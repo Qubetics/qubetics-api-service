@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  expo-api
+  labels:
+    app:  expo-api
+  namespace: stage-explorer-ns
+spec:
+  selector:
+    matchLabels:
+      app: expo-api
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app:  expo-api
+    spec:
+      containers:
+      - image: ${ECR_REPO_URL}
+        imagePullPolicy: Always
+        name:  expo-api
+        # envFrom:
+        #   - configMapRef:
+        #       name: expo-api-env
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m    
+        ports:
+        - containerPort:  7200
+          name: expo-api-port
+      restartPolicy: Always
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name:  expo-api
+  labels:
+    app: expo-api
+  namespace: stage-explorer-ns
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: '/status'
+spec:
+  selector:
+    app:  expo-api
+  ports:
+    - name:  expo-api-port
+      port:  7200
+      targetPort: 7200 

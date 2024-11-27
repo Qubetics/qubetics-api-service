@@ -1,0 +1,1419 @@
+{
+   "openapi": "3.0.2",
+   "info": {
+      "title": "Qubetics Explorer Apis",
+      "description": "Explorer service",
+      "version": "1.0.0"
+   },
+   "produces": ["application/json"],
+   "servers": [
+      {
+         "url": "http://localhost:4001",
+         "description": "Development server"
+      },     
+      {
+         "url": "<QA Server URL>",
+         "description": "QA Development server"
+      },
+      {
+         "url": "<Testnet URL>",
+         "description": "Development server"
+      },
+      {
+         "url": "<Mainnet URL>",
+         "description": "Production server"
+      }
+      
+   ],
+   "components": {
+      "schemas": {
+         "users": {
+            "type": "object",
+            "properties": {
+               "address": {
+                  "type": "string"
+               },
+               "txn": {
+                  "type": "string"
+               },
+               "balance": {
+                  "type": "string"
+               },
+               "createdAt": {
+                  "type": "string"
+               },
+               "updatedAt": {
+                  "type": "string"
+               }
+            }
+         },
+         "blocks": {
+            "type": "object",
+            "properties": {
+               "blocknumber": {
+                  "type": "string"
+               },
+               "blockhash": {
+                  "type": "string"
+               },
+               "timestamp": {
+                  "type": "string"
+               },
+               "stateRoot": {
+                  "type": "string"
+               },
+               "parentHash": {
+                  "type": "string"
+               },
+               "extrinsicsRoot": {
+                  "type": "string"
+               },
+               "transactionCount": {
+                  "type": "string"
+               },
+               "deposit": {
+                  "type": "string"
+               },
+               "transfer": {
+                  "type": "string"
+               },
+               "validator": {
+                  "type": "string"
+               },
+               "baseFeePerGas": {
+                  "type": "string"
+               },
+               "receiptsRoot": {
+                  "type": "string"
+               },
+               "sha3Uncles": {
+                  "type": "string"
+               },
+               "size": {
+                  "type": "string"
+               },
+               "gasLimit": {
+                  "type": "string"
+               },
+               "gasUsed": {
+                  "type": "number"
+               },
+               "createdAt": {
+                  "type": "string"
+               },
+               "updatedAt": {
+                  "type": "string"
+               }
+
+            }
+         },
+         "transactions": {
+            "type": "object",
+            "properties": {
+               "blocknumber": {
+                  "type": "string"
+               },
+               "blockhash": {
+                  "type": "string"
+               },
+               "stateRoot": {
+                  "type": "string"
+               },
+               "txhash": {
+                  "type": "string"
+               },
+               "contractAddress": {
+                  "type": "string"
+               },
+               "status": {
+                  "type": "string"
+               },
+               "type": {
+                  "type": "string"
+               },
+               "fromAddress": {
+                  "type": "string"
+               },
+               "toAddress": {
+                  "type": "string"
+               },
+               "timestamp": {
+                  "type": "string"
+               },
+               "maxFeePerGas": {
+                  "type": "string"
+               },
+               "maxPriorityFeePerGas": {
+                  "type": "string"
+               },
+               "gasPrice": {
+                  "type": "string"
+               },
+               "gas": {
+                  "type": "string"
+               },
+               "value": {
+                  "type": "number"
+               },
+               "createdAt": {
+                  "type": "string"
+               },
+               "updatedAt": {
+                  "type": "string"
+               }
+            }
+         },
+         "contracts": {
+            "type": "object",
+            "properties": {
+               "contractAddress": {
+                  "type": "string"
+               },
+               "createdAt": {
+                  "type": "string"
+               },
+               "updatedAt": {
+                  "type": "string"
+               }
+            }
+         }
+      }
+   },
+   "paths": {
+      "/qubetics/blocks/get-all-blocks": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get list of all blocks",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Block Fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "data": {
+                                 "type": "object",
+                                 "$ref": "#/components/schemas/blocks"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/blocks/get-latest-block": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get latest block number",
+            "responses": {
+               "200": {
+                  "description": "Block Fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "data": {
+                                 "type": "object",
+                                 "$ref": "#/components/schemas/blocks"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/transactions/get-all-transactions": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get list of all transactions",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Transaction Fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "latestBlock": {
+                                 "type": "number"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/transactions/get-transaction-by-address": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Fetching transactions using from address ,to address,contract address",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "address",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "data": {
+                                 "type": "object"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/transactions/get-transaction-by-block": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Fetching Transaction using block number and block hash",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "value",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "data": {
+                                 "type": "object"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/explorer/searching": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Searaching txHash,block hash and block number",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "value",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Searching done Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "data": {
+                                 "type": "object"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/explorer/peers": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get all peers",
+            "responses": {
+               "200": {
+                  "description": "Peers Fetched Successfully"
+                 
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/explorer/summary":{
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Summary of explorer",
+            "responses": {
+               "200": {
+                  "description": "Summary Fetch Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/dashboard":{
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get apr value and total number of valdators",
+            "responses": {
+               "200": {
+                  "description": "Apr value and validators count fetched successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/top-validator":{
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get top validator",
+            "responses": {
+               "200": {
+                  "description": "Top validators fetched successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/graph/tps":{
+         "get": {
+            "tags": ["Explorer Graph"],
+            "summary": "Get tps history and number of transactions",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "interval",
+                  "schema": {
+                     "type": "string",
+                     "example": "1"
+                  }
+               },{
+                  "in": "query",
+                  "name": "time",
+                  "schema": {
+                     "type": "string",
+                     "example":"d"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "TPS history fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/graph/account":{
+         "get": {
+            "tags": ["Explorer Graph"],
+            "summary": "Get number of account count",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "interval",
+                  "schema": {
+                     "type":"string",
+                     "example": "1"
+                  }
+               },{
+                  "in": "query",
+                  "name": "time",
+                  "schema": {
+                     "type": "string",
+                     "example":"d"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Account history fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/graph/coin-transfer":{
+         "get": {
+            "tags": ["Explorer Graph"],
+            "summary": "Get number of coin transactions count",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "interval",
+                  "schema": {
+                     "type": "string",
+                     "example": "1"
+                  }
+               },{
+                  "in": "query",
+                  "name": "time",
+                  "schema": {
+                     "type": "string",
+                     "example":"d"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Transaction history fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/graph/contract-deployed":{
+         "get": {
+            "tags": ["Explorer Graph"],
+            "summary": "Get number of contract deployed transactions",
+           
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "interval",
+                  "schema": {
+                     "type": "string",
+                     "example": "1"
+                  }
+               },{
+                  "in": "query",
+                  "name": "time",
+                  "schema": {
+                     "type": "string",
+                     "example":"d"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Transaction history fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/address-detail/{address}": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get address detail by address",
+            "parameters": [
+               {
+                  "in": "path",
+                  "name": "address",
+                  "schema": {
+                     "type": "string",
+                     "example": "0xbf705c722e5ed79dfb59093b3e7a22e8eb0fdebc0fa37d185ad710e1ea4fec37"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Success",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "data": {
+                                 "type": "object"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+    
+      "/qubetics/faucet/transfer": {
+         "post": {
+            "tags": ["Faucet"],
+            "summary": "Transfer fund",
+            "requestBody": {
+               "description": "",
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "type": "object",
+                        "properties": {
+                           "toAddress": {
+                              "type": "string"
+                           },
+                           "value": {
+                              "type": "number"
+                           }
+                        },
+                        "example": {
+                           "toAddress": "abgy6234o",
+                           "value": 1
+                        }
+                     }
+                  }
+               }
+            },
+            "responses": {
+               "200": {
+                  "description": "Balance Transfer Successfuly",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/contracts/all-contracts": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Contract list",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               
+               }
+            }
+         }
+      },
+      "/qubetics/contracts/contract-detail-by-address/{contractAddress}": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Contract Detail By contract address",
+            "parameters": [
+               {
+                  "in": "path",
+                  "name": "contractAddress",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      },
+      "/qubetics/contracts/all-transaction": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Contract Transaction",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "contractAddress",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/contracts/transfer": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Contract Transaction",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "contractAddress",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/contracts/events": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Contract events",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "contractAddress",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/contracts/popular": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get popular Contract Transaction",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/tokens/holders": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get holders of tokens by contract or token",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "contractAddress",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/tokens/all-tokens": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get all tokens",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/tokens/token-transfer": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get all tokens transactions",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Token Transaction Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/tokens": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get all tokens",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "value",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },
+      "/qubetics/tokens/token-by-address/{contractAddress}": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get token  of tokens by contract or token address",
+            "parameters": [
+               {
+                  "in": "path",
+                  "name": "contractAddress",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Contract Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },    
+      "/qubetics/tokens/token-by-wallet-address": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Token Transaction",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "address",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Token Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },  
+      "/qubetics/tokens/searching": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get Token Transaction",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "value",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+
+            "responses": {
+               "200": {
+                  "description": "Token Fetched Successfully"
+                
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+                 
+               }
+            }
+         }
+      },  
+      "/qubetics/explorer/graph/token-price":{
+         "get": {
+            "tags": ["Explorer Graph"],
+            "summary": "Get token price history and volume 24",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "interval",
+                  "schema": {
+                     "type": "string",
+                     "example": "1"
+                  }
+               },{
+                  "in": "query",
+                  "name": "time",
+                  "schema": {
+                     "type": "string",
+                     "example":"d"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "TPS history fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
+      "/qubetics/explorer/market-cap":{
+         "get": {
+            "tags": ["Market Cap"],
+            "summary": "Get Market Cap history and volume 24",
+            "parameters": [],
+            "responses": {
+               "200": {
+                  "description": "Market Cap history fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },      
+      "/qubetics/validators/getAllValidators": {
+         "get": {
+            "tags": ["Explorer"],
+            "summary": "Get list of all validators",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "page",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "limit",
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "in": "query",
+                  "name": "status",
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Validator Fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "data": {
+                                 "type": "object"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+      }
+   }
+}
+

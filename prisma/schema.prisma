@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum TransactionType {
+  COIN_TRANSFER
+  CONTRACT_CREATION
+  CONTRACT_TRANSFER
+}
+
+model Users {
+  id        Int      @id @default(autoincrement())
+  address   String   @unique @db.VarChar(255)
+  balance   String   @default("0")
+  txn       BigInt   @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Blocks {
+  id               Int      @id @default(autoincrement())
+  blocknumber      BigInt   @unique
+  blockhash        String   @unique @db.VarChar(255)
+  stateRoot        String   @db.VarChar(255)
+  parentHash       String   @db.VarChar(255)
+  transactionsRoot String
+  timestamp        BigInt
+  transactionCount BigInt   @default(0)
+  nonce            BigInt
+  miner            String   @db.VarChar(255)
+  baseFeePerGas    BigInt
+  receiptsRoot     String   @db.VarChar(255)
+  sha3Uncles       String   @db.VarChar(255)
+  transfer         String   @default("0")
+  deposit          String   @default("0")
+  size             BigInt
+  gasLimit         BigInt
+  gasUsed          BigInt
+  createdAt        DateTime @default(now())
+
+  @@index([blocknumber, blockhash])
+  @@index([createdAt])
+  @@index([miner]) 
+}
+
+model Transactions {
+  id              Int               @id @default(autoincrement())
+  blockhash       String            @db.VarChar(255)
+  blocknumber     BigInt
+  txhash          String            @unique
+  contractAddress String            @default("N/A")
+  status          TransactionStatus @default(PENDING)
+  type            TransactionType
+  timestamp       BigInt
+  fromAddress     String            @db.VarChar(255)
+  toAddress       String            @db.VarChar(255)
+  gasPrice        BigInt            @default(0)
+  gas             BigInt            @default(0)
+  txFee           String            @default("0") @db.VarChar(255)
+  value           String            @default("0")
+  token           String            @default("0")
+  input           String            @default("") 
+  createdAt       DateTime          @default(now())
+  ContractLogs    ContractLogs[]
+
+  @@index([type, txhash, contractAddress, fromAddress, toAddress])
+}
+
+model CoinTransaferTx {
+  id          Int               @id @default(autoincrement())
+  blockhash   String            @db.VarChar(255)
+  blocknumber BigInt
+  txhash      String            @unique
+  status      TransactionStatus @default(PENDING)
+  fromAddress String            @db.VarChar(255)
+  toAddress   String            @db.VarChar(255)
+  timestamp   BigInt
+  gasPrice    BigInt            @default(0)
+  gas         BigInt            @default(0)
+  value       String            @default("0")
+  txFee       String            @default("0") @db.VarChar(255)
+  createdAt   DateTime          @default(now())
+
+  @@index([txhash, fromAddress, toAddress])
+}
+
+model Contracts {
+  id           Int            @id @default(autoincrement())
+  creator      String         @default("")
+  address      String         @unique
+  blockHash    String         @db.VarChar(255)
+  blockNumber  BigInt
+  bytecode     String         @default("") @db.VarChar(65535)
+  txHash       String
+  timestamp    BigInt
+  contractName String
+  contractType String         @default("UNKNOWN")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Tokens       Tokens?
+  Holders      Holders[]
+  ContractLogs ContractLogs[]
+  ContractVerification ContractVerification? @relation(fields: [address], references: [contractAddress])
+}
+
+model Tokens {
+  id              Int      @id @default(autoincrement())
+  creator         String
+  decimal         String
+  totalSupply     String
+  type            String
+  tokenName       String
+  tokenSymbol     String
+  contractAddress String   @unique
+  blockHash       String
+  blockNumber     BigInt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contract Contracts? @relation(fields: [contractAddress], references: [address])
+}
+
+model Holders {
+  id              Int    @id @default(autoincrement())
+  address         String
+  contractAddress String
+  tokenBalance    String
+
+  contract Contracts? @relation(fields: [contractAddress], references: [address])
+}
+
+model ContractLogs {
+  id              Int      @id @default(autoincrement())
+  txHash          String   @unique
+  contractAddress String
+  blockHash       String
+  blockNumber     BigInt
+  topics          String[] @default([])
+  logs            String   @default("")
+  methodSignature String
+  method          String   @default("N/A")
+  gasFee          BigInt
+  status          String
+  timestamp       BigInt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contract     Contracts?    @relation(fields: [contractAddress], references: [address])
+  transactions Transactions? @relation(fields: [txHash], references: [txhash])
+}
+
+model CoinmarketInfo {
+  id               Int      @id @default(autoincrement())
+  price            String
+  volume24h        String
+  volumeChange24h  String
+  percentChange1h  String
+  percentChange24h String
+  percentChange7d  String
+  percentChange30d String
+  symbol           String   @default("") @db.VarChar(255)
+  currency         String   @default("") @db.VarChar(255)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model TxFee {
+  id  Int    @id @default(autoincrement())
+  fee String @default("0")
+
+  @@index([fee])
+}
+
+model Validator {
+  id             Int      @id @default(autoincrement())
+  name           String   @default("")
+  address        String   @unique
+  status         String   @default("")
+  votingPower    Float    @default(0)
+  selfStake      String   @default("")
+  commission     String   @default("")
+  delegatorCount Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([selfStake, createdAt, updatedAt])
+}
+
+
+model DecodedLogs {
+  id              Int              @id @default(autoincrement())
+  txHash          String           @unique
+  contractAddress String
+  input           String           @default("")
+  logs            String           @default("")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ContractVerification {
+  id                      Int          @id @default(autoincrement())  
+  contractAddress         String       @unique
+  implementation          String       @default("")
+  sourceCode              Json         @default("[]")
+  codeformat              String
+  contractname            String       @default("")
+  compilerversion         String
+  evmVersion              String       @default("")
+  optimizationUsed        Boolean      @default(false)
+  verificationType        Int          @default(0) //0:pending,1:partial,2:fully ,-1:rejected
+  runs                    Int          @default(200)
+  licenseType             Int          @default(0)
+  constructorArguements   String       @default("")
+  creationCode            String       @default("")
+  byteCode                String       @default("")
+  abi                     Json         @default("[]")
+  abis                    Json         @default("[]")
+  errors                  Json         @default("[]")
+  iconUrl                 String       @default("")
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  Contracts Contracts[]
+}
