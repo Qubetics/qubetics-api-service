@@ -19,4 +19,6 @@ jobs:
       # Step 2: Log in to Huawei SWR
       - name: Log in to Huawei SWR
         run: |
-          docker login -u ${{ secrets.HUAWEI_REGION }}@${{ secrets.HUAWEI_USERNAME }} -p ${{ secrets.HUAWEI_PASSWORD }} ${{ secrets.HUAWEI_SWR_URL }}
+          # docker login -u ${{ secrets.HUAWEI_REGION }}@${{ secrets.HUAWEI_USERNAME }} -p ${{ secrets.HUAWEI_PASSWORD }} ${{ secrets.HUAWEI_SWR_URL }}
+          echo "${{ secrets.HUAWEI_PASSWORD }}" | docker login -u "${{ secrets.HUAWEI_REGION }}@${{ secrets.HUAWEI_USERNAME }}" --password-stdin ${{ secrets.HUAWEI_SWR_URL }}
+
