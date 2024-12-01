@@ -1,3 +1,10 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - master
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -8,6 +15,7 @@ jobs:
       HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
       HUAWEI_ORGANIZATION: ${{ secrets.HUAWEI_ORGANIZATION }}
       HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -20,10 +28,10 @@ jobs:
         env:
           HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
         run: |
-          docker build -t $HUAWEI_SWR_URL/$HUAWEI_ORGANIZATION/HUAWEI_IMAGE:${{ github.sha }} .
+          docker build -t $HUAWEI_SWR_URL/$HUAWEI_ORGANIZATION/$HUAWEI_IMAGE:${{ github.sha }} .
 
       - name: Push Docker Image
         env:
           HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
         run: |
-          docker push $HUAWEI_SWR_URL/dev-qubetics/dev-qubetics-api:${{ github.sha }}
+          docker push $HUAWEI_SWR_URL/$HUAWEI_ORGANIZATION/$HUAWEI_IMAGE:${{ github.sha }}
