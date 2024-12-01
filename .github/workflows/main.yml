@@ -1,23 +1,29 @@
-name: Huawei SWR Docker Build and Push
-
-on:
-  push:
-    branches:
-      - main
-      - staging
-      - feature/*
-
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
-
+    env:
+      HUAWEI_REGION: ${{ secrets.HUAWEI_REGION }}
+      HUAWEI_USERNAME: ${{ secrets.HUAWEI_USERNAME }}
+      HUAWEI_PASSWORD: ${{ secrets.HUAWEI_PASSWORD }}
+      HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
+      HUAWEI_ORGANIZATION: ${{ secrets.HUAWEI_ORGANIZATION }}
+      HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}    
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Log in to Huawei SWR
       - name: Log in to Huawei SWR
         run: |
-          docker login -u ${{ secrets.HUAWEI_REGION }}@${{ secrets.HUAWEI_USERNAME }} -p ${{ secrets.HUAWEI_PASSWORD }} ${{ secrets.HUAWEI_SWR_URL }}
+          echo "$HUAWEI_PASSWORD" | docker login -u "$HUAWEI_REGION@$HUAWEI_USERNAME" --password-stdin $HUAWEI_SWR_URL
 
+      - name: Build Docker Image
+        env:
+          HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
+        run: |
+          docker build -t $HUAWEI_SWR_URL/$HUAWEI_ORGANIZATION/HUAWEI_IMAGE:${{ github.sha }} .
+
+      - name: Push Docker Image
+        env:
+          HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
+        run: |
+          docker push $HUAWEI_SWR_URL/dev-qubetics/dev-qubetics-api:${{ github.sha }}
