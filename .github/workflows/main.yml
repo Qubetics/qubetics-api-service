@@ -1,14 +1,14 @@
-name: Simple Docker Build Pipeline
+name: Huawei SWR Docker Build and Push
 
 on:
   push:
     branches:
-      - master
+      - main
       - staging
       - feature/*
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,6 +16,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Build the Docker image
-      - name: Build Docker Image
-        run: docker build -t my-app .
+      # Step 2: Log in to Huawei SWR
+      - name: Log in to Huawei SWR
+        run: |
+          docker login -u ${{ secrets.HUAWEI_USERNAME }} -p ${{ secrets.HUAWEI_PASSWORD }} ${{ secrets.HUAWEI_SWR_URL }}
