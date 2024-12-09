@@ -18,6 +18,7 @@ jobs:
         HUAWEI_SWR_API: ${{ secrets.HUAWEI_SWR_API }}
         HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}
         HUAWEI_SWR_ENDPOINT: ${{ secrets.HUAWEI_SWR_ENDPOINT }}
+        HUAWEI_ORGANIZATION: ${{ secrets.HUAWEI_ORGANIZATION }}
 
     steps:
       - name: Checkout Code
@@ -44,4 +45,13 @@ jobs:
           dc_login="${dc_header} ${HUAWEI_SWR_ENDPOINT}"
           echo "Docker login command"
           echo "$dc_login"
-          echo "dc_login=${dc_login}" >> $GITHUB_OUTPUT            
+          echo "dc_login=${dc_login}" >> $GITHUB_OUTPUT    
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }} .
+          
+      - name: Docker login & Push Docker image to Huawei SWR
+        run: |
+          ${{steps.login.outputs.dc_login}}
+          docker push ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}                  
