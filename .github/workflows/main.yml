@@ -23,7 +23,7 @@ jobs:
         id: idtoken
         with:
           script: |
-            const core = require('@actions/core');
+            # const core = require('@actions/core');
             const id_token = await core.getIDToken("dev-qubetics-pipeline");
             core.setOutput('id_token', id_token);
 
