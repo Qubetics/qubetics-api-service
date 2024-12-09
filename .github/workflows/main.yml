@@ -23,20 +23,7 @@ jobs:
         id: idtoken
         with:
           script: |
-            # const core = require('@actions/core');
-            const id_token = await core.getIDToken("dev-qubetics-pipeline");
-            core.setOutput('id_token', id_token);
-
-      - name: Getting credentials from Huawei and Docker login
-        id: login
-        run: |
-          unscoped_token=$(curl -ki -s -X POST -H "Authorization: Bearer ${{ steps.idtoken.outputs.id_token }}" https://iam.myhuaweicloud.com/v3/OS-FEDERATION/identity_providers/vjtest/protocols/oidc/auth -H "Accept: application/json;" -H "Content-Type: application/json" -d "{}" | grep 'X-Subject-Token:' | awk '{print $2}')
-          response=$(curl -ki -s -X POST -H "x-auth-token: ${unscoped_token}" https://swr-api.ap-southeast-3.myhuaweicloud.com/v2/manage/utils/secret)
-          dc_header=$(echo "$response" | grep -i 'X-Swr-Dockerlogin:' | cut -d ':' -f2 | sed 's/^ *//;s/ *$//' | tr -d '\r' | tr -d '\n')
-          dc_login="${dc_header} swr.ap-southeast-3.myhuaweicloud.com"
-          echo "Docker login command"
-          echo "$dc_login"
-          echo "dc_login=${dc_login}" >> $GITHUB_OUTPUT
-          echo "$dc_login" | docker login --username "X-Swr-Dockerlogin" --password-stdin swr.ap-southeast-3.myhuaweicloud.com
-
-     
+            const core = require('@actions/core');
+            const token = await github.getOctokit(process.env.GITHUB_TOKEN).request('POST /user');
+            const id_token = await github.actions.getIDToken("dev-qubetics-pipeline");
+            core.setOutput("id_token", id_token);
