@@ -1,38 +1,42 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image with OIDC
 
 on:
   push:
     branches:
       - master
-      - feature/*      
+      - feature/*
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      HUAWEI_REGION: ${{ secrets.HUAWEI_REGION }}
-      HUAWEI_USERNAME: ${{ secrets.HUAWEI_USERNAME }}
-      HUAWEI_PASSWORD: ${{ secrets.HUAWEI_PASSWORD }}
-      HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
-      HUAWEI_ORGANIZATION: ${{ secrets.HUAWEI_ORGANIZATION }}
-      HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}    
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Log in to Huawei SWR
-        run: |
-          echo "$HUAWEI_PASSWORD" | docker login -u "$HUAWEI_REGION@$HUAWEI_USERNAME" --password-stdin $HUAWEI_SWR_URL
+      - name: Install OIDC Client from Core Package
+        run: npm install @actions/core@1.6.0 @actions/http-client
 
-      - name: Build Docker Image
-        env:
-          HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
-        run: |
-          docker build -t $HUAWEI_SWR_URL/$HUAWEI_ORGANIZATION/$HUAWEI_IMAGE:${{ github.sha }} .
+      - name: Get Id Token
+        uses: actions/github-script@v6
+        id: idtoken
+        with:
+          script: |
+            const core = require('@actions/core')
+            let id_token = await core.getIDToken("dev-qubetics-pipeline")
+            core.setOutput('id_token', id_token)
 
-      - name: Push Docker Image
-        env:
-          HUAWEI_SWR_URL: ${{ secrets.HUAWEI_SWR_URL }}
+      - name: Getting credentials from Huawei
+        id: login
         run: |
-          docker push $HUAWEI_SWR_URL/$HUAWEI_ORGANIZATION/$HUAWEI_IMAGE:${{ github.sha }}
+          unscoped_token=$(curl -ki -s -X POST -H "Authorization: Bearer ${{steps.idtoken.outputs.id_token}}" https://iam.myhuaweicloud.com/v3/OS-FEDERATION/identity_providers/vjtest/protocols/oidc/auth -H "Accept: application/json;" -H "Content-Type: application/json" -d "{}" | grep 'X-Subject-Token:' | awk '{print $2}')
+          response=$(curl -ki -s -X POST -H "x-auth-token: ${unscoped_token}" https://swr-api.ap-southeast-3.myhuaweicloud.com/v2/manage/utils/secret)
+          dc_header=$(echo "$response" | grep -i 'X-Swr-Dockerlogin:' | cut -d ':' -f2 | sed 's/^ *//;s/ *$//' | tr -d '\r' | tr -d '\n')
+          dc_login="${dc_header} swr.ap-southeast-3.myhuaweicloud.com"
+          echo "Docker login command"
+          echo "$dc_login"
+          echo "dc_login=${dc_login}" >> $GITHUB_OUTPUT
