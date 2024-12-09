@@ -47,6 +47,9 @@ jobs:
           echo "$dc_login"
           echo "dc_login=${dc_login}" >> $GITHUB_OUTPUT    
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Build Docker image
         run: |
           docker build -t ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }} .
