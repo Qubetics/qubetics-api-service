@@ -17,13 +17,15 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        
+      - name: Install OIDC Client from Core Package
+        run: npm install @actions/core@1.6.0 @actions/http-client        
 
       - name: Get Id Token
         uses: actions/github-script@v6
         id: idtoken
         with:
           script: |
-            const core = require('@actions/core');
-            const token = await github.getOctokit(process.env.GITHUB_TOKEN).request('POST /user');
-            const id_token = await github.actions.getIDToken("dev-qubetics-pipeline");
-            core.setOutput("id_token", id_token);
+            const coredemo = require('@actions/core')
+            let id_token = await coredemo.getIDToken("set_by_owner")
+            coredemo.setOutput('id_token', id_token)
