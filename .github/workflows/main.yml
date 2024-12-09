@@ -14,6 +14,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+env:
+    HUAWEI_SWR_API: ${{ secrets.HUAWEI_SWR_URL }}
+    HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}
+    HUAWEI_SWR_ENDPOINT: ${{ secrets.HUAWEI_SWR_ENDPOINT }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -27,5 +32,16 @@ jobs:
         with:
           script: |
             const coredemo = require('@actions/core')
-            let id_token = await coredemo.getIDToken("set_by_owner")
+            let id_token = await coredemo.getIDToken("dev-qubetics")
             coredemo.setOutput('id_token', id_token)
+
+      - name: Getting credentials
+        id: login
+        run: |
+          unscoped_token=$(curl -ki -s -X POST -H "Authorization: Bearer ${{steps.idtoken.outputs.id_token}}" https://iam.myhuaweicloud.com/v3/OS-FEDERATION/identity_providers/vjtest/protocols/oidc/auth -H "Accept: application/json;" -H "Content-Type: application/json" -d "{}" | grep 'X-Subject-Token:' | awk '{print $2}')
+          response=$(curl -ki -s -X POST -H "x-auth-token: ${unscoped_token}" $HUAWEI_SWR_API/v2/manage/utils/secret)
+          dc_header=$(echo "$response" | grep -i 'X-Swr-Dockerlogin:' | cut -d ':' -f2 | sed 's/^ *//;s/ *$//' | tr -d '\r' | tr -d '\n')
+          dc_login="${dc_header} $HUAWEI_SWR_ENDPOINT"
+          echo "Docker login command"
+          echo "$dc_login"
+          echo "dc_login=${dc_login}" >> $GITHUB_OUTPUT
