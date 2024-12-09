@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-        HUAWEI_SWR_API: ${{ secrets.HUAWEI_SWR_URL }}
+        HUAWEI_SWR_API: ${{ secrets.HUAWEI_SWR_API }}
         HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}
         HUAWEI_SWR_ENDPOINT: ${{ secrets.HUAWEI_SWR_ENDPOINT }}
 
