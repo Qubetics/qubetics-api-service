@@ -21,14 +21,22 @@ jobs:
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
 
-      - name: Get Id Token
+      # - name: Get Id Token
+      #   uses: actions/github-script@v6
+      #   id: idtoken
+      #   with:
+      #     script: |
+      #       const core = require('@actions/core');
+      #       const id_token = await core.getIDToken("set_by_owner");
+      #       core.setOutput('id_token', id_token);
+
+      - name: Test OIDC Token
         uses: actions/github-script@v6
-        id: idtoken
+        id: testscript
         with:
           script: |
             const core = require('@actions/core');
-            const id_token = await core.getIDToken("set_by_owner");
-            core.setOutput('id_token', id_token);
+            core.info("Script executed successfully.");      
 
       - name: Getting credentials from Huawei
         id: login
