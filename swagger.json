@@ -12,7 +12,7 @@
          "description": "Development server"
       },     
       {
-         "url": "<QA Server URL>",
+         "url": "https://evm-backend.qubetics.work/qubetics",
          "description": "QA Development server"
       },
       {
