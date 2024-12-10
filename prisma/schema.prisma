@@ -109,8 +109,8 @@ model Contracts {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   Tokens       Tokens?
-  // Holders      Holders[]
-  // ContractLogs ContractLogs[]
+  Holders      Holders[]
+  ContractLogs ContractLogs[]
   // ContractVerification ContractVerification? @relation(fields: [address], references: [contractAddress])
   ContractVerification ContractVerification? 
 }
@@ -138,7 +138,7 @@ model Holders {
   contractAddress String
   tokenBalance    String
 
-  // contract Contracts? @relation(fields: [contractAddress], references: [address])
+  contract Contracts? @relation(fields: [contractAddress], references: [address])
 }
 
 model ContractLogs {
@@ -157,7 +157,7 @@ model ContractLogs {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // contract     Contracts?    @relation(fields: [contractAddress], references: [address])
+  contract     Contracts?    @relation(fields: [contractAddress], references: [address])
   transactions Transactions? @relation(fields: [txHash], references: [txhash])
 }
 
@@ -232,5 +232,6 @@ model ContractVerification {
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
   Contracts              Contracts @relation(fields: [contractAddress], references: [address])
+
   // Contracts Contracts[]
 }
