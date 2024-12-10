@@ -40,12 +40,12 @@ class ContractService {
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 			const contractCount = await prisma.contracts.count();
 			// `SELECT COUNT(id) FROM public."Contracts" where "contractType" = 'ERC-20'`;
-			const erc20Count = await prisma.$queryRawUnsafe<{
+			const erc20Count: any = await prisma.$queryRawUnsafe<{
 				tokenCount: number;
 			}>(
-				`SELECT COUNT(id) as "tokenCount" from Contracts WHERE contractType = "ERC-20"`,
+				`SELECT COUNT(id) as "tokenCount" from "Contracts" WHERE "contractType" = 'ERC-20'`,
 			);
-			console.log('erc20Count', erc20Count, erc20Count.tokenCount);
+			console.log('erc20Count', erc20Count, erc20Count[0].tokenCount);
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT,
@@ -54,8 +54,8 @@ class ContractService {
 					contracts: convertBigIntToNumber(contracts),
 					nextCursor,
 					prevCursor,
-					erc20Count: erc20Count.tokenCount
-						? erc20Count.tokenCount
+					erc20Count: erc20Count[0].tokenCount
+						? Number(erc20Count[0].tokenCount)
 						: 0,
 				},
 			};
