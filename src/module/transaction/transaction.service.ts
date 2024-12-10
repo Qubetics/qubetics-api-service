@@ -36,6 +36,20 @@ class TransactionService {
 				REDIS_KEY.TRANSACTIONS_COUNT,
 			);
 
+			const thirtyDaysAgo = new Date();
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+			// Query the count of transactions
+			const previous30DaysTrxn = await prisma.transactions.count({
+				where: {
+					createdAt: {
+						gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+					},
+				},
+			});
+
+			console.log('previous30DaysTrxn', previous30DaysTrxn);
+
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
 
@@ -59,6 +73,7 @@ class TransactionService {
 					transactions: convertBigIntToNumber(transactions),
 					nextCursor,
 					prevCursor,
+					previous30DaysTrxn,
 				},
 			};
 		} catch (err) {

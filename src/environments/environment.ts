@@ -55,6 +55,7 @@ class Environment implements IEnvironment {
 	public redisExpiry: number;
 
 	public projectName: string;
+	public faucetAmount: number;
 
 	/**
 	 *
@@ -88,6 +89,7 @@ class Environment implements IEnvironment {
 		this.nodeIp = <string>process.env.NODE_INFO_IP;
 		this.redisExpiry = Number(process.env.API_REDIS_EXPIRY ?? 3600);
 		this.projectName = <string>process.env.PROJECT_NAME;
+		this.faucetAmount = Number(process.env.FAUCET_AMOUNT) || 20;
 	}
 
 	/**
