@@ -73,4 +73,11 @@ jobs:
         run: |
           cd argocd-qubetics
           sed -i "s|\(image: \).*|\1${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}|" Evm-backend/api-deployment.yaml
+
+      - name: Commit and Push Changes
+        run: |
+          cd argocd-qubetics
+          git add .
+          git commit -m "Update image to ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}"
+          git push origin master          
           
