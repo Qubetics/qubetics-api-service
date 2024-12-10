@@ -72,6 +72,8 @@ export const RES_MSG = {
 		'error occur while fetching APR value and validators count',
 	VALIDATOR_ERROR: 'Error occurred while getting validator details',
 	TOKEN_FETCH_ERROR: 'error occured while fetch token detail',
+	DATA_NOT_FOUND: 'data not found',
+	TRANSACTION_FEE_SUCCESS: 'transaction fee fetched successfully',
 };
 
 export const BLOCKCHAIN_ERROR_MSG = {
@@ -183,6 +185,7 @@ export const REDIS_KEY = {
 	COIN_TRANSFER_TX_HISTORY: 'CoinTransferTxHistory',
 	CONTRACT_DEPLOYMENT_HISTORY: 'ContractDeploymentHistory',
 	STAST_GENERATED: 'StatsGenerated',
+	TX_FEE_HISTORY: 'TxFeeHistory',
 };
 
 export const QUEUE_NAME = {
@@ -266,3 +269,17 @@ export enum TRANSACTION_TYPE {
 	CONTRACT_CREATION = 'CONTRACT_CREATION',
 	CONTRACT_TRANSFER = 'CONTRACT_TRANSFER',
 }
+
+export const STATS_CONVERTER: {
+	[key: string]: { [key: string]: { key: string; len: number } };
+} = {
+	d: {
+		'1': { key: 'hourly', len: 24 },
+		'7': { key: 'daily', len: 7 },
+		'30': { key: 'daily', len: 30 },
+	},
+	y: {
+		'1': { key: 'monthly', len: 12 },
+		'5': { key: 'monthly', len: 60 },
+	},
+};

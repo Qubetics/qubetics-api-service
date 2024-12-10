@@ -54,7 +54,8 @@ class ExplorerController implements Controller {
 				getGraphHistoryValidation,
 				this.getContractDeployedCount,
 			)
-			.get('/market-cap', this.getMarketCap);
+			.get('/market-cap', this.getMarketCap)
+			.get('/graph/tx-fee', getGraphHistoryValidation, this.getTxFeeSum);
 	}
 
 	private searching = async (request: Request, response: Response) => {
@@ -204,6 +205,21 @@ class ExplorerController implements Controller {
 		const res = await ExplorerService.getAddressDetail(
 			request.params.address,
 		);
+		if (res.error) {
+			return setResponse.error(response, res);
+		}
+		return setResponse.success(response, res);
+	};
+
+	private getTxFeeSum = async (request: Request, response: Response) => {
+		const data = {
+			interval: !request.query?.interval
+				? 1
+				: Number(request.query.interval),
+			time: !request.query?.time ? 'd' : <string>request.query.time,
+		};
+		const res = await ExplorerService.getTxFeeSum(data);
+
 		if (res.error) {
 			return setResponse.error(response, res);
 		}

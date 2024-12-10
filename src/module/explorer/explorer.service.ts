@@ -6,6 +6,7 @@ import {
 	nodeIpDetail,
 	TRANSACTION_TYPE,
 	RESPONSES,
+	STATS_CONVERTER,
 } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService, RabbitMqService } from '../../service/index';
@@ -929,6 +930,51 @@ class ExplorerService {
 				error: true,
 				message: err instanceof Error ? err.message : RES_MSG.ERROR,
 			};
+		}
+	}
+
+	async getTxFeeSum(payloads: {
+		time: string;
+		interval: number;
+	}): Promise<IGraphResponse> {
+		try {
+			let { time, interval } = payloads;
+			console.log('ppp', payloads);
+			console.log(STATS_CONVERTER[time][interval], 'skskskks');
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
+
+			const [TxnFeeStats] = await Promise.all([
+				RedisService.getString(REDIS_KEY.TX_FEE_HISTORY),
+			]);
+
+			let _slice: any[] = TxnFeeStats[key];
+
+			if (!!_slice) {
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
+
+				return {
+					error: false,
+					message: RES_MSG.TRANSACTION_FEE_SUCCESS,
+					data: {
+						finalData: _slice as Array<GraphData>,
+						count: 0,
+					},
+				};
+			}
+
+			return {
+				error: false,
+				message: RES_MSG.DATA_NOT_FOUND,
+			};
+		} catch (err) {
+			console.log('tx-fee', err);
+			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
 }

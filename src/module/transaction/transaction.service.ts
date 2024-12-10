@@ -42,20 +42,21 @@ class TransactionService {
 			const thirtyDaysAgo = new Date();
 			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-			const [activeAccount, previous30DaysTrxn] = await Promise.all([
-				prisma.transactions.findMany({
-					select: {
-						_count: true,
-					},
-					distinct: ['fromAddress'],
-					where: {
-						timestamp: {
-							gte: todayStart.toISOString(),
-							lte: new Date().toISOString(),
-						},
-					},
-				}),
-
+			const [getActiveAccount, previous30DaysTrxn] = await Promise.all([
+				// prisma.transactions.findmany({
+				// 	select: {
+				// 		_count: true,
+				// 	},
+				// 	distinct: ['fromAddress'],
+				// 	where: {
+				// 		timestamp: {
+				// 			gte: todayStart.toISOString(),
+				// 			lte: new Date().toISOString(),
+				// 		},
+				// 	},
+				// }),
+				prisma.$queryRaw`
+ 					SELECT COUNT(DISTINCT "fromAddress") AS "count" FROM "Transactions" WHERE "timestamp" >= CAST(${todayStart.toISOString()} AS timestamp) AND "timestamp" <= CAST(${new Date().toISOString()} AS timestamp)`,
 				prisma.transactions.count({
 					where: {
 						createdAt: {
@@ -69,9 +70,10 @@ class TransactionService {
 			console.log(
 				'previous30DaysTrxn',
 				previous30DaysTrxn,
-				activeAccount,
+				getActiveAccount,
 			);
 
+			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
 
@@ -96,10 +98,11 @@ class TransactionService {
 					nextCursor,
 					prevCursor,
 					previous30DaysTrxn,
-					activeAccount,
+					activeAccount: activeAccount ? activeAccount[0].count : 0,
 				},
 			};
 		} catch (err) {
+			console.log('err', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };

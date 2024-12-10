@@ -194,7 +194,7 @@ export const getGraphHistoryValidation = (
 	const schema = Joi.object({
 		interval: Joi.string()
 
-			.required()
+			.optional()
 			.custom((value, helpers) => {
 				const regex = /^\s+|\s+$/;
 				let time;
@@ -214,40 +214,35 @@ export const getGraphHistoryValidation = (
 					return helpers.error('custom.noLeadingSpaces');
 				}
 
-				const timeNum = Number(value);
-
 				// Access the "time" value from the parent
-				if (time === 'mintue') {
-					if (timeNum > 60 || timeNum < 30) {
-						return helpers.error('custom.invalidInterval_min');
+				// if (time === 'h') {
+				// 	if (value !== '1') {
+				// 		return helpers.error('custom.invalidInterval_h');
+				// 	}
+				// } else
+				if (time === 'd') {
+					if (value === '1' || value === '7' || value === '30') {
+						return value;
 					}
-				} else if (time === 'hourly') {
-					if (timeNum < 6 || timeNum > 24) {
-						return helpers.error('custom.invalidInterval_h');
-					}
-				} else if (time === 'daily') {
-					if (timeNum < 6 || timeNum > 31) {
-						return helpers.error('custom.invalidInterval_d');
-					}
-				} else if (time === 'monthly') {
-					if (timeNum < 6 || timeNum > 12) {
-						return helpers.error('custom.invalidInterval_m');
-					}
-				} else {
-					return helpers.error('custom.invalidtime');
+					return helpers.error('custom.invalidInterval_d');
 				}
+				if (time === 'y') {
+					if (value === '1' || value === '5') {
+						return value;
+					}
+					return helpers.error('custom.invalidInterval_y');
+				}
+				return helpers.error('custom.invalidtime');
 			})
 			.messages({
-				'custom.invalidInterval_min':
-					'the interval should be 30 to 60 when dealing with time units in mintue (mintue, represent the 30min to 1 hour stats with 1 mintue points)',
-				'custom.invalidInterval_h':
-					'the interval should be 6 to 24 hours when dealing with time units in hour (hourly)',
 				'custom.invalidInterval_d':
-					'the interval should be 6 to 31 day when dealing with time units in day (daily)',
-				'custom.invalidInterval_m':
-					'the interval should be 6 to 12 month when dealing with time units in month (monthly).',
+					'the interval should be set to 1 day,7 day,30 day when dealing with time units in day (d).',
+				'custom.invalidInterval_y':
+					'the interval should be set to 1 year,5 year when dealing with time units in year (y).',
+				'custom.invalidInterval_h':
+					'the interval should be set to 1 hour when dealing with time units in hour (h).',
 				'custom.invalidtime':
-					"Invalid time unit should be  'mintue', 'hourly', 'daily', 'monthly',",
+					'time units can be represented in Hours (h) or Days (d).',
 				'string.base': 'interval must be a string',
 				'custom.noLeadingSpaces':
 					'interval should not have leading or trailing spaces',
@@ -257,27 +252,20 @@ export const getGraphHistoryValidation = (
 				'custom.requireTime': 'time is required',
 			}),
 		time: Joi.string()
-			.required()
+			.optional()
 			.custom((value, helpers) => {
 				const regex = /^\s+|\s+$/;
 				if (value.startsWith(' ') || regex.test(value)) {
 					return helpers.error('custom.noLeadingSpaces');
 				}
-				if (
-					value === 'mintue' ||
-					value === 'hourly' ||
-					value === 'daily' ||
-					value === 'monthly'
-				) {
+				if (value === 'h' || value === 'd' || value === 'y') {
 					return value;
-				} else {
-					return helpers.error('custom.invalidtime');
 				}
+				return helpers.error('custom.invalidtime');
 			})
-			.required()
 			.messages({
 				'custom.invalidtime':
-					"Invalid time unit should be  'mintue', 'hourly', 'daily', 'monthly',",
+					'time units can be represented in Hours (h) or Days (d).',
 				'string.base': 'time must be a string',
 				'custom.requireInterval': 'interval is required',
 				'custom.noLeadingSpaces':
@@ -292,7 +280,7 @@ export const getGraphHistoryValidation = (
 
 	if (error) {
 		return res
-			.status(RESPONSES.BADREQUEST)
+			.status(400)
 			.json({ error: true, message: error.details[0].message });
 	}
 	next();
