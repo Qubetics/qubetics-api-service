@@ -55,6 +55,7 @@ class Environment implements IEnvironment {
 	public redisExpiry: number;
 
 	public projectName: string;
+
 	public faucetAmount: number;
 
 	/**
