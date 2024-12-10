@@ -71,8 +71,9 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts   
           git clone ${ARGOCD_REPO}
+          cd argocd-qubetics          
+          git pull origin
           git checkout ${BRANCH}
-          cd argocd-qubetics
           sed -i "s|\(image: \).*|\1${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}|" ${DEPLOYMENT_PATH}
           git config user.name ${GIT_USERNAME}
           git config user.email ${GIT_EMAIL}
