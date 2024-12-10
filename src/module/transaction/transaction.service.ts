@@ -36,19 +36,41 @@ class TransactionService {
 				REDIS_KEY.TRANSACTIONS_COUNT,
 			);
 
+			const todayStart = new Date();
+			todayStart.setHours(0, 0, 0, 0);
+
 			const thirtyDaysAgo = new Date();
 			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-			// Query the count of transactions
-			const previous30DaysTrxn = await prisma.transactions.count({
-				where: {
-					createdAt: {
-						gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+			const [activeAccount, previous30DaysTrxn] = await Promise.all([
+				prisma.transactions.findMany({
+					select: {
+						_count: true,
 					},
-				},
-			});
+					distinct: ['fromAddress'],
+					where: {
+						timestamp: {
+							gte: todayStart.toISOString(),
+							lte: new Date().toISOString(),
+						},
+					},
+				}),
 
-			console.log('previous30DaysTrxn', previous30DaysTrxn);
+				prisma.transactions.count({
+					where: {
+						createdAt: {
+							gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+						},
+					},
+				}),
+			]);
+			// Query the count of transactions
+
+			console.log(
+				'previous30DaysTrxn',
+				previous30DaysTrxn,
+				activeAccount,
+			);
 
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
@@ -74,6 +96,7 @@ class TransactionService {
 					nextCursor,
 					prevCursor,
 					previous30DaysTrxn,
+					activeAccount,
 				},
 			};
 		} catch (err) {

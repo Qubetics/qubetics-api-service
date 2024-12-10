@@ -271,11 +271,22 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
-			const [txnStats, txnCount] = await Promise.all([
+			let txnCount = 0;
+			const [txnStats, txnCountFromRedis] = await Promise.all([
 				RedisService.getString(REDIS_KEY.TX_HISTORY),
 				RedisService.getString(REDIS_KEY.TRANSACTIONS_COUNT),
 			]);
+			console.log('txnCountFromRedis', txnCountFromRedis);
 
+			if (!txnCountFromRedis) {
+				// First time, get the count from the database
+				console.log('tpsHistory');
+				txnCount = await prisma.transactions.count();
+				await RedisService.setString(
+					REDIS_KEY.TRANSACTIONS_COUNT,
+					txnCount,
+				);
+			}
 			let _slice: any[] = txnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
 				_slice = _slice.slice(_slice.length - payloads.interval);

@@ -9,6 +9,7 @@ import {
 import { IESResponse } from '../../interfaces/index';
 import { RabbitMqService, RedisService } from '../../service/index';
 import prisma from '../../lib/db';
+import web3Helper from '../../helper/web3.helper';
 
 class BlockService {
 	async getAllLatestBlock(data: {
@@ -44,6 +45,43 @@ class BlockService {
 
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
 
+			//get20 blocks average time
+			const blocksCount = 20;
+			let avgTime = await RedisService.getString(
+				REDIS_KEY.BLOCK_AVG_TIME,
+			);
+			if (!avgTime) {
+				const currentBlock = await web3Helper.getBlockNumber();
+				console.log('currentBlock', currentBlock);
+
+				const blockNumber = +currentBlock.toString();
+				console.log('blockNumber', blockNumber);
+				const calls = [];
+				for (let i = 0; i <= blocksCount; i++) {
+					calls.push(
+						web3Helper.getDetailByBlockNumber(
+							blockNumber - blocksCount + i,
+						),
+					);
+				}
+				const blocks = await Promise.all(calls);
+				let total = 0;
+				for (let i = 1; i <= blocksCount; i++) {
+					const diff =
+						+blocks[i].timestamp.toString() -
+						+blocks[i - 1].timestamp.toString();
+					total += diff;
+				}
+
+				const avg = total / blocksCount;
+				await RedisService.setStringWithExpiry(
+					REDIS_KEY.BLOCK_AVG_TIME,
+					avg.toFixed(2),
+					120,
+				);
+				avgTime = Number(avg).toFixed(2);
+			}
+
 			return {
 				error: false,
 				message: RES_MSG.ALL_BLOCK_FETCH,
@@ -52,6 +90,7 @@ class BlockService {
 					blocks: convertBigIntToNumber(blocks),
 					nextCursor,
 					prevCursor,
+					avgTime: avgTime,
 				},
 			};
 		} catch (err) {

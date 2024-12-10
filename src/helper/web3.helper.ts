@@ -13,7 +13,6 @@ class Web3Helper {
 
 	async init() {
 		try {
-			console.log('In here');
 			this.web3 = new Web3(
 				new Web3.providers.HttpProvider(environment.nodeLink),
 			);
