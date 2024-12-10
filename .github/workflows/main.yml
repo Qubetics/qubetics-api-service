@@ -19,7 +19,11 @@ jobs:
         HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}
         HUAWEI_SWR_ENDPOINT: ${{ secrets.HUAWEI_SWR_ENDPOINT }}
         HUAWEI_ORGANIZATION: ${{ secrets.HUAWEI_ORGANIZATION }}
-
+        ARGOCD_REPO: ${{secrets.ARGOCD_REPO}}
+        DEPLOYMENT_PATH: ${{secrets.DEPLOYMENT_PATH}}
+        GIT_USERNAME: ${{secrets.GIT_USERNAME}}
+        GIT_EMAIL: ${{secrets.GIT_EMAIL}}
+        BRANCH: ${{secrets.BRANCH}}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -58,4 +62,21 @@ jobs:
       - name: Docker login & Push Docker image to Huawei SWR
         run: |
           ${{steps.login.outputs.dc_login}}
-          docker push ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}                  
+          docker push ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}  
+
+      - name: Configure Deploy Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts   
+          git clone ${ARGOCD_REPO}
+          cd argocd-qubetics          
+          git pull origin
+          git checkout ${BRANCH}
+          sed -i "s|\(image: \).*|\1${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}|" ${DEPLOYMENT_PATH}
+          git config user.name ${GIT_USERNAME}
+          git config user.email ${GIT_EMAIL}
+          git add .
+          git commit -m "Update image to ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}"
+          git push origin ${BRANCH}      
