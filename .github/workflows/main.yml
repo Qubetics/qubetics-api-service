@@ -72,8 +72,8 @@ jobs:
           git clone ${ARGOCD_REPO}
           cd argocd-qubetics
           sed -i "s|\(image: \).*|\1${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}|" ${DEPLOYMENT_PATH}
-          git config user.name ${GIT_USERNAME}
-          git config user.email ${GIT_EMAIL}
+          git config user.name "nitikas99"
+          git config user.email "sharma.nitika-it@antiersolutions.com"
           git add .
           git commit -m "Update image to ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}"
           git push origin       
