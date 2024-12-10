@@ -68,7 +68,8 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts   
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh -vT git@github.com
           git clone git@github.com:Qubetics/argocd-qubetics.git
           cd argocd-qubetics
           sed -i "s|\(image: \).*|\1${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}|" ${DEPLOYMENT_PATH}
