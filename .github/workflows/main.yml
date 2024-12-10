@@ -59,15 +59,12 @@ jobs:
       #   run: |
           # ${{steps.login.outputs.dc_login}}
           # docker push ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}  
-          
-      - name: Update Kubernetes Deployment YAML
-        run: |
-          sed -i "s|\(image: \).*|\1${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}|" Evm-backend/api-deployment.yaml
-          
-          
+
       - name: Configure Deploy Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts          
+          ssh-keyscan github.com >> ~/.ssh/known_hosts   
+          git clone git@github.com:Qubetics/argocd-qubetics.git
+          cd argocd-qubetics
