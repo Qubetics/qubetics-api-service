@@ -74,6 +74,7 @@ export const RES_MSG = {
 	TOKEN_FETCH_ERROR: 'error occured while fetch token detail',
 	DATA_NOT_FOUND: 'data not found',
 	TRANSACTION_FEE_SUCCESS: 'transaction fee fetched successfully',
+	BLOCK_AVG_SUCCESS: 'Block avg time fetched successfully',
 };
 
 export const BLOCKCHAIN_ERROR_MSG = {

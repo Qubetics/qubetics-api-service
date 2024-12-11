@@ -27,7 +27,8 @@ class ExplorerController implements Controller {
 				getBlockByHashValidation,
 				this.getBlockByHash,
 			)
-			.get('/get-latest-block', this.getLatestBlock);
+			.get('/get-latest-block', this.getLatestBlock)
+			.get('/block-time', this.blockTime);
 	}
 
 	private getAllBlock = async (request: Request, response: Response) => {
@@ -90,6 +91,15 @@ class ExplorerController implements Controller {
 		}
 
 		return setResponse.success(response, blocks);
+	};
+
+	private blockTime = async (request: Request, response: Response) => {
+		const res = await BlockService.getAverageBlockTime(20);
+
+		if (res.error) {
+			return setResponse.error(response, res);
+		}
+		return setResponse.success(response, res);
 	};
 }
 

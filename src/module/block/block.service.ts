@@ -45,43 +45,6 @@ class BlockService {
 
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
 
-			//get20 blocks average time
-			const blocksCount = 20;
-			let avgTime = await RedisService.getString(
-				REDIS_KEY.BLOCK_AVG_TIME,
-			);
-			if (!avgTime) {
-				const currentBlock = await web3Helper.getBlockNumber();
-				console.log('currentBlock', currentBlock);
-
-				const blockNumber = +currentBlock.toString();
-				console.log('blockNumber', blockNumber);
-				const calls = [];
-				for (let i = 0; i <= blocksCount; i++) {
-					calls.push(
-						web3Helper.getDetailByBlockNumber(
-							blockNumber - blocksCount + i,
-						),
-					);
-				}
-				const blocks = await Promise.all(calls);
-				let total = 0;
-				for (let i = 1; i <= blocksCount; i++) {
-					const diff =
-						+blocks[i].timestamp.toString() -
-						+blocks[i - 1].timestamp.toString();
-					total += diff;
-				}
-
-				const avg = total / blocksCount;
-				await RedisService.setStringWithExpiry(
-					REDIS_KEY.BLOCK_AVG_TIME,
-					avg.toFixed(2),
-					120,
-				);
-				avgTime = Number(avg).toFixed(2);
-			}
-
 			return {
 				error: false,
 				message: RES_MSG.ALL_BLOCK_FETCH,
@@ -90,7 +53,6 @@ class BlockService {
 					blocks: convertBigIntToNumber(blocks),
 					nextCursor,
 					prevCursor,
-					avgTime: avgTime,
 				},
 			};
 		} catch (err) {
@@ -344,6 +306,59 @@ class BlockService {
 				return { error: true, message: err.message };
 			}
 			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async getAverageBlockTime(blockCount = 10): Promise<IESResponse> {
+		const avgTime = await RedisService.getString(REDIS_KEY.BLOCK_AVG_TIME);
+		try {
+			if (avgTime) {
+				return {
+					error: false,
+					message: RES_MSG.BLOCK_AVG_SUCCESS,
+					data: { avgTime: avgTime },
+				};
+			}
+
+			const currentBlock = await web3Helper.getBlockNumber();
+
+			const blockNumber = +currentBlock.toString();
+			const calls = [];
+			for (let i = 0; i <= blockCount; i++) {
+				calls.push(
+					web3Helper.getDetailByBlockNumber(
+						blockNumber - blockCount + i,
+					),
+				);
+			}
+			const blocks = await Promise.all(calls);
+			let total = 0;
+			for (let i = 1; i <= blockCount; i++) {
+				const diff =
+					+blocks[i].timestamp.toString() -
+					+blocks[i - 1].timestamp.toString();
+				total += diff;
+			}
+
+			const avg = total / blockCount;
+			await RedisService.setStringWithExpiry(
+				REDIS_KEY.BLOCK_AVG_TIME,
+				avg.toFixed(2),
+				120,
+			);
+			return {
+				error: false,
+				message: RES_MSG.BLOCK_AVG_SUCCESS,
+				data: { avgTime: Number(avg).toFixed(2) },
+			};
+		} catch (err) {
+			console.log('Error inside block avg', err);
+
+			return {
+				error: false,
+				message: RES_MSG.BLOCK_AVG_SUCCESS,
+				data: { avgTime: avgTime || environment?.averageBlockTime },
+			};
 		}
 	}
 }
