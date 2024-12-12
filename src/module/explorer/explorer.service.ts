@@ -680,8 +680,9 @@ class ExplorerService {
 			]);
 
 			let _slice: any[] = addrStats[payloads.time.toLowerCase()];
+
 			if (!!_slice) {
-				_slice = _slice.slice(_slice.length - payloads.interval);
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
 					error: false,
@@ -725,7 +726,7 @@ class ExplorerService {
 			let _slice: any[] = coinTxnStats[payloads.time.toLowerCase()];
 			console.log('_slice', _slice);
 			if (!!_slice) {
-				_slice = _slice.slice(_slice.length - payloads.interval);
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
 					error: false,
@@ -768,7 +769,7 @@ class ExplorerService {
 
 			let _slice: any[] = contractTxnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
-				_slice = _slice.slice(_slice.length - payloads.interval);
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
 					error: false,
