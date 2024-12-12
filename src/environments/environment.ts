@@ -57,6 +57,7 @@ class Environment implements IEnvironment {
 	public projectName: string;
 
 	public faucetAmount: number;
+
 	public averageBlockTime: string;
 
 	/**

@@ -665,6 +665,15 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
+			let { time, interval } = payloads;
+
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
 			const [addrStats, addrCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.NEW_ACCOUNT_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_ADDRESSES),
@@ -699,12 +708,22 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
+			let { time, interval } = payloads;
+
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
 			const [coinTxnStats, coinTnxCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.COIN_TRANSFER_TX_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_COIN_TRANSFER_TX),
 			]);
 
 			let _slice: any[] = coinTxnStats[payloads.time.toLowerCase()];
+			console.log('_slice', _slice);
 			if (!!_slice) {
 				_slice = _slice.slice(_slice.length - payloads.interval);
 
@@ -733,6 +752,15 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
+			let { time, interval } = payloads;
+
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
 			const [contractTxnStats, contractTnxCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.CONTRACT_DEPLOYMENT_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_CONTRACT_DEPLOYED_TX),
@@ -939,8 +967,6 @@ class ExplorerService {
 	}): Promise<IGraphResponse> {
 		try {
 			let { time, interval } = payloads;
-			console.log('ppp', payloads);
-			console.log(STATS_CONVERTER[time][interval], 'skskskks');
 			let { key, len } = STATS_CONVERTER[time][interval];
 
 			if (!key || !len)
