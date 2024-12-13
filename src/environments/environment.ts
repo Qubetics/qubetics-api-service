@@ -59,6 +59,7 @@ class Environment implements IEnvironment {
 	public faucetAmount: number;
 
 	public averageBlockTime: string;
+
 	public RPCURL: string;
 
 	/**

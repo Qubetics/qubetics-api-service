@@ -154,6 +154,7 @@ export const CONTRACT = {
 	txHash: true,
 	createdAt: true,
 	updatedAt: true,
+	bytecode: true,
 };
 export const ASC = 'asc';
 export const DESC = 'desc';
