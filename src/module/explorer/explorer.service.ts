@@ -174,10 +174,15 @@ class ExplorerService {
 				if (radisCountPeer && radisCountPeer.length > 0) {
 					globeLocDetail = radisCountPeer;
 				} else {
-					const url = environment.nodeInfoUrl;
-					const response = await axios.get(url);
+					const url = environment.nodeLink;
+					console.log('urlddd', url);
+					const response = await axios.get(url + '/net_info');
 					response.data.result.peers.push(nodeIpDetail);
-
+					console.log('ssss', response.data.result.peers);
+					console.log(
+						'response.data.result.peers',
+						response.data.result.peers.length,
+					);
 					for (
 						let peer = 0;
 						peer < response.data.result.peers.length;

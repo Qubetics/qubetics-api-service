@@ -37,7 +37,6 @@ class TokenService {
 				],
 			);
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
-			console.log('erc20Count,', erc20Count);
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
