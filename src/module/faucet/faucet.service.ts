@@ -45,6 +45,8 @@ class FaucetService {
 					environment.publicKey,
 				);
 
+				console.log('Faucet Balance: ', faucetAccountBalance);
+
 				faucetBalance =
 					Number(faucetAccountBalance.toString()) / Math.pow(10, 18);
 

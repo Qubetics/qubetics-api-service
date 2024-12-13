@@ -14,7 +14,7 @@ class Web3Helper {
 	async init() {
 		try {
 			this.web3 = new Web3(
-				new Web3.providers.HttpProvider(environment.nodeLink),
+				new Web3.providers.HttpProvider(environment.RPCURL),
 			);
 		} catch (Error) {
 			console.log('Here s the errror', Error);

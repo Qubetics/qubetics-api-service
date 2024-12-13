@@ -59,6 +59,7 @@ class Environment implements IEnvironment {
 	public faucetAmount: number;
 
 	public averageBlockTime: string;
+	public RPCURL: string;
 
 	/**
 	 *
@@ -94,6 +95,7 @@ class Environment implements IEnvironment {
 		this.projectName = <string>process.env.PROJECT_NAME;
 		this.faucetAmount = Number(process.env.FAUCET_AMOUNT) || 20;
 		this.averageBlockTime = <string>process.env.AVG_BLOCK_TIME || '1.00';
+		this.RPCURL = <string>process.env.HTTP_HOST;
 	}
 
 	/**
