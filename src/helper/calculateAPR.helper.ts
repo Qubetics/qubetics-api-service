@@ -135,7 +135,7 @@ const calculateData = async (): Promise<
 			},
 			timeout: CONST_NAME.THOUSAND,
 		});
-
+		console.log('data-calculateData', apiRes);
 		const params = await getParams(apiRes);
 		if (!params) throw new Error(RES_MSG.APR_VALUE_ERROR);
 		const blocksYearReal = await getBlocksPerYearReal(apiRes);

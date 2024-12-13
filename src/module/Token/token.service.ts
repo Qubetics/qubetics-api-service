@@ -16,24 +16,35 @@ class TokenService {
 		limit: number;
 	}): Promise<IESResponse> {
 		try {
-			const [tokens, tokensCount] = await prisma.$transaction([
-				prisma.tokens.findMany({
-					skip: data.page * data.limit,
-					take: data.limit,
-					orderBy: {
-						createdAt: 'desc',
-					},
-				}),
-				prisma.tokens.count(),
-			]);
+			const [tokens, tokensCount, erc20Count] = await prisma.$transaction(
+				[
+					prisma.tokens.findMany({
+						skip: data.page * data.limit,
+						take: data.limit,
+						orderBy: {
+							createdAt: 'desc',
+						},
+					}),
+					prisma.tokens.count(),
+					prisma.tokens.findMany({
+						where: {
+							type: 'ERC-20',
+						},
+						orderBy: {
+							createdAt: 'desc',
+						},
+					}),
+				],
+			);
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
-
+			console.log('erc20Count,', erc20Count);
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
 					count: tokensCount,
 					tokens: convertBigIntToNumber(tokens),
+					erc20Count: erc20Count?.length,
 				},
 			};
 		} catch (err) {

@@ -674,19 +674,19 @@ class ExplorerService {
 					error: false,
 					message: RES_MSG.DATA_NOT_FOUND,
 				};
+
 			const [addrStats, addrCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.NEW_ACCOUNT_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_ADDRESSES),
 			]);
 
-			let _slice: any[] = addrStats[payloads.time.toLowerCase()];
-
+			let _slice: any[] = addrStats[key];
 			if (!!_slice) {
 				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
 					error: false,
-					message: RES_MSG.SUCCESS,
+					message: RES_MSG.ACCOUNT_HISTORY_SUCCESS,
 					data: {
 						finalData: _slice as Array<GraphData>,
 						count: addrCount,
@@ -696,10 +696,10 @@ class ExplorerService {
 
 			return {
 				error: false,
-				message: RES_MSG.NOT_FOUND,
-				status: RESPONSES.NOTFOUND,
+				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
+			console.log(':kksksksks', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
@@ -718,13 +718,14 @@ class ExplorerService {
 					error: false,
 					message: RES_MSG.DATA_NOT_FOUND,
 				};
+
 			const [coinTxnStats, coinTnxCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.COIN_TRANSFER_TX_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_COIN_TRANSFER_TX),
 			]);
 
-			let _slice: any[] = coinTxnStats[payloads.time.toLowerCase()];
-			console.log('_slice', _slice);
+			let _slice: any[] = coinTxnStats[key];
+
 			if (!!_slice) {
 				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
@@ -740,10 +741,10 @@ class ExplorerService {
 
 			return {
 				error: false,
-				message: RES_MSG.NOT_FOUND,
-				status: RESPONSES.NOTFOUND,
+				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
+			console.log('Error in code', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
