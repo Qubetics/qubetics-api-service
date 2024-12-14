@@ -61,12 +61,14 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			circulation_supply,
 		};
 	} catch (error) {
-		logger.log('error occurred while calculating stake APR', error);
+		// logger.log('error occurred while calculating stake APR', error);
+		console.log('getParams Error', error);
 		return false;
 	}
 }
 
 function calculateNominalAPR(params: Params): number {
+	console.log('calculateNominalAPR', params);
 	return (
 		(params.annualProvisions * (CONST_NAME.ONE - params.communityTax)) /
 		params.bondedTokens
@@ -110,6 +112,13 @@ function calculateRealAPR(
 	nominalAPR: number,
 	blocksYearReal: number,
 ): number {
+	console.log(
+		params,
+		'params-calculateRealAPR',
+		nominalAPR,
+		'calculateRealAPR',
+		blocksYearReal,
+	);
 	const blockProvision = params.annualProvisions / params.blocksPerYear;
 
 	const realProvision = blockProvision * blocksYearReal;
@@ -145,6 +154,7 @@ const calculateData = async (): Promise<
 			nominalAPR,
 			blocksYearReal,
 		);
+		console.log('actualAPR---', actualAPR);
 
 		const expoValue: number = getDigitsAfterE(actualAPR.toString());
 		const actualapr = actualAPR.toFixed(expoValue);
@@ -155,6 +165,7 @@ const calculateData = async (): Promise<
 		};
 	} catch (err) {
 		logger.error('Error occurred while calculating stake APR', err);
+		console.log('calculateData-Error', err);
 		if (err instanceof Error) {
 			return { error: true, message: err.message };
 		}

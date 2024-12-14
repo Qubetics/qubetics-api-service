@@ -36,6 +36,7 @@ import { convertBigIntToNumber } from '../../helper/common.helper';
 import Web3 from 'web3';
 import { Json } from 'web3-validator';
 import { promises } from 'dns';
+import web3Helper from '../../helper/web3.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
 		try {
@@ -799,21 +800,31 @@ class ExplorerService {
 
 	async dashboard(): Promise<IESResponse> {
 		try {
-			const data = await calculateData();
+			const data: any = await calculateData();
+			console.log('data-dashboard', data);
 
-			if ('apr' in data && 'validator' in data) {
-				return {
-					error: false,
-					message: RES_MSG.APR_VALUE_SUCCESS,
-					data: {
-						apr: data.apr,
-						validators: data.validator,
-					},
-				};
-			} else {
-				return { error: true, message: RES_MSG.APR_VALUE_ERROR };
-			}
+			const [latest_block, transactionCount, userCount] =
+				await Promise.all([
+					Number(await web3Helper.getBlockNumber()),
+					await prisma.transactions.count(),
+					await prisma.users.count(),
+				]);
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					apr: data?.apr ? Number(data?.apr) : 0,
+					validators: data?.validator ? data?.validator : 0,
+					circulationSupply: data?.circulationSupply
+						? data.circulationSupply
+						: 0,
+					latest_block: latest_block,
+					total_transactions: transactionCount,
+					total_accounts: userCount,
+				},
+			};
 		} catch (err) {
+			console.log('dashboard-Error', err);
 			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
 		}
 	}
