@@ -37,12 +37,27 @@ class TokenService {
 				],
 			);
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
+			let tokensRecords: any = [];
+			const getTotalTokens = await Promise.all(
+				tokens.map(async (token: any) => {
+					const holdersCount = await prisma.holders.count({
+						where: {
+							contractAddress: token.contractAddress,
+						},
+					});
+
+					token.holders = holdersCount; // Add the holders count to the token
+					return token; // Return the modified token
+				}),
+			);
+
+			console.log(getTotalTokens, 'getTotalTokens');
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
 					count: tokensCount,
-					tokens: convertBigIntToNumber(tokens),
+					tokens: convertBigIntToNumber(getTotalTokens),
 					erc20Count: erc20Count?.length,
 				},
 			};
