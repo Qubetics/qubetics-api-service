@@ -37,7 +37,7 @@ class TokenService {
 				],
 			);
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
-			let tokensRecords: any = [];
+
 			const getTotalTokens = await Promise.all(
 				tokens.map(async (token: any) => {
 					const holdersCount = await prisma.holders.count({
