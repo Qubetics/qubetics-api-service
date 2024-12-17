@@ -130,6 +130,7 @@ class ContractService {
 							decimal: true,
 							totalSupply: true,
 							tokenSymbol: true,
+							tokenName: true,
 						},
 					},
 					ContractVerification: {
@@ -169,6 +170,7 @@ class ContractService {
 				decimal: contractData?.Tokens?.decimal ?? '',
 				totalSupply: contractData?.Tokens?.totalSupply ?? '',
 				symbol: contractData?.Tokens?.tokenSymbol ?? '',
+				tokenName: contractData?.Tokens?.tokenName ?? '',
 				txCount: txCount,
 				contractName: contractData?.ContractVerification?.contractname
 					? contractData?.ContractVerification?.contractname
