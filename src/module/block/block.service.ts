@@ -17,14 +17,29 @@ class BlockService {
 		limit: number;
 	}): Promise<IESResponse> {
 		try {
+			let isLimitFullFilled = true;
 			const isFirstPage = data.page === 1;
-			const blocks = await prisma.blocks.findMany({
+			let blocks = await prisma.blocks.findMany({
 				orderBy: {
 					blocknumber: 'desc',
 				},
 				where: isFirstPage ? {} : { blocknumber: { lt: data.page } },
 				take: data.limit,
 			});
+
+			// check if limit is fullfilled with current block range
+			if(blocks.length < data.limit) {
+				const tempBlocks= await prisma.blocks.findMany({
+					orderBy: {
+						blocknumber: 'asc',
+					},
+					where: { blocknumber: { gt: data.page } },
+					take: data.limit - blocks.length,
+				});
+
+				blocks = [...tempBlocks.reverse(), ...blocks];
+				isLimitFullFilled = false;
+			}
 
 			const blockCount = await RedisService.getString(
 				REDIS_KEY.BLOCKS_COUNT,
@@ -33,7 +48,7 @@ class BlockService {
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
 
 			const nextCursor =
-				blocks.length === data.limit
+				(blocks.length === data.limit && isLimitFullFilled)
 					? convertBigIntToNumber(blocks)[blocks.length - 1]
 							.blocknumber
 					: null;
