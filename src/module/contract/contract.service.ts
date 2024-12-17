@@ -15,20 +15,17 @@ class ContractService {
 			const baseQuery = `SELECT "Contracts"."id", "Contracts"."creator", "Contracts"."address", "Contracts"."blockHash", "Contracts"."blockNumber", "Contracts"."bytecode", "Contracts"."bytecodeHash", "Contracts"."txHash", "Contracts"."timestamp", "Contracts"."contractName" as tokenName, "Contracts"."contractType", "Contracts"."createdAt", "Contracts"."updatedAt", "ContractVerification"."contractname" as "contractName" ,"ContractVerification"."verificationType", "ContractVerification"."iconUrl" FROM "Contracts" LEFT JOIN "ContractVerification" ON "Contracts"."address" = "ContractVerification"."contractAddress"`;
 
 			const whereClause = isFirstPage
-			? ''
-			: `WHERE "Contracts"."id" < ${data.page} `;
+				? ''
+				: `WHERE "Contracts"."id" < ${data.page} `;
 
 			const orderLimitClause = `ORDER BY "Contracts"."createdAt" DESC
 				 LIMIT ${data.limit}
 				 `;
 
-
 			const query = baseQuery + whereClause + orderLimitClause;
-			console.log("query: ", query);
-			
+			console.log('query: ', query);
 
 			const contracts: any = await prisma.$queryRawUnsafe(query);
-			
 
 			const nextCursor =
 				contracts.length === data.limit
