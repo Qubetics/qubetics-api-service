@@ -2,11 +2,11 @@ name: Docker Build
 
 on:
   push:
-    # branches:
-    #   - dev
-    #   - main
-    #   - master
-    #   - feat
+    branches:
+      - dev
+      - main
+      - master
+      - feature/*
 
 permissions:
   id-token: write
