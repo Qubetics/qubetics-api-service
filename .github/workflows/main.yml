@@ -6,14 +6,13 @@ on:
       - dev
       - main
       - master
-      - feature/*
 permissions:
   id-token: write
   contents: read
 
 jobs:
   build:
-    if: startsWith(github.ref, 'refs/heads/feature/ci-cd') || startsWith(github.ref, 'refs/heads/qa') || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
+    if: startsWith(github.ref, 'refs/heads/dev') || startsWith(github.ref, 'refs/heads/qa') || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/main' && 'main' || 'prod' }}
     
