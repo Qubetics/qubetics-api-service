@@ -13,9 +13,8 @@ class Web3Helper {
 
 	async init() {
 		try {
-			console.log('In here');
 			this.web3 = new Web3(
-				new Web3.providers.HttpProvider(environment.nodeLink),
+				new Web3.providers.HttpProvider(environment.RPCURL),
 			);
 		} catch (Error) {
 			console.log('Here s the errror', Error);
@@ -61,12 +60,13 @@ class Web3Helper {
 			return await this.web3.eth.getBalance(publicKey);
 		} catch (err) {
 			console.log('error while getting balance : ', err);
-
-			if (err instanceof Error) {
-				throw new Error(err.message);
-			} else {
-				throw new Error(BLOCKCHAIN_ERROR_MSG.GET_BALANCE);
-			}
+			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
+			// if (err instanceof Error) {
+			// 	throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
+			// 	// throw new Error(err.message);
+			// } else {
+			// 	throw new Error(BLOCKCHAIN_ERROR_MSG.GET_BALANCE);
+			// }
 		}
 	}
 
@@ -74,7 +74,8 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.getTransactionCount(publicKey);
 		} catch (err) {
-			throw new Error(BLOCKCHAIN_ERROR_MSG.TRANSACTION_COUNT);
+			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
+			// throw new Error(BLOCKCHAIN_ERROR_MSG.TRANSACTION_COUNT);
 		}
 	}
 

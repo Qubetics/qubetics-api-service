@@ -6,6 +6,7 @@ import {
 	nodeIpDetail,
 	TRANSACTION_TYPE,
 	RESPONSES,
+	STATS_CONVERTER,
 } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService, RabbitMqService } from '../../service/index';
@@ -35,6 +36,7 @@ import { convertBigIntToNumber } from '../../helper/common.helper';
 import Web3 from 'web3';
 import { Json } from 'web3-validator';
 import { promises } from 'dns';
+import web3Helper from '../../helper/web3.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
 		try {
@@ -173,10 +175,15 @@ class ExplorerService {
 				if (radisCountPeer && radisCountPeer.length > 0) {
 					globeLocDetail = radisCountPeer;
 				} else {
-					const url = environment.nodeInfoUrl;
-					const response = await axios.get(url);
+					const url = environment.nodeLink;
+					console.log('urlddd', url);
+					const response = await axios.get(url + '/net_info');
 					response.data.result.peers.push(nodeIpDetail);
-
+					console.log('ssss', response.data.result.peers);
+					console.log(
+						'response.data.result.peers',
+						response.data.result.peers.length,
+					);
 					for (
 						let peer = 0;
 						peer < response.data.result.peers.length;
@@ -271,11 +278,22 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
-			const [txnStats, txnCount] = await Promise.all([
+			let txnCount = 0;
+			const [txnStats, txnCountFromRedis] = await Promise.all([
 				RedisService.getString(REDIS_KEY.TX_HISTORY),
 				RedisService.getString(REDIS_KEY.TRANSACTIONS_COUNT),
 			]);
+			console.log('txnCountFromRedis', txnCountFromRedis);
 
+			if (!txnCountFromRedis) {
+				// First time, get the count from the database
+				console.log('tpsHistory');
+				txnCount = await prisma.transactions.count();
+				await RedisService.setString(
+					REDIS_KEY.TRANSACTIONS_COUNT,
+					txnCount,
+				);
+			}
 			let _slice: any[] = txnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
 				_slice = _slice.slice(_slice.length - payloads.interval);
@@ -653,18 +671,28 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
+			let { time, interval } = payloads;
+
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
+
 			const [addrStats, addrCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.NEW_ACCOUNT_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_ADDRESSES),
 			]);
 
-			let _slice: any[] = addrStats[payloads.time.toLowerCase()];
+			let _slice: any[] = addrStats[key];
 			if (!!_slice) {
-				_slice = _slice.slice(_slice.length - payloads.interval);
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
 					error: false,
-					message: RES_MSG.SUCCESS,
+					message: RES_MSG.ACCOUNT_HISTORY_SUCCESS,
 					data: {
 						finalData: _slice as Array<GraphData>,
 						count: addrCount,
@@ -674,10 +702,10 @@ class ExplorerService {
 
 			return {
 				error: false,
-				message: RES_MSG.NOT_FOUND,
-				status: RESPONSES.NOTFOUND,
+				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
+			console.log(':kksksksks', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
@@ -687,14 +715,25 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
+			let { time, interval } = payloads;
+
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
+
 			const [coinTxnStats, coinTnxCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.COIN_TRANSFER_TX_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_COIN_TRANSFER_TX),
 			]);
 
-			let _slice: any[] = coinTxnStats[payloads.time.toLowerCase()];
+			let _slice: any[] = coinTxnStats[key];
+
 			if (!!_slice) {
-				_slice = _slice.slice(_slice.length - payloads.interval);
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
 					error: false,
@@ -708,10 +747,10 @@ class ExplorerService {
 
 			return {
 				error: false,
-				message: RES_MSG.NOT_FOUND,
-				status: RESPONSES.NOTFOUND,
+				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
+			console.log('Error in code', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
@@ -721,6 +760,15 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
+			let { time, interval } = payloads;
+
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
 			const [contractTxnStats, contractTnxCount] = await Promise.all([
 				RedisService.getString(REDIS_KEY.CONTRACT_DEPLOYMENT_HISTORY),
 				RedisService.getString(REDIS_KEY.TOTAL_CONTRACT_DEPLOYED_TX),
@@ -728,7 +776,7 @@ class ExplorerService {
 
 			let _slice: any[] = contractTxnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
-				_slice = _slice.slice(_slice.length - payloads.interval);
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
 					error: false,
@@ -752,21 +800,31 @@ class ExplorerService {
 
 	async dashboard(): Promise<IESResponse> {
 		try {
-			const data = await calculateData();
+			const data: any = await calculateData();
+			console.log('data-dashboard', data);
 
-			if ('apr' in data && 'validator' in data) {
-				return {
-					error: false,
-					message: RES_MSG.APR_VALUE_SUCCESS,
-					data: {
-						apr: data.apr,
-						validators: data.validator,
-					},
-				};
-			} else {
-				return { error: true, message: RES_MSG.APR_VALUE_ERROR };
-			}
+			const [latest_block, transactionCount, userCount] =
+				await Promise.all([
+					Number(await web3Helper.getBlockNumber()),
+					await prisma.transactions.count(),
+					await prisma.users.count(),
+				]);
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					apr: data?.apr ? Number(data?.apr) : 0,
+					validators: data?.validator ? data?.validator : 0,
+					circulationSupply: data?.circulationSupply
+						? data.circulationSupply
+						: 0,
+					latest_block: latest_block,
+					total_transactions: transactionCount,
+					total_accounts: userCount,
+				},
+			};
 		} catch (err) {
+			console.log('dashboard-Error', err);
 			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
 		}
 	}
@@ -918,6 +976,49 @@ class ExplorerService {
 				error: true,
 				message: err instanceof Error ? err.message : RES_MSG.ERROR,
 			};
+		}
+	}
+
+	async getTxFeeSum(payloads: {
+		time: string;
+		interval: number;
+	}): Promise<IGraphResponse> {
+		try {
+			let { time, interval } = payloads;
+			let { key, len } = STATS_CONVERTER[time][interval];
+
+			if (!key || !len)
+				return {
+					error: false,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
+
+			const [TxnFeeStats] = await Promise.all([
+				RedisService.getString(REDIS_KEY.TX_FEE_HISTORY),
+			]);
+
+			let _slice: any[] = TxnFeeStats[key];
+
+			if (!!_slice) {
+				_slice = _slice.slice(Math.max(_slice.length - len, 0));
+
+				return {
+					error: false,
+					message: RES_MSG.TRANSACTION_FEE_SUCCESS,
+					data: {
+						finalData: _slice as Array<GraphData>,
+						count: 0,
+					},
+				};
+			}
+
+			return {
+				error: false,
+				message: RES_MSG.DATA_NOT_FOUND,
+			};
+		} catch (err) {
+			console.log('tx-fee', err);
+			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
 }

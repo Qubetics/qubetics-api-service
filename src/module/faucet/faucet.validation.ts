@@ -18,12 +18,12 @@ export const fundTransferValidation = (
 				'any.required': 'to address is required',
 				'string.empty': 'to address cannot be empty',
 			}),
-		value: Joi.number().min(0.1).max(5).required().messages({
-			'number.base': 'value must be a number',
-			'any.required': 'value is required',
-			'number.min': 'value should be at least {#limit}',
-			'number.max': 'value should not exceed {#limit}',
-		}),
+		// value: Joi.number().min(0.1).max(5).required().messages({
+		// 	'number.base': 'value must be a number',
+		// 	'any.required': 'value is required',
+		// 	'number.min': 'value should be at least {#limit}',
+		// 	'number.max': 'value should not exceed {#limit}',
+		// }),
 		captchaToken: Joi.string().trim().messages({
 			'string.base': 'captcha must be a string',
 			'any.required': 'captcha is required',

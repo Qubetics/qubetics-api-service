@@ -9,6 +9,7 @@ import {
 import { IESResponse } from '../../interfaces/index';
 import { RabbitMqService, RedisService } from '../../service/index';
 import prisma from '../../lib/db';
+import web3Helper from '../../helper/web3.helper';
 
 class BlockService {
 	async getAllLatestBlock(data: {
@@ -16,14 +17,29 @@ class BlockService {
 		limit: number;
 	}): Promise<IESResponse> {
 		try {
+			let isLimitFullFilled = true;
 			const isFirstPage = data.page === 1;
-			const blocks = await prisma.blocks.findMany({
+			let blocks = await prisma.blocks.findMany({
 				orderBy: {
 					blocknumber: 'desc',
 				},
 				where: isFirstPage ? {} : { blocknumber: { lt: data.page } },
 				take: data.limit,
 			});
+
+			// check if limit is fullfilled with current block range
+			if(blocks.length < data.limit) {
+				const tempBlocks= await prisma.blocks.findMany({
+					orderBy: {
+						blocknumber: 'asc',
+					},
+					where: { blocknumber: { gt: data.page } },
+					take: data.limit - blocks.length,
+				});
+
+				blocks = [...tempBlocks.reverse(), ...blocks];
+				isLimitFullFilled = false;
+			}
 
 			const blockCount = await RedisService.getString(
 				REDIS_KEY.BLOCKS_COUNT,
@@ -32,7 +48,7 @@ class BlockService {
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
 
 			const nextCursor =
-				blocks.length === data.limit
+				(blocks.length === data.limit && isLimitFullFilled)
 					? convertBigIntToNumber(blocks)[blocks.length - 1]
 							.blocknumber
 					: null;
@@ -305,6 +321,59 @@ class BlockService {
 				return { error: true, message: err.message };
 			}
 			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async getAverageBlockTime(blockCount = 10): Promise<IESResponse> {
+		const avgTime = await RedisService.getString(REDIS_KEY.BLOCK_AVG_TIME);
+		try {
+			if (avgTime) {
+				return {
+					error: false,
+					message: RES_MSG.BLOCK_AVG_SUCCESS,
+					data: { avgTime: avgTime },
+				};
+			}
+
+			const currentBlock = await web3Helper.getBlockNumber();
+
+			const blockNumber = +currentBlock.toString();
+			const calls = [];
+			for (let i = 0; i <= blockCount; i++) {
+				calls.push(
+					web3Helper.getDetailByBlockNumber(
+						blockNumber - blockCount + i,
+					),
+				);
+			}
+			const blocks = await Promise.all(calls);
+			let total = 0;
+			for (let i = 1; i <= blockCount; i++) {
+				const diff =
+					+blocks[i].timestamp.toString() -
+					+blocks[i - 1].timestamp.toString();
+				total += diff;
+			}
+
+			const avg = total / blockCount;
+			await RedisService.setStringWithExpiry(
+				REDIS_KEY.BLOCK_AVG_TIME,
+				avg.toFixed(2),
+				120,
+			);
+			return {
+				error: false,
+				message: RES_MSG.BLOCK_AVG_SUCCESS,
+				data: { avgTime: Number(avg).toFixed(2) },
+			};
+		} catch (err) {
+			console.log('Error inside block avg', err);
+
+			return {
+				error: false,
+				message: RES_MSG.BLOCK_AVG_SUCCESS,
+				data: { avgTime: avgTime || environment?.averageBlockTime },
+			};
 		}
 	}
 }

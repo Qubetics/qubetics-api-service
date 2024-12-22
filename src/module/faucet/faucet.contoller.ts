@@ -26,7 +26,6 @@ class ExplorerController implements Controller {
 	) => {
 		const res = await FaucetService.fundTransfer(
 			request.body.toAddress,
-			request.body.value,
 			request.body.captchaToken,
 		);
 		if (res.error) {

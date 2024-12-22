@@ -12,18 +12,18 @@ class ContractService {
 		try {
 			const isFirstPage = data.page === 1;
 
-			const baseQuery = `SELECT "Contracts".*,"ContractVerification"."contractname"  as "tokenName" ,"ContractVerification"."verificationType", "ContractVerification"."iconUrl" FROM "Contracts"
-			LEFT JOIN "ContractVerification" ON "Contracts"."address" = "ContractVerification"."contractAddress"`;
+			const baseQuery = `SELECT "Contracts"."id", "Contracts"."creator", "Contracts"."address", "Contracts"."blockHash", "Contracts"."blockNumber", "Contracts"."bytecode", "Contracts"."bytecodeHash", "Contracts"."txHash", "Contracts"."timestamp", "Contracts"."contractName" as tokenName, "Contracts"."contractType", "Contracts"."createdAt", "Contracts"."updatedAt", "ContractVerification"."contractname" as "contractName" ,"ContractVerification"."verificationType", "ContractVerification"."iconUrl" FROM "Contracts" LEFT JOIN "ContractVerification" ON "Contracts"."address" = "ContractVerification"."contractAddress"`;
+
+			const whereClause = isFirstPage
+				? ''
+				: `WHERE "Contracts"."id" < ${data.page} `;
 
 			const orderLimitClause = `ORDER BY "Contracts"."createdAt" DESC
 				 LIMIT ${data.limit}
 				 `;
 
-			const whereClause = isFirstPage
-				? ''
-				: `WHERE "Contracts"."id" < ${data.page}`;
-
 			const query = baseQuery + whereClause + orderLimitClause;
+			console.log('query: ', query);
 
 			const contracts: any = await prisma.$queryRawUnsafe(query);
 
@@ -130,6 +130,12 @@ class ContractService {
 							decimal: true,
 							totalSupply: true,
 							tokenSymbol: true,
+							tokenName: true,
+						},
+					},
+					ContractVerification: {
+						select: {
+							contractname: true,
 						},
 					},
 				},
@@ -164,7 +170,11 @@ class ContractService {
 				decimal: contractData?.Tokens?.decimal ?? '',
 				totalSupply: contractData?.Tokens?.totalSupply ?? '',
 				symbol: contractData?.Tokens?.tokenSymbol ?? '',
+				tokenName: contractData?.Tokens?.tokenName ?? '',
 				txCount: txCount,
+				contractName: contractData?.ContractVerification?.contractname
+					? contractData?.ContractVerification?.contractname
+					: contractData?.contractName,
 			};
 			delete contractDataToSend.Tokens;
 			const contract = convertBigIntToNumber([contractDataToSend])[0];
@@ -255,6 +265,9 @@ class ContractService {
 								...item,
 								txHash: item.txhash,
 								blockNumber: item.blocknumber,
+								method: item?.method
+									? item.method
+									: item?.methodSignature,
 							}),
 						),
 					},
@@ -529,6 +542,260 @@ class ContractService {
 			};
 		} catch (err) {
 			console.log('error in getPopularTx : ', err);
+
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	async getContractsTokens(data: {
+		page: number;
+		limit: number;
+		contractName: string;
+	}): Promise<IESResponse> {
+		try {
+			console.log('contractName', data.contractName);
+			const [
+				contractData,
+				tokensData,
+				contractCount,
+				tokenCount,
+				contracts,
+				contractsCount,
+			] = await Promise.all([
+				prisma.contracts.findMany({
+					skip: data.page * data.limit,
+					take: data.limit,
+					orderBy: {
+						createdAt: 'desc',
+					},
+					include: {
+						ContractVerification: {
+							select: {
+								contractname: true,
+							},
+						},
+					},
+					where: {
+						address: {
+							contains: data.contractName,
+							mode: 'insensitive',
+						},
+					},
+				}),
+				prisma.tokens.findMany({
+					skip: data.page * data.limit,
+					take: data.limit,
+					orderBy: {
+						createdAt: 'desc',
+					},
+
+					where: {
+						OR: [
+							{
+								tokenName: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+							{
+								tokenSymbol: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+							{
+								contractAddress: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+						],
+					},
+					// select: { hash: true, from_address: true },
+				}),
+				prisma.contracts.count({
+					where: {
+						address: {
+							contains: data.contractName,
+							mode: 'insensitive',
+						},
+					},
+				}),
+				prisma.tokens.count({
+					where: {
+						OR: [
+							{
+								tokenName: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+							{
+								tokenSymbol: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+							{
+								contractAddress: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+						],
+					},
+				}),
+				prisma.contractVerification.findMany({
+					skip: data.page * data.limit,
+					take: data.limit,
+					orderBy: {
+						createdAt: 'desc',
+					},
+					where: {
+						OR: [
+							{
+								contractAddress: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+							{
+								contractname: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+						],
+					},
+					include: {
+						Contracts: true,
+					},
+				}),
+
+				prisma.contractVerification.count({
+					where: {
+						OR: [
+							{
+								contractAddress: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+							{
+								contractname: {
+									contains: data.contractName,
+									mode: 'insensitive',
+								},
+							},
+						],
+					},
+				}),
+			]);
+			console.log('contractData', contractData);
+			console.log('tokensData', tokensData);
+
+			const getTotalTokens = await Promise.all(
+				tokensData.map(async (token: any) => {
+					const holdersCount = await prisma.holders.count({
+						where: {
+							contractAddress: token.contractAddress,
+						},
+					});
+
+					token.holders = holdersCount; // Add the holders count to the token
+					return token; // Return the modified token
+				}),
+			);
+			let contractListing: any;
+			let contractCounting: number;
+
+			if (
+				Array.isArray(contractData) &&
+				contractData.length === 0 &&
+				contracts
+			) {
+				contractListing = contracts.map(async (item: any) => ({
+					...item,
+					address: item?.contracts.address,
+					transaction_count: await this.getContractTransaction(
+						item?.contracts.address,
+					),
+					updated_at: item?.contracts.updatedAt,
+					created_at: item.contracts.createdAt,
+				}));
+
+				contractListing = await Promise.all(
+					tokensData.map(async (token: any) => {
+						const holdersCount = await prisma.holders.count({
+							where: {
+								contractAddress: token.contractAddress,
+							},
+						});
+
+						token.holders = holdersCount; // Add the holders count to the token
+						return token; // Return the modified token
+					}),
+				);
+				contractCounting = contractsCount;
+			} else {
+				contractListing = contractData.map((item: any) => ({
+					...item,
+					contract_name: item?.contractVerification?.contractname,
+				}));
+
+				contractCounting = contractCount;
+			}
+			console.log('contracts', contracts);
+			console.log('contractsCount', contractsCount);
+
+			return {
+				error: false,
+				message: RES_MSG.CONTRACT,
+				data: {
+					contracts: convertBigIntToNumber(contractListing),
+					tokens: convertBigIntToNumber(getTotalTokens),
+					contractCount: contractCounting,
+					tokenCount,
+					// contractName: convertBigIntToNumber(contracts),
+					// contractsCount,
+				},
+			};
+		} catch (err) {
+			console.log(err, 'Error Log:: getContractsTokens');
+			if (err instanceof Error) {
+				return { error: true, message: err.message };
+			}
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async getContractTxCount(data: { contractAddress: string }) {
+		try {
+			const contractLogsCount = await prisma.contractLogs.count({
+				where: { contractAddress: data.contractAddress },
+			});
+
+			let txCount;
+			if (contractLogsCount === 0) {
+				txCount = await prisma.transactions.count({
+					where: { toAddress: data.contractAddress },
+				});
+			} else {
+				txCount = contractLogsCount;
+			}
+			if (contractLogsCount) {
+				return contractLogsCount;
+			}
+			return false;
+		} catch (err) {
+			console.log('error inside getInternalTx : ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {

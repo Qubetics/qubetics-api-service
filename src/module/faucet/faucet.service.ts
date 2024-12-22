@@ -26,7 +26,7 @@ class FaucetService {
 		});
 	}
 
-	async fundTransfer(to: string, value: number, _captchaToken: string) {
+	async fundTransfer(to: string, _captchaToken: string) {
 		try {
 			let faucetBalance;
 			const privateKey = `0x${environment.privateKey}`;
@@ -45,6 +45,8 @@ class FaucetService {
 					environment.publicKey,
 				);
 
+				console.log('Faucet Balance: ', faucetAccountBalance);
+
 				faucetBalance =
 					Number(faucetAccountBalance.toString()) / Math.pow(10, 18);
 
@@ -52,6 +54,7 @@ class FaucetService {
 					const expValue = getDigitsAfterE(faucetBalance.toString());
 					faucetBalance = faucetBalance.toFixed(expValue);
 				}
+				const value = environment.faucetAmount;
 
 				if (Number(faucetBalance) <= Number(value))
 					throw new Error(RES_MSG.FAUCET_ACCOUNT_BALANCE_LOW);

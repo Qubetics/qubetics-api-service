@@ -9,16 +9,22 @@ class ValidatorService {
 		limit: number;
 	}): Promise<IESResponse> {
 		try {
-			const [validators, validatorCount] = await prisma.$transaction([
-				prisma.validator.findMany({
-					orderBy: {
-						selfStake: 'desc',
-					},
-					skip: data.page * data.limit,
-					take: data.limit,
-				}),
-				prisma.validator.count(),
-			]);
+			const [validators, validatorCount, activeValidators] =
+				await prisma.$transaction([
+					prisma.validator.findMany({
+						orderBy: {
+							selfStake: 'desc',
+						},
+						skip: data.page * data.limit,
+						take: data.limit,
+					}),
+					prisma.validator.count(),
+					prisma.validator.findMany({
+						where: {
+							status: 'active',
+						},
+					}),
+				]);
 			if (!validators?.length)
 				throw new Error(RES_MSG.VALIDATOR_NOT_FOUND);
 
@@ -27,6 +33,9 @@ class ValidatorService {
 				message: RES_MSG.ALL_VALIDATOR_FETCH,
 				data: {
 					count: validatorCount,
+					activeValidators: activeValidators?.length
+						? activeValidators.length
+						: 0,
 					validators: convertBigIntToNumber(validators),
 				},
 			};

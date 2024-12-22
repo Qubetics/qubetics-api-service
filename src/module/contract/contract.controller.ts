@@ -44,11 +44,13 @@ class ContractController implements Controller {
 			)
 			.get('/popular', getContractValidation, this.getPopularTx)
 			.get('/events', getContractTxValidation, this.getContractEvents)
+			.get('/transfer', getContractTxValidation, this.getContractTransfer)
 			.get(
-				'/transfer',
-				getContractTxValidation,
-				this.getContractTransfer,
+				'/search/*',
+				// getContractByAddressValidation,
+				this.searchContractToken,
 			);
+		// https://api.evm.qa.5ire.network/5ire/contracts/search/0xeE02101Da362c9bFc616F72AbF8301Ba94f3C4fe?page=1&limit=10;
 	}
 
 	private getAllContract = async (request: Request, response: Response) => {
@@ -166,6 +168,24 @@ class ContractController implements Controller {
 			return setResponse.error(response, popularTx);
 		}
 		return setResponse.success(response, popularTx);
+	};
+
+	private searchContractToken = async (
+		request: Request,
+		response: Response,
+	) => {
+		const data = {
+			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
+			limit: !request.query?.limit ? 10 : Number(request.query.limit),
+			contractName: <string>request.params[0], // to get the params
+		};
+		const searchContractToken =
+			await ContractService.getContractsTokens(data);
+
+		if (searchContractToken.error) {
+			return setResponse.error(response, searchContractToken);
+		}
+		return setResponse.success(response, searchContractToken);
 	};
 }
 

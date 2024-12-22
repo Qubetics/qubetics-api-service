@@ -36,6 +36,44 @@ class TransactionService {
 				REDIS_KEY.TRANSACTIONS_COUNT,
 			);
 
+			const todayStart = new Date();
+			todayStart.setHours(0, 0, 0, 0);
+
+			const thirtyDaysAgo = new Date();
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+			const [getActiveAccount, previous30DaysTrxn] = await Promise.all([
+				// prisma.transactions.findmany({
+				// 	select: {
+				// 		_count: true,
+				// 	},
+				// 	distinct: ['fromAddress'],
+				// 	where: {
+				// 		timestamp: {
+				// 			gte: todayStart.toISOString(),
+				// 			lte: new Date().toISOString(),
+				// 		},
+				// 	},
+				// }),
+				prisma.$queryRaw`
+ 					SELECT COUNT(DISTINCT "fromAddress") AS "count" FROM "Transactions" WHERE "timestamp" >= CAST(${todayStart.toISOString()} AS timestamp) AND "timestamp" <= CAST(${new Date().toISOString()} AS timestamp)`,
+				prisma.transactions.count({
+					where: {
+						createdAt: {
+							gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+						},
+					},
+				}),
+			]);
+			// Query the count of transactions
+
+			console.log(
+				'previous30DaysTrxn',
+				previous30DaysTrxn,
+				getActiveAccount,
+			);
+
+			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
 
@@ -59,9 +97,12 @@ class TransactionService {
 					transactions: convertBigIntToNumber(transactions),
 					nextCursor,
 					prevCursor,
+					previous30DaysTrxn,
+					activeAccount: activeAccount ? activeAccount[0].count : 0,
 				},
 			};
 		} catch (err) {
+			console.log('err', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };

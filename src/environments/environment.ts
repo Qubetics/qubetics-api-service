@@ -56,6 +56,12 @@ class Environment implements IEnvironment {
 
 	public projectName: string;
 
+	public faucetAmount: number;
+
+	public averageBlockTime: string;
+
+	public RPCURL: string;
+
 	/**
 	 *
 	 * @param NODE_ENV
@@ -88,6 +94,9 @@ class Environment implements IEnvironment {
 		this.nodeIp = <string>process.env.NODE_INFO_IP;
 		this.redisExpiry = Number(process.env.API_REDIS_EXPIRY ?? 3600);
 		this.projectName = <string>process.env.PROJECT_NAME;
+		this.faucetAmount = Number(process.env.FAUCET_AMOUNT) || 20;
+		this.averageBlockTime = <string>process.env.AVG_BLOCK_TIME || '1.00';
+		this.RPCURL = <string>process.env.HTTP_HOST;
 	}
 
 	/**
