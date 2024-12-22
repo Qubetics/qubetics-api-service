@@ -2,11 +2,11 @@ name: Docker Build
 
 on:
   push:
-    branches:
-      - dev
-      - main
-      - master
-      - feature/*
+    # branches:
+    #   - dev
+    #   - main
+    #   - master
+    #   - feat
 
 permissions:
   id-token: write
@@ -22,18 +22,22 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set environment variables for dev or qa
-        if: ${{ github.ref_name == 'dev' || github.ref_name == 'testnet' || github.ref_name == 'mainnet'}}
-        env:
-          HUAWEI_SWR_API: ${{ secrets.HUAWEI_SWR_API }}
-          HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}
-          HUAWEI_SWR_ENDPOINT: ${{ secrets.HUAWEI_SWR_ENDPOINT }}
-          HUAWEI_ORGANIZATION: ${{ secrets.HUAWEI_ORGANIZATION }}
-          ARGOCD_REPO: ${{ secrets.ARGOCD_REPO }}
-          DEPLOYMENT_PATH: ${{ secrets.DEPLOYMENT_PATH }}
-          GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
-          GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
-          BRANCH: ${{ secrets.BRANCH }}
-        run: echo "Environment variables set based on branch."      
+        id: set-env-vars
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/dev" || "${{ github.ref }}" == "refs/heads/qa" ]]; then
+            echo "Using environment based on branch"
+            echo "HUAWEI_SWR_API: ${{ secrets.HUAWEI_SWR_API }}" >> $GITHUB_ENV 
+            echo "HUAWEI_IMAGE: ${{ secrets.HUAWEI_IMAGE }}" >> $GITHUB_ENV
+            echo "HUAWEI_SWR_ENDPOINT: ${{ secrets.HUAWEI_SWR_ENDPOINT }}" >> $GITHUB_ENV
+            echo "HUAWEI_ORGANIZATION: ${{ secrets.HUAWEI_ORGANIZATION }}" >> $GITHUB_ENV
+            echo "ARGOCD_REPO: ${{secrets.ARGOCD_REPO}}" >> $GITHUB_ENV
+            echo "DEPLOYMENT_PATH: ${{secrets.DEPLOYMENT_PATH}}" >> $GITHUB_ENV
+            echo "GIT_USERNAME: ${{secrets.GIT_USERNAME}}" >> $GITHUB_ENV
+            echo "GIT_EMAIL: ${{secrets.GIT_EMAIL}}" >> $GITHUB_ENV
+            echo "BRANCH: ${{secrets.BRANCH}}" >> $GITHUB_ENV
+          else
+            echo "Not in dev or qa branch, skipping Docker build"
+            exit 0
 
       - name: Checkout Code
         uses: actions/checkout@v3
