@@ -39,13 +39,37 @@ jobs:
             exit 0
           fi
 
+      - name: Install OIDC Client from Core Package
+        run: npm install @actions/core@1.6.0 @actions/http-client        
+
+      - name: Get Id Token
+        uses: actions/github-script@v6
+        id: idtoken
+        with:
+          script: |
+            const coredemo = require('@actions/core')
+            let id_token = await coredemo.getIDToken("dev-qubetics")
+            coredemo.setOutput('id_token', id_token)
+
+      - name: Getting credentials
+        id: login
+        run: |
+          unscoped_token=$(curl -ki -s -X POST -H "Authorization: Bearer ${{steps.idtoken.outputs.id_token}}" https://iam.myhuaweicloud.com/v3/OS-FEDERATION/identity_providers/dev-qubetics-pipeline/protocols/oidc/auth -H "Accept: application/json;" -H "Content-Type: application/json" -d "{}" | grep 'X-Subject-Token:' | awk '{print $2}')
+          response=$(curl -ki -s -X POST -H "x-auth-token: ${unscoped_token}" ${HUAWEI_SWR_API}/v2/manage/utils/secret)
+          echo "$response"
+          dc_header=$(echo "$response" | grep -i 'X-Swr-Dockerlogin:' | cut -d ':' -f2 | sed 's/^ *//;s/ *$//' | tr -d '\r' | tr -d '\n')
+          dc_login="${dc_header} ${HUAWEI_SWR_ENDPOINT}"
+          echo "Docker login command"
+          echo "$dc_login"
+          echo "dc_login=${dc_login}" >> $GITHUB_OUTPUT    
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Build Docker image
         run: |
           docker build -t ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }} .
-
+          
       - name: Docker login & Push Docker image to Huawei SWR
         run: |
           ${{steps.login.outputs.dc_login}}
