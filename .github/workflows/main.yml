@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/qa' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/feature/ci-cd' || github.ref == 'refs/heads/qa' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/main' && 'main' || 'prod' }}
     
