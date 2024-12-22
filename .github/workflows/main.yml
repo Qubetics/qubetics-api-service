@@ -6,7 +6,7 @@ on:
       - dev
       - main
       - master
-      - feature/*
+      - feature/ci-cd
 
 permissions:
   id-token: write
