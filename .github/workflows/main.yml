@@ -48,21 +48,22 @@ jobs:
 
       - name: Docker login & Push Docker image to Huawei SWR
         run: |
-          echo "${{ secrets.DOCKER_LOGIN }}" | docker login --username "${{ secrets.DOCKER_USER }}" --password-stdin ${HUAWEI_SWR_ENDPOINT}
-          docker push ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}
+          ${{steps.login.outputs.dc_login}}
+          docker push ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}  
 
-      - name: Configure Deploy Key and Update Deployment
+      - name: Configure Deploy Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-keyscan github.com >> ~/.ssh/known_hosts   
           git clone ${ARGOCD_REPO}
-          cd argocd-qubetics
+          cd argocd-qubetics          
+          git pull origin
           git checkout ${BRANCH}
           sed -i "s|\(image: \).*|\1${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}|" ${DEPLOYMENT_PATH}
-          git config user.name "${{ secrets.GIT_USERNAME }}"
-          git config user.email "${{ secrets.GIT_EMAIL }}"
+          git config user.name ${GIT_USERNAME}
+          git config user.email ${GIT_EMAIL}
           git add .
           git commit -m "Update image to ${HUAWEI_SWR_ENDPOINT}/${HUAWEI_ORGANIZATION}/${HUAWEI_IMAGE}:${{ github.sha }}"
-          git push origin ${BRANCH}
+          git push origin ${BRANCH} 
