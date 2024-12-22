@@ -24,7 +24,7 @@ jobs:
       - name: Set environment variables for dev or qa
         id: set-env-vars
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/dev" || "${{ github.ref }}" == "refs/heads/qa" ]]; then
+          if [[ "${{ github.ref }}" == "refs/heads/feature/ci-cd" || "${{ github.ref }}" == "refs/heads/qa" ]]; then
             echo "Using environment based on branch"
             echo "HUAWEI_SWR_API=${{ secrets.HUAWEI_SWR_API }}" >> $GITHUB_ENV 
             echo "HUAWEI_IMAGE=${{ secrets.HUAWEI_IMAGE }}" >> $GITHUB_ENV
