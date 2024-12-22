@@ -10,37 +10,23 @@ on:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/qa' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/qa' && 'qa' || 'prod' }}
+    environment: ${{ github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/main' && 'main' || 'prod' }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set environment variables for dev or qa
-        id: set-env-vars
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/dev" || "${{ github.ref }}" == "refs/heads/qa" ]]; then
             echo "IMAGE_ID=${{ secrets.IMAGE_ID }}" >> $GITHUB_ENV
-              # IMAGE_ID=${{ secrets.IMAGE_ID }}
-
           else
             echo "Not in dev or qa branch, skipping Docker build"
             exit 0
-          fi        
-          # if [ "${{ github.ref }}" == "refs/heads/dev" ]; then
-          #   echo "Using dev environment"
-          #   IMAGE_ID=${{ secrets.IMAGE_ID_DEV }}
-          # elif [ "${{ github.ref }}" == "refs/heads/qa" ]; then
-          #   echo "Using qa environment"
-          #   IMAGE_ID=${{ secrets.IMAGE_ID_QA }}
-          # else
-          #   echo "Not in dev or qa branch, skipping Docker build"
-          #   exit 0
-          # fi
-          # echo "IMAGE_ID=${IMAGE_ID}" >> $GITHUB_ENV
+          fi
 
       - name: Build Docker image
         run: |
           docker build -t $IMAGE_ID .
-          # hhh
