@@ -278,26 +278,23 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
-			const [txnStats, txnCountFromRedis] = await Promise.all([
-				RedisService.getString(REDIS_KEY.TX_HISTORY),
-				RedisService.getString(REDIS_KEY.TRANSACTIONS_COUNT),
-			]);
-			console.log('txnCountFromRedis', txnCountFromRedis);
+			const txnStats= await RedisService.getString(REDIS_KEY.TX_HISTORY);
+			// console.log('txnCountFromRedis', txnCountFromRedis);
 
-			let txnCount = !txnCountFromRedis
-				? await prisma.transactions.count()
-				: txnCountFromRedis;
-			if (!txnCountFromRedis) {
-				// First time, get the count from the database
-				await RedisService.setString(
-					REDIS_KEY.TRANSACTIONS_COUNT,
-					txnCount,
-				);
-			}
+			// let txnCount = !txnCountFromRedis
+			// 	? await prisma.transactions.count()
+			// 	: txnCountFromRedis;
+			// if (!txnCountFromRedis) {
+			// 	// First time, get the count from the database
+			// 	await RedisService.setString(
+			// 		REDIS_KEY.TRANSACTIONS_COUNT,
+			// 		txnCount,
+			// 	);
+			// }
 			let _slice: any[] = txnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
 				_slice = _slice.slice(_slice.length - payloads.interval);
-
+				const txnCount = _slice.reduce((sum, item) => sum + item.count, 0);
 				return {
 					error: false,
 					message: RES_MSG.SUCCESS,

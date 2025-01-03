@@ -28,8 +28,8 @@ class BlockService {
 			});
 
 			// check if limit is fullfilled with current block range
-			if(blocks.length < data.limit) {
-				const tempBlocks= await prisma.blocks.findMany({
+			if (blocks.length < data.limit) {
+				const tempBlocks = await prisma.blocks.findMany({
 					orderBy: {
 						blocknumber: 'asc',
 					},
@@ -48,7 +48,7 @@ class BlockService {
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
 
 			const nextCursor =
-				(blocks.length === data.limit && isLimitFullFilled)
+				blocks.length === data.limit && isLimitFullFilled
 					? convertBigIntToNumber(blocks)[blocks.length - 1]
 							.blocknumber
 					: null;
