@@ -278,17 +278,17 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
-			let txnCount = 0;
 			const [txnStats, txnCountFromRedis] = await Promise.all([
 				RedisService.getString(REDIS_KEY.TX_HISTORY),
 				RedisService.getString(REDIS_KEY.TRANSACTIONS_COUNT),
 			]);
 			console.log('txnCountFromRedis', txnCountFromRedis);
 
+			let txnCount = !txnCountFromRedis
+				? await prisma.transactions.count()
+				: txnCountFromRedis;
 			if (!txnCountFromRedis) {
 				// First time, get the count from the database
-				console.log('tpsHistory');
-				txnCount = await prisma.transactions.count();
 				await RedisService.setString(
 					REDIS_KEY.TRANSACTIONS_COUNT,
 					txnCount,
