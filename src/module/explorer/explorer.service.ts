@@ -278,7 +278,7 @@ class ExplorerService {
 		interval: number;
 	}): Promise<IGraphResponse> {
 		try {
-			const txnStats= await RedisService.getString(REDIS_KEY.TX_HISTORY);
+			const txnStats = await RedisService.getString(REDIS_KEY.TX_HISTORY);
 			// console.log('txnCountFromRedis', txnCountFromRedis);
 
 			// let txnCount = !txnCountFromRedis
@@ -294,7 +294,10 @@ class ExplorerService {
 			let _slice: any[] = txnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
 				_slice = _slice.slice(_slice.length - payloads.interval);
-				const txnCount = _slice.reduce((sum, item) => sum + item.count, 0);
+				const txnCount = _slice.reduce(
+					(sum, item) => sum + item.count,
+					0,
+				);
 				return {
 					error: false,
 					message: RES_MSG.SUCCESS,
@@ -684,7 +687,7 @@ class ExplorerService {
 			]);
 
 			let _slice: any[] = addrStats[key];
-			if (!!_slice) {
+			if (_slice) {
 				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
@@ -702,7 +705,7 @@ class ExplorerService {
 				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
-			console.log(':kksksksks', err);
+			console.log(':getAccountCounts Error', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
