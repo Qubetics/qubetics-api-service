@@ -34,6 +34,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			return false;
 		}
 
+		console.log(circulationSupplyResponse, '||circulationSupplyResponse||');
 		const circulation_supply: number =
 			Number(circulationSupplyResponse.data.amount.amount) /
 			CONST_NAME.ETH_EXP;
@@ -148,7 +149,6 @@ const calculateData = async (): Promise<
 			nominalAPR,
 			blocksYearReal,
 		);
-		console.log('actualAPR---', actualAPR);
 
 		const expoValue: number = getDigitsAfterE(actualAPR.toString());
 		const actualapr = actualAPR.toFixed(expoValue);
