@@ -151,7 +151,6 @@ const calculateData = async (): Promise<
 		console.log('actualAPR---', actualAPR);
 
 		const expoValue: number = getDigitsAfterE(actualAPR.toString());
-		console.log('expoValue', expoValue);
 		const actualapr = actualAPR.toFixed(expoValue);
 		return {
 			apr: actualapr,

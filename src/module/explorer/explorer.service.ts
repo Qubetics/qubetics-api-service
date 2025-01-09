@@ -4,12 +4,11 @@ import {
 	CONST_NAME,
 	REDIS_KEY,
 	nodeIpDetail,
-	TRANSACTION_TYPE,
 	RESPONSES,
 	STATS_CONVERTER,
 } from '../../constant/response';
 import logger from '../../lib/logger';
-import { RedisService, RabbitMqService } from '../../service/index';
+import { RedisService } from '../../service/index';
 import BlockService from '../block/block.service';
 import TransactionService from '../transaction/transaction.service';
 import {
@@ -19,23 +18,10 @@ import {
 	IPeerData,
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
-import {
-	fillMissingDatesWithZeroByhr,
-	fillMissingDatesWithZeroByDay,
-	formatDate,
-	formatDateForDay,
-	formatDateByMin,
-	fillMissingMinutes,
-	exp,
-	formatDateForYear,
-	fillMissingDatesWithZeroByMonth,
-} from '../../lib/utilities.helper';
+import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
-import { convertBigIntToNumber } from '../../helper/common.helper';
 import Web3 from 'web3';
-import { Json } from 'web3-validator';
-import { promises } from 'dns';
 import web3Helper from '../../helper/web3.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
@@ -626,28 +612,6 @@ class ExplorerService {
 				obj.supply = data?.supply;
 				obj.marketCap = data?.marketCap;
 			}
-			// let marketCapPrice;
-			// let price;
-			// marketCapPrice = await RedisService.getString(
-			// 	CONST_NAME.MARKET_CAP_PRICE,
-			// );
-
-			// if (marketCapPrice === null) {
-			// 	const latestEntry = await prisma.coinmarketInfo.findFirst({
-			// 		orderBy: {
-			// 			id: 'desc',
-			// 		},
-			// 		select: {
-			// 			price: true,
-			// 		},
-			// 	});
-
-			// 	price = latestEntry != null ? Number(latestEntry.price) : 0;
-			// } else {
-			// 	marketCapPrice = JSON.parse(marketCapPrice);
-
-			// 	price = Number(marketCapPrice.price);
-			// }
 
 			return {
 				error: false,
