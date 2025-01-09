@@ -29,10 +29,14 @@ export function getDigitsAfterE(scientificNotation: string) {
 	try {
 		if (!/e-|e\+/.test(scientificNotation)) {
 			const digits = scientificNotation.split('.');
+			if (!digits[1]) {
+				return digits[0].length;
+			}
 			return digits[1].length;
 		}
 		const parts = scientificNotation.split(/e-|e\+/);
 		const exponentPart = parts[1];
+
 		const twoDigitsAfterE = exponentPart.substring(0, 2);
 		const numericValue = parseInt(twoDigitsAfterE, 10);
 		return numericValue;

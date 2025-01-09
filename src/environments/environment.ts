@@ -62,6 +62,8 @@ class Environment implements IEnvironment {
 
 	public RPCURL: string;
 
+	public token_symbol: string;
+
 	/**
 	 *
 	 * @param NODE_ENV
@@ -97,6 +99,7 @@ class Environment implements IEnvironment {
 		this.faucetAmount = Number(process.env.FAUCET_AMOUNT) || 20;
 		this.averageBlockTime = <string>process.env.AVG_BLOCK_TIME || '1.00';
 		this.RPCURL = <string>process.env.HTTP_HOST;
+		this.token_symbol = <string>process.env.TOKEN_SYMBOL;
 	}
 
 	/**
