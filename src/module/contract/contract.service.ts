@@ -752,8 +752,8 @@ class ContractService {
 
 				contractCounting = contractCount;
 			}
-			console.log('contracts', contracts);
-			console.log('contractsCount', contractsCount);
+			// console.log('contracts', contracts);
+			// console.log('contractsCount', contractsCount);
 
 			return {
 				error: false,
