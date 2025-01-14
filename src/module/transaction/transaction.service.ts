@@ -22,16 +22,6 @@ class TransactionService {
 		try {
 			const isFirstPage = data.page === 1;
 
-			const [transactions] = await prisma.$transaction([
-				prisma.transactions.findMany({
-					orderBy: {
-						id: 'desc',
-					},
-					where: isFirstPage ? {} : { id: { lt: data.page } },
-					take: data.limit,
-				}),
-			]);
-
 			const transactionCount = await RedisService.getString(
 				REDIS_KEY.TRANSACTIONS_COUNT,
 			);
@@ -42,33 +32,47 @@ class TransactionService {
 			const thirtyDaysAgo = new Date();
 			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-			const [getActiveAccount, previous30DaysTrxn] = await Promise.all([
-				// prisma.transactions.findmany({
-				// 	select: {
-				// 		_count: true,
-				// 	},
-				// 	distinct: ['fromAddress'],
-				// 	where: {
-				// 		timestamp: {
-				// 			gte: todayStart.toISOString(),
-				// 			lte: new Date().toISOString(),
-				// 		},
-				// 	},
-				// }),
-				prisma.$queryRaw`
- 					SELECT COUNT(DISTINCT "fromAddress") AS "count" FROM "Transactions" WHERE "timestamp" >= CAST(${todayStart.toISOString()} AS timestamp) AND "timestamp" <= CAST(${new Date().toISOString()} AS timestamp)`,
-				prisma.transactions.count({
-					where: {
-						createdAt: {
-							gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+			const [transactions, getActiveAccount, previous30DaysTrxn] =
+				await Promise.all([
+					prisma.transactions.findMany({
+						select: {
+							id: true,
+							blockhash: true,
+							blocknumber: true,
+							txhash: true,
+							contractAddress: true,
+							status: true,
+							type: true,
+							timestamp: true,
+							fromAddress: true,
+							toAddress: true,
+							gasPrice: true,
+							gas: true,
+							txFee: true,
+							value: true,
+							token: true,
+							createdAt: true,
 						},
-					},
-				}),
-			]);
+						orderBy: {
+							id: 'desc',
+						},
+						where: isFirstPage ? {} : { id: { lt: data.page } },
+						take: data.limit,
+					}),
+					prisma.$queryRaw`
+ 					SELECT COUNT(DISTINCT "fromAddress") AS "count" FROM "Transactions" WHERE "timestamp" >= CAST(${todayStart.toISOString()} AS timestamp) AND "timestamp" <= CAST(${new Date().toISOString()} AS timestamp)`,
+					prisma.transactions.count({
+						where: {
+							createdAt: {
+								gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+							},
+						},
+					}),
+				]);
 			// Query the count of transactions
-
 			console.log(
-				'previous30DaysTrxn',
+				'Total Return',
+				transactions,
 				previous30DaysTrxn,
 				getActiveAccount,
 			);

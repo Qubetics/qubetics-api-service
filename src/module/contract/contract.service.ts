@@ -23,7 +23,7 @@ class ContractService {
 				 `;
 
 			const query = baseQuery + whereClause + orderLimitClause;
-			console.log('query: ', query);
+			console.log('query:Contract ', query);
 
 			const contracts: any = await prisma.$queryRawUnsafe(query);
 
