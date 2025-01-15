@@ -23,9 +23,9 @@ class TransactionService {
 	 * @returns 
 	 */
 	ascPagination = async (page: number, limit: number) => {
+		
 		const isFirstPage = page === 1;
-		const transactions = await
-		prisma.transactions.findMany({
+		const transactions = await prisma.transactions.findMany({
 			select: {
 				id: true,
 				blockhash: true,
@@ -50,6 +50,7 @@ class TransactionService {
 			where: isFirstPage ? {} : { id: { gt: page } },
 			take: limit,
 		});
+		
 
 	const nextCursor =
 		transactions.length === limit
@@ -60,10 +61,10 @@ class TransactionService {
 	const prevCursor = isFirstPage
 		? null
 		: page && transactions.length > 0
-			? convertBigIntToNumber(transactions)[0].id - (limit)
+			? convertBigIntToNumber(transactions)[0].id - (limit+1)
 			: null;
 
-	return { transactions, nextCursor, prevCursor };
+	return { transactions, nextCursor, prevCursor: (prevCursor === 0) ? 1 : prevCursor };
 	};
 
 	/**
@@ -125,7 +126,7 @@ class TransactionService {
 		try {
 
 			let transactionsData: any;
-
+			
 			if (data.order === 'asc')
 				transactionsData = await this.ascPagination(data.page, data.limit);
 			else
@@ -156,12 +157,6 @@ class TransactionService {
 					}),
 				]);
 			// Query the count of transactions
-			console.log(
-				'Total Return',
-				transactions,
-				previous30DaysTrxn,
-				getActiveAccount,
-			);
 
 			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)

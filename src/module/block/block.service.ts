@@ -57,7 +57,7 @@ class BlockService {
 				? null
 				: data.page && blocks.length > 0
 					? data.order === 'asc' ? 
-					convertBigIntToNumber(blocks)[0].blocknumber - (data.limit)
+					convertBigIntToNumber(blocks)[0].blocknumber - (data.limit+1)
 					: convertBigIntToNumber(blocks)[0].blocknumber + (data.limit+1)
 					: null;
 
@@ -70,7 +70,7 @@ class BlockService {
 					blockCount,
 					blocks: convertBigIntToNumber(blocks),
 					nextCursor,
-					prevCursor,
+					prevCursor: (prevCursor === 0) ? 1 : prevCursor,
 					lastPage: data.order === 'asc' ? blockCount - data.limit : (data.limit+1)
 				},
 			};
