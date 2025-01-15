@@ -49,7 +49,7 @@ class ExplorerController implements Controller {
 	) => {
 		const data = {
 			page: request.query?.page ? Number(request.query?.page) : 1,
-
+			order: request.query?.order ? request.query?.order : 'desc',
 			limit: !request.query?.limit ? 10 : Number(request.query?.limit),
 		};
 

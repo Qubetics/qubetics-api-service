@@ -50,6 +50,17 @@ export const getTxValidation = (
 				'custom.noLeadingSpaces': 'limit should not start with a space',
 				'any.required': 'limit is required',
 			}),
+		order: Joi.string().optional().custom((value, helpers) => {
+				console.log(value !== 'dsec'|| value !== 'asc');
+				
+				if(value === 'desc' || value === 'asc') {return value;}
+				return helpers.error('custom.order');
+				
+			})
+			.messages({
+				'custom.order':
+					'Order must be dsec or asc.',
+			})
 	});
 
 	const { error } = schema.validate(req.query);

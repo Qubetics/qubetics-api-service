@@ -15,26 +15,91 @@ import { exp, txType } from '../../lib/utilities.helper';
 import { RabbitMqService, RedisService } from '../../service';
 
 class TransactionService {
+
+	/**
+	 * handle the asc pagination according to id
+	 * @param page 
+	 * @param limit 
+	 * @returns 
+	 */
+	ascPagination = async (page: number, limit: number) => {
+		const isFirstPage = page === 1;
+		const transactions = await
+		prisma.transactions.findMany({
+			orderBy: {
+				id: 'asc',
+			},
+			where: isFirstPage ? {} : { id: { gt: page } },
+			take: limit,
+		});
+
+	const nextCursor =
+		transactions.length === limit
+			? convertBigIntToNumber(transactions)[
+				transactions.length - 1
+			].id
+			: null;
+	const prevCursor = isFirstPage
+		? null
+		: page && transactions.length > 0
+			? convertBigIntToNumber(transactions)[0].id - (limit)
+			: null;
+
+	return { transactions, nextCursor, prevCursor };
+	};
+
+	/**
+	 * handle the desc pagination according to id
+	 * @param page 
+	 * @param limit 
+	 * @returns 
+	 */
+	descPagination = async (page: number, limit: number) => {
+		const isFirstPage = page === 1;
+
+		const transactions = await
+			prisma.transactions.findMany({
+				orderBy: {
+					id: 'desc',
+				},
+				where: isFirstPage ? {} : { id: { lt: page } },
+				take: limit,
+			});
+
+		const nextCursor =
+			transactions.length === limit
+				? convertBigIntToNumber(transactions)[
+					transactions.length - 1
+				].id
+				: null;
+		const prevCursor = isFirstPage
+			? null
+			: page && transactions.length > 0
+				? convertBigIntToNumber(transactions)[0].id + (limit+1)
+				: null;
+
+		return { transactions, nextCursor, prevCursor };
+	}
+
 	async getAllTransaction(data: {
-		page?: number;
+		page: number;
 		limit: number;
+		order: any;
 	}): Promise<IESResponse> {
 		try {
-			const isFirstPage = data.page === 1;
 
-			const [transactions] = await prisma.$transaction([
-				prisma.transactions.findMany({
-					orderBy: {
-						id: 'desc',
-					},
-					where: isFirstPage ? {} : { id: { lt: data.page } },
-					take: data.limit,
-				}),
-			]);
+			let transactionsData: any;
+
+			if (data.order === 'asc')
+				transactionsData = await this.ascPagination(data.page, data.limit);
+			else
+				transactionsData = await this.descPagination(data.page, data.limit);
 
 			const transactionCount = await RedisService.getString(
 				REDIS_KEY.TRANSACTIONS_COUNT,
 			);
+
+			const {transactions, nextCursor, prevCursor} = transactionsData;
 
 			const todayStart = new Date();
 			todayStart.setHours(0, 0, 0, 0);
@@ -67,27 +132,9 @@ class TransactionService {
 			]);
 			// Query the count of transactions
 
-			console.log(
-				'previous30DaysTrxn',
-				previous30DaysTrxn,
-				getActiveAccount,
-			);
-
 			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
-
-			const nextCursor =
-				transactions.length === data.limit
-					? convertBigIntToNumber(transactions)[
-							transactions.length - 1
-						].id
-					: null;
-			const prevCursor = isFirstPage
-				? null
-				: data.page && transactions.length > 0
-					? convertBigIntToNumber(transactions)[0].id + 11
-					: null;
 
 			return {
 				error: false,
@@ -95,10 +142,11 @@ class TransactionService {
 				data: {
 					count: transactionCount,
 					transactions: convertBigIntToNumber(transactions),
-					nextCursor,
+					nextCursor: (transactionCount === nextCursor  || nextCursor === 1) ? null : nextCursor,
 					prevCursor,
 					previous30DaysTrxn,
 					activeAccount: activeAccount ? activeAccount[0].count : 0,
+					lastPage: data.order === 'asc' ? transactionCount - data.limit : (data.limit+1)
 				},
 			};
 		} catch (err) {
