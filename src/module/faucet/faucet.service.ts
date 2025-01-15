@@ -13,14 +13,16 @@ class FaucetService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const res = await axios.post(
-					`${environment.recaptchaUrl}${environment.recaptchaSiteKey}&response=${token}`,
+					`${environment.recaptchaUrl}?secret=${environment.recaptchaSiteKey}&response=${token}`,
 				);
+				console.log('res------------', res);
 				if (res.data.success) {
 					resolve(true);
 				} else {
 					reject(RES_MSG.INVALID_USER_ERROR);
 				}
 			} catch (err) {
+				console.log('Errrrr', err);
 				reject(RES_MSG.CAPTCHA_ERROR);
 			}
 		});
