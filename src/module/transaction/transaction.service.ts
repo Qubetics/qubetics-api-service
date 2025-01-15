@@ -26,6 +26,24 @@ class TransactionService {
 		const isFirstPage = page === 1;
 		const transactions = await
 		prisma.transactions.findMany({
+			select: {
+				id: true,
+				blockhash: true,
+				blocknumber: true,
+				txhash: true,
+				contractAddress: true,
+				status: true,
+				type: true,
+				timestamp: true,
+				fromAddress: true,
+				toAddress: true,
+				gasPrice: true,
+				gas: true,
+				txFee: true,
+				value: true,
+				token: true,
+				createdAt: true,
+			},
 			orderBy: {
 				id: 'asc',
 			},
@@ -59,6 +77,24 @@ class TransactionService {
 
 		const transactions = await
 			prisma.transactions.findMany({
+				select: {
+					id: true,
+					blockhash: true,
+					blocknumber: true,
+					txhash: true,
+					contractAddress: true,
+					status: true,
+					type: true,
+					timestamp: true,
+					fromAddress: true,
+					toAddress: true,
+					gasPrice: true,
+					gas: true,
+					txFee: true,
+					value: true,
+					token: true,
+					createdAt: true,
+				},
 				orderBy: {
 					id: 'desc',
 				},
@@ -107,30 +143,25 @@ class TransactionService {
 			const thirtyDaysAgo = new Date();
 			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-			const [getActiveAccount, previous30DaysTrxn] = await Promise.all([
-				// prisma.transactions.findmany({
-				// 	select: {
-				// 		_count: true,
-				// 	},
-				// 	distinct: ['fromAddress'],
-				// 	where: {
-				// 		timestamp: {
-				// 			gte: todayStart.toISOString(),
-				// 			lte: new Date().toISOString(),
-				// 		},
-				// 	},
-				// }),
-				prisma.$queryRaw`
+			const [getActiveAccount, previous30DaysTrxn] =
+				await Promise.all([
+					prisma.$queryRaw`
  					SELECT COUNT(DISTINCT "fromAddress") AS "count" FROM "Transactions" WHERE "timestamp" >= CAST(${todayStart.toISOString()} AS timestamp) AND "timestamp" <= CAST(${new Date().toISOString()} AS timestamp)`,
-				prisma.transactions.count({
-					where: {
-						createdAt: {
-							gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+					prisma.transactions.count({
+						where: {
+							createdAt: {
+								gte: thirtyDaysAgo, // Greater than or equal to 30 days ago
+							},
 						},
-					},
-				}),
-			]);
+					}),
+				]);
 			// Query the count of transactions
+			console.log(
+				'Total Return',
+				transactions,
+				previous30DaysTrxn,
+				getActiveAccount,
+			);
 
 			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)

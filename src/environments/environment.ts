@@ -84,9 +84,7 @@ class Environment implements IEnvironment {
 		this.rabbitMq = <string>process.env.RABITMQ_URL;
 		this.publicKey = <string>process.env.PUBLIC_KEY;
 		this.privateKey = <string>process.env.PRIVATE_KEY;
-		this.recaptchaSiteKey = <string>(
-			process.env.REACT_APP_RECAPTCHA_SITE_KEY
-		);
+		this.recaptchaSiteKey = <string>process.env.RECAPTCHA_SECRET_KEY;
 		this.recaptchaUrl = <string>process.env.GOOGLE_RECAPTCHA_URL;
 		this.coinMarketApi = <string>process.env.COIN_MARKET_API_PATH;
 		this.coinMarketKey = <string>process.env.COIN_MARKET_API_KEY;
@@ -97,7 +95,7 @@ class Environment implements IEnvironment {
 		this.redisExpiry = Number(process.env.API_REDIS_EXPIRY ?? 3600);
 		this.projectName = <string>process.env.PROJECT_NAME;
 		this.faucetAmount = Number(process.env.FAUCET_AMOUNT) || 20;
-		this.averageBlockTime = <string>process.env.AVG_BLOCK_TIME || '1.00';
+		this.averageBlockTime = <string>process.env.AVG_BLOCK_TIME || '6.00';
 		this.RPCURL = <string>process.env.HTTP_HOST;
 		this.token_symbol = <string>process.env.TOKEN_SYMBOL;
 	}
