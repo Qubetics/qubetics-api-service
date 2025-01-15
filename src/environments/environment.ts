@@ -97,7 +97,7 @@ class Environment implements IEnvironment {
 		this.redisExpiry = Number(process.env.API_REDIS_EXPIRY ?? 3600);
 		this.projectName = <string>process.env.PROJECT_NAME;
 		this.faucetAmount = Number(process.env.FAUCET_AMOUNT) || 20;
-		this.averageBlockTime = <string>process.env.AVG_BLOCK_TIME || '1.00';
+		this.averageBlockTime = <string>process.env.AVG_BLOCK_TIME || '6.00';
 		this.RPCURL = <string>process.env.HTTP_HOST;
 		this.token_symbol = <string>process.env.TOKEN_SYMBOL;
 	}

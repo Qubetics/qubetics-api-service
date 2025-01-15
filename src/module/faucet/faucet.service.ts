@@ -34,7 +34,7 @@ class FaucetService {
 			if (!existingData) {
 				Web3Helper.isValidAddress(to);
 
-				// await this.captchaRequest(captchaToken);
+				await this.captchaRequest(_captchaToken);
 				let account = await Web3Helper.getAccount(privateKey);
 
 				if (account?.address !== environment.publicKey) {
