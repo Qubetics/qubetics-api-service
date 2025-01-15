@@ -84,9 +84,7 @@ class Environment implements IEnvironment {
 		this.rabbitMq = <string>process.env.RABITMQ_URL;
 		this.publicKey = <string>process.env.PUBLIC_KEY;
 		this.privateKey = <string>process.env.PRIVATE_KEY;
-		this.recaptchaSiteKey = <string>(
-			process.env.REACT_APP_RECAPTCHA_SITE_KEY
-		);
+		this.recaptchaSiteKey = <string>process.env.RECAPTCHA_SECRET_KEY;
 		this.recaptchaUrl = <string>process.env.GOOGLE_RECAPTCHA_URL;
 		this.coinMarketApi = <string>process.env.COIN_MARKET_API_PATH;
 		this.coinMarketKey = <string>process.env.COIN_MARKET_API_KEY;
