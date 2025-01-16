@@ -35,7 +35,7 @@ class ExplorerController implements Controller {
 		const data = {
 			page: request.query?.page ? Number(request.query?.page) : 1,
 			limit: !request.query?.limit ? 10 : Number(request.query?.limit),
-			order: request.query?.order ? request.query.order: 'desc'
+			order: request.query?.order ? request.query.order : 'desc',
 		};
 
 		const res = await BlockService.getAllLatestBlock(data);
