@@ -12,7 +12,7 @@ class ContractService {
 		try {
 			const isFirstPage = data.page === 1;
 
-			const baseQuery = `SELECT "Contracts"."id", "Contracts"."creator", "Contracts"."address", "Contracts"."blockHash", "Contracts"."blockNumber", "Contracts"."bytecode", "Contracts"."bytecodeHash", "Contracts"."txHash", "Contracts"."timestamp", "Contracts"."contractName" as tokenName, "Contracts"."contractType", "Contracts"."createdAt", "Contracts"."updatedAt", "ContractVerification"."contractname" as "contractname" , "Contracts"."contractName" as "contractName","ContractVerification"."verificationType", "ContractVerification"."iconUrl" FROM "Contracts" LEFT JOIN "ContractVerification" ON "Contracts"."address" = "ContractVerification"."contractAddress"`;
+			const baseQuery = `SELECT "Contracts"."id", "Contracts"."creator", "Contracts"."address", "Contracts"."blockHash", "Contracts"."blockNumber",  "Contracts"."bytecodeHash", "Contracts"."txHash", "Contracts"."timestamp", "Contracts"."contractName" as tokenName, "Contracts"."contractType", "Contracts"."createdAt", "Contracts"."updatedAt", "ContractVerification"."contractname" as "contractname" , "Contracts"."contractName" as "contractName","ContractVerification"."verificationType", "ContractVerification"."iconUrl" FROM "Contracts" LEFT JOIN "ContractVerification" ON "Contracts"."address" = "ContractVerification"."contractAddress"`;
 
 			const whereClause = isFirstPage
 				? ''
@@ -39,13 +39,30 @@ class ContractService {
 
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 			const contractCount = await prisma.contracts.count();
-			// `SELECT COUNT(id) FROM public."Contracts" where "contractType" = 'ERC-20'`;
-			const erc20Count: any = await prisma.$queryRawUnsafe<{
-				tokenCount: number;
-			}>(
-				`SELECT COUNT(id) as "tokenCount" from "Contracts" WHERE "contractType" = 'ERC-20'`,
-			);
-			console.log('erc20Count', erc20Count, erc20Count[0].tokenCount);
+
+			const result = await prisma.contracts.groupBy({
+				by: ['contractType'], // Group by the 'type' column
+				_count: {
+					contractType: true, // Count occurrences of each type
+				},
+			});
+			console.log('contractTypeCount', result);
+
+			// Loop through the result and filter each count
+
+			const counts = result.reduce((acc: any, item) => {
+				acc[item.contractType] = item._count.contractType;
+				return acc;
+			}, {});
+
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+			} = counts;
+
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT,
@@ -54,9 +71,11 @@ class ContractService {
 					contracts: convertBigIntToNumber(contracts),
 					nextCursor,
 					prevCursor,
-					erc20Count: erc20Count[0].tokenCount
-						? Number(erc20Count[0].tokenCount)
-						: 0,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
 				},
 			};
 		} catch (err) {

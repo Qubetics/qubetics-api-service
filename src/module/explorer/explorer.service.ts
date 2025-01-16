@@ -769,9 +769,9 @@ class ExplorerService {
 
 			const [latest_block, transactionCount, userCount] =
 				await Promise.all([
-					Number(await web3Helper.getBlockNumber()),
-					await prisma.transactions.count(),
-					await prisma.users.count(),
+					web3Helper.getBlockNumber().then(Number),
+					prisma.transactions.count(),
+					prisma.users.count(),
 				]);
 			return {
 				error: false,

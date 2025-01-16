@@ -15,7 +15,7 @@ class FaucetService {
 				const res = await axios.post(
 					`${environment.recaptchaUrl}?secret=${environment.recaptchaSiteKey}&response=${token}`,
 				);
-				console.log('res------------', res);
+
 				if (res.data.success) {
 					resolve(true);
 				} else {
