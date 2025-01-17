@@ -110,6 +110,7 @@ export interface Params {
 	communityTax: number;
 	validator: number;
 	circulation_supply: number;
+	total_supply: number;
 }
 
 export interface BlockHeader {

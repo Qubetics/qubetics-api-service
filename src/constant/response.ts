@@ -50,7 +50,7 @@ export const RES_MSG = {
 		'we could not transfer balance because you have already exceeded the max amount of qubetics coin',
 	ERROR: 'Oops! Something went wrong. Please try again.',
 	FAUCET_ACCOUNT_BALANCE_LOW: 'faucet account balance too low',
-	FAUCET_MSG: 'only 1 transaction is allowed for 24 Hrs.',
+	FAUCET_MSG: 'Only 1 transaction is allowed in 24 Hrs',
 	INVALID_PRIVATE_KEY: 'invalid private key.',
 	INVALID_HASH: 'hash is not valid',
 	NOT_VALID_BLOCK_NUMBER: 'block number is not valid',
@@ -62,7 +62,7 @@ export const RES_MSG = {
 	// TOKEN_NOT_FOUND: 'token not found',
 	TRANSACTION_NOT_FOUND: 'transaction not found',
 	TRANSACTION_FETCH_SUCCESS: 'transaction fetched successfully',
-	TRANSACTION_DONE: 'transaction successful',
+	TRANSACTION_DONE: 'Transaction Successful',
 	TPS_HISTORY_SUCCESS: 'TPS history fetched successfully',
 	TOKEN_HISTORY_SUCCESS: 'token history fetched successfully',
 	INVALID_USER_ERROR: 'you are not genuine user',
@@ -180,6 +180,7 @@ export const REDIS_KEY = {
 	TRANSACTIONS_COUNT: 'TRANSACTIONS_COUNT',
 	TOP_VALIDATOR: 'TOP_VALIDATOR',
 	BLOCK_AVG_TIME: 'BLOCK_AVG_TIME',
+	VALIDATOR_LIST: 'VALIDATOR_LIST',
 
 	// stats
 	TX_HISTORY: 'TxHistory',

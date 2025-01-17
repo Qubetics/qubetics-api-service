@@ -16,8 +16,6 @@ export default class App {
 	public limiter;
 
 	constructor() {
-		console.log('ROUTER PREFIX:', `${environment.projectName}`);
-		console.log('PORT NUMVER:', `${environment.port}`);
 		// Create a rate limiter with a limit of 20 requests per 2 minutes (120000 milliseconds)
 		this.limiter = rateLimit({
 			windowMs: RATE_LIMITER_MESSAGE.WINDOW_MS,

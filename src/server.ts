@@ -15,7 +15,7 @@ import App from './App';
 	let server: http.Server;
 
 	function serverError(error: NodeJS.ErrnoException): void {
-		console.log('For Error throwing....');
+		logger.error('For Error throwing....');
 		throw error;
 	}
 

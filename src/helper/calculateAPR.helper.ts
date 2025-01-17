@@ -12,14 +12,18 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			inflationRateResponse,
 			poolResponse,
 			paramsResponse,
+			totalSupply,
+			annualProvision,
 		] = await Promise.all([
 			apiRes.get('/cosmos/staking/v1beta1/validators'),
 			apiRes.get(
-				`/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.projectName}`,
+				`/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.token_symbol}`,
 			),
 			apiRes.get('/cosmos/mint/v1beta1/inflation'),
 			apiRes.get('/cosmos/staking/v1beta1/pool'),
 			apiRes.get('/cosmos/distribution/v1beta1/params'),
+			apiRes.get('/cosmos/bank/v1beta1/supply'),
+			apiRes.get('/cosmos/mint/v1beta1/annual_provisions'),
 		]);
 
 		const validator = validatorResponse?.data?.validators.filter(
@@ -30,6 +34,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			return false;
 		}
 
+		console.log(circulationSupplyResponse, '||circulationSupplyResponse||');
 		const circulation_supply: number =
 			Number(circulationSupplyResponse.data.amount.amount) /
 			CONST_NAME.ETH_EXP;
@@ -37,10 +42,6 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 		const inflation_rate = Number(inflationRateResponse.data.inflation);
 
 		const formattedInflationRate = `${inflation_rate}`;
-
-		const annualProvisions = Number(
-			circulation_supply * parseFloat(formattedInflationRate),
-		);
 
 		let blocksPerYear = Number(CONST_NAME.BLOCK_PER_YEAR);
 		blocksPerYear = Number(blocksPerYear / 2);
@@ -50,7 +51,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			Number(poolResponse.data.pool.bonded_tokens) / 10 ** 18;
 
 		const communityTax = Number(paramsResponse.data.params.community_tax);
-
+		const annualProvisions = annualProvision.data.annual_provisions;
 		return {
 			annualProvisions,
 			blocksPerYear,
@@ -59,16 +60,21 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			communityTax,
 			validator: validator?.length,
 			circulation_supply,
+			total_supply: totalSupply.data.supply[0].amount,
 		};
 	} catch (error) {
 		// logger.log('error occurred while calculating stake APR', error);
-		console.log('getParams Error', error);
+		logger.error('getParams Error', error);
 		return false;
 	}
 }
 
 function calculateNominalAPR(params: Params): number {
-	console.log('calculateNominalAPR', params);
+	console.log(
+		'calculateNominalAPR RESPONSE',
+		(params.annualProvisions * (CONST_NAME.ONE - params.communityTax)) /
+			params.bondedTokens,
+	);
 	return (
 		(params.annualProvisions * (CONST_NAME.ONE - params.communityTax)) /
 		params.bondedTokens
@@ -80,12 +86,12 @@ async function getBlocksPerYearReal(lcdApi: AxiosInstance): Promise<number> {
 		const response: AxiosResponse = await lcdApi.get(
 			'/cosmos/base/tendermint/v1beta1/blocks/latest',
 		);
+
 		const block1: BlockHeader = response.data.block.header;
 		const blockRange =
 			Number(block1.height) > CONST_NAME.THOUSAND
 				? CONST_NAME.THOUSAND
 				: CONST_NAME.ONE;
-
 		const response2: AxiosResponse = await lcdApi.get(
 			`/cosmos/base/tendermint/v1beta1/blocks/${
 				Number(block1.height) - blockRange
@@ -112,17 +118,8 @@ function calculateRealAPR(
 	nominalAPR: number,
 	blocksYearReal: number,
 ): number {
-	console.log(
-		params,
-		'params-calculateRealAPR',
-		nominalAPR,
-		'calculateRealAPR',
-		blocksYearReal,
-	);
 	const blockProvision = params.annualProvisions / params.blocksPerYear;
-
 	const realProvision = blockProvision * blocksYearReal;
-
 	return nominalAPR * (realProvision / params.annualProvisions);
 }
 
@@ -144,17 +141,15 @@ const calculateData = async (): Promise<
 			},
 			timeout: 5000,
 		});
-		console.log('data-calculateData', apiRes);
 		const params = await getParams(apiRes);
 		if (!params) throw new Error(RES_MSG.APR_VALUE_ERROR);
 		const blocksYearReal = await getBlocksPerYearReal(apiRes);
 		const nominalAPR: number = calculateNominalAPR(params);
-		const actualAPR: number = calculateRealAPR(
+		const actualAPR: any = calculateRealAPR(
 			params,
 			nominalAPR,
 			blocksYearReal,
 		);
-		console.log('actualAPR---', actualAPR);
 
 		const expoValue: number = getDigitsAfterE(actualAPR.toString());
 		const actualapr = actualAPR.toFixed(expoValue);
@@ -165,7 +160,6 @@ const calculateData = async (): Promise<
 		};
 	} catch (err) {
 		logger.error('Error occurred while calculating stake APR', err);
-		console.log('calculateData-Error', err);
 		if (err instanceof Error) {
 			return { error: true, message: err.message };
 		}

@@ -13,14 +13,16 @@ class FaucetService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const res = await axios.post(
-					`${environment.recaptchaUrl}${environment.recaptchaSiteKey}&response=${token}`,
+					`${environment.recaptchaUrl}?secret=${environment.recaptchaSiteKey}&response=${token}`,
 				);
+
 				if (res.data.success) {
 					resolve(true);
 				} else {
 					reject(RES_MSG.INVALID_USER_ERROR);
 				}
 			} catch (err) {
+				console.log('Errrrr', err);
 				reject(RES_MSG.CAPTCHA_ERROR);
 			}
 		});
@@ -34,7 +36,7 @@ class FaucetService {
 			if (!existingData) {
 				Web3Helper.isValidAddress(to);
 
-				// await this.captchaRequest(captchaToken);
+				await this.captchaRequest(_captchaToken);
 				let account = await Web3Helper.getAccount(privateKey);
 
 				if (account?.address !== environment.publicKey) {
@@ -44,8 +46,6 @@ class FaucetService {
 				const faucetAccountBalance = await Web3Helper.getBalance(
 					environment.publicKey,
 				);
-
-				console.log('Faucet Balance: ', faucetAccountBalance);
 
 				faucetBalance =
 					Number(faucetAccountBalance.toString()) / Math.pow(10, 18);
@@ -99,7 +99,7 @@ class FaucetService {
 				throw new Error(RES_MSG.FAUCET_MSG);
 			}
 		} catch (err) {
-			console.log('error while fund transfer ', err);
+			logger.error('error while fund transfer ', err);
 			const errorMessage =
 				err instanceof Error ? err.message : RES_MSG.ERROR;
 			return { error: true, message: errorMessage };

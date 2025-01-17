@@ -3,6 +3,7 @@ import prisma from '../../lib/db';
 import { IESResponse } from '../../interfaces/index';
 import { convertBigIntToNumber } from '../../helper/common.helper';
 import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
+import logger from '../../lib/logger';
 
 class ContractService {
 	async getAllContract(data: {
@@ -12,21 +13,16 @@ class ContractService {
 		try {
 			const isFirstPage = data.page === 1;
 
-			const baseQuery = `SELECT "Contracts"."id", "Contracts"."creator", "Contracts"."address", "Contracts"."blockHash", "Contracts"."blockNumber", "Contracts"."bytecode", "Contracts"."bytecodeHash", "Contracts"."txHash", "Contracts"."timestamp", "Contracts"."contractName" as tokenName, "Contracts"."contractType", "Contracts"."createdAt", "Contracts"."updatedAt", "ContractVerification"."contractname" as "contractName" ,"ContractVerification"."verificationType", "ContractVerification"."iconUrl" FROM "Contracts" LEFT JOIN "ContractVerification" ON "Contracts"."address" = "ContractVerification"."contractAddress"`;
+			const baseQuery = `SELECT "Contracts"."id", "Contracts"."creator", "Contracts"."address", "Contracts"."blockHash", "Contracts"."blockNumber",  "Contracts"."bytecodeHash", "Contracts"."txHash", "Contracts"."timestamp", "Contracts"."contractName" as tokenName, "Contracts"."contractType", "Contracts"."createdAt", "Contracts"."updatedAt", "ContractVerification"."contractname" as "contractname" , "Contracts"."contractName" as "contractName","ContractVerification"."verificationType", "ContractVerification"."iconUrl" FROM "Contracts" LEFT JOIN "ContractVerification" ON "Contracts"."address" = "ContractVerification"."contractAddress"`;
 
 			const whereClause = isFirstPage
 				? ''
 				: `WHERE "Contracts"."id" < ${data.page} `;
-
 			const orderLimitClause = `ORDER BY "Contracts"."createdAt" DESC
 				 LIMIT ${data.limit}
 				 `;
-
 			const query = baseQuery + whereClause + orderLimitClause;
-			console.log('query: ', query);
-
 			const contracts: any = await prisma.$queryRawUnsafe(query);
-
 			const nextCursor =
 				contracts.length === data.limit
 					? convertBigIntToNumber(contracts)[contracts.length - 1].id
@@ -39,13 +35,30 @@ class ContractService {
 
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 			const contractCount = await prisma.contracts.count();
-			// `SELECT COUNT(id) FROM public."Contracts" where "contractType" = 'ERC-20'`;
-			const erc20Count: any = await prisma.$queryRawUnsafe<{
-				tokenCount: number;
-			}>(
-				`SELECT COUNT(id) as "tokenCount" from "Contracts" WHERE "contractType" = 'ERC-20'`,
-			);
-			console.log('erc20Count', erc20Count, erc20Count[0].tokenCount);
+
+			const result = await prisma.contracts.groupBy({
+				by: ['contractType'], // Group by the 'type' column
+				_count: {
+					contractType: true, // Count occurrences of each type
+				},
+			});
+			console.log('contractTypeCount', result);
+
+			// Loop through the result and filter each count
+
+			const counts = result.reduce((acc: any, item) => {
+				acc[item.contractType] = item._count.contractType;
+				return acc;
+			}, {});
+
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+			} = counts;
+
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT,
@@ -54,14 +67,16 @@ class ContractService {
 					contracts: convertBigIntToNumber(contracts),
 					nextCursor,
 					prevCursor,
-					erc20Count: erc20Count[0].tokenCount
-						? Number(erc20Count[0].tokenCount)
-						: 0,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
 				},
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				console.log(err);
+				logger.error(err);
 
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -103,7 +118,7 @@ class ContractService {
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				console.log(err);
+				logger.error(err);
 
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -229,7 +244,8 @@ class ContractService {
 					}),
 				],
 			);
-			console.log('contractLogs : : ', contractLogs);
+
+			console.log('contractLogs....................', contractLogs);
 
 			if (!contractLogs?.length) {
 				const [contractTx, contractTxCount] = await prisma.$transaction(
@@ -254,6 +270,8 @@ class ContractService {
 
 				if (!contractTx?.length)
 					throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
+
+				console.log('iwyeiruwuerweuyrowierwer', contractTx);
 
 				return {
 					error: false,
@@ -405,7 +423,7 @@ class ContractService {
 				WHERE 
 					c."contractAddress" = ${data.contractAddress} 
 				ORDER BY 
-					c."createdAt" LIMIT ${data.limit}
+					c."createdAt" DESC LIMIT ${data.limit}
 					OFFSET ${data.page * data.limit};`,
 					prisma.contractLogs.count({
 						where: {
@@ -424,7 +442,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log('error inside getContractEvents : ', err);
+			logger.error('error inside getContractEvents : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -472,7 +490,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log('error inside getInternalTx : ', err);
+			logger.error('error inside getInternalTx : ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
@@ -541,7 +559,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log('error in getPopularTx : ', err);
+			logger.error('error in getPopularTx : ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
@@ -560,7 +578,6 @@ class ContractService {
 		contractName: string;
 	}): Promise<IESResponse> {
 		try {
-			console.log('contractName', data.contractName);
 			const [
 				contractData,
 				tokensData,
@@ -698,8 +715,6 @@ class ContractService {
 					},
 				}),
 			]);
-			console.log('contractData', contractData);
-			console.log('tokensData', tokensData);
 
 			const getTotalTokens = await Promise.all(
 				tokensData.map(async (token: any) => {
@@ -752,8 +767,6 @@ class ContractService {
 
 				contractCounting = contractCount;
 			}
-			console.log('contracts', contracts);
-			console.log('contractsCount', contractsCount);
 
 			return {
 				error: false,
@@ -768,7 +781,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log(err, 'Error Log:: getContractsTokens');
+			logger.error('Error Log:: getContractsTokens', err);
 			if (err instanceof Error) {
 				return { error: true, message: err.message };
 			}
@@ -795,8 +808,7 @@ class ContractService {
 			}
 			return false;
 		} catch (err) {
-			console.log('error inside getInternalTx : ', err);
-
+			logger.error('error inside getInternalTx : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
