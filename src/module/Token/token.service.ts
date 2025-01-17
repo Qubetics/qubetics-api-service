@@ -46,8 +46,20 @@ class TokenService {
 							contractAddress: token.contractAddress,
 						},
 					});
+					const getIconUrl =
+						await prisma.contractVerification.findFirst({
+							where: {
+								contractAddress: token.contractAddress,
+							},
+							select: {
+								iconUrl: true,
+							},
+						});
 
 					token.holders = holdersCount; // Add the holders count to the token
+					token.iconUrl = getIconUrl?.iconUrl
+						? getIconUrl?.iconUrl
+						: '';
 					return token; // Return the modified token
 				}),
 			);

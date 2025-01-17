@@ -151,6 +151,7 @@ class ContractService {
 					ContractVerification: {
 						select: {
 							contractname: true,
+							iconUrl: true,
 						},
 					},
 				},
