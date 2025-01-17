@@ -45,11 +45,7 @@ class ContractController implements Controller {
 			.get('/popular', getContractValidation, this.getPopularTx)
 			.get('/events', getContractTxValidation, this.getContractEvents)
 			.get('/transfer', getContractTxValidation, this.getContractTransfer)
-			.get(
-				'/search/*',
-				// getContractByAddressValidation,
-				this.searchContractToken,
-			);
+			.get('/search/*', getContractValidation, this.searchContractToken);
 		// https://api.evm.qa.5ire.network/5ire/contracts/search/0xeE02101Da362c9bFc616F72AbF8301Ba94f3C4fe?page=1&limit=10;
 	}
 

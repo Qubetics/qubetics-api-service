@@ -14,17 +14,25 @@ import logger from '../../lib/logger';
 
 class BlockService {
 	async getAllLatestBlock(data: {
-		page?: number;
+		page: number;
 		limit: number;
+		order: any;
 	}): Promise<IESResponse> {
 		try {
 			let isLimitFullFilled = true;
 			const isFirstPage = data.page === 1;
 			let blocks = await prisma.blocks.findMany({
 				orderBy: {
-					blocknumber: 'desc',
+					blocknumber: data.order,
 				},
-				where: isFirstPage ? {} : { blocknumber: { lt: data.page } },
+				where: isFirstPage
+					? {}
+					: {
+							blocknumber:
+								data.order === 'asc'
+									? { gt: data.page }
+									: { lt: data.page },
+						},
 				take: data.limit,
 			});
 
@@ -56,7 +64,11 @@ class BlockService {
 			const prevCursor = isFirstPage
 				? null
 				: data.page && blocks.length > 0
-					? convertBigIntToNumber(blocks)[0].blocknumber + 11
+					? data.order === 'asc'
+						? convertBigIntToNumber(blocks)[0].blocknumber -
+							(data.limit + 1)
+						: convertBigIntToNumber(blocks)[0].blocknumber +
+							(data.limit + 1)
 					: null;
 
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
@@ -68,7 +80,11 @@ class BlockService {
 					blockCount,
 					blocks: convertBigIntToNumber(blocks),
 					nextCursor,
-					prevCursor,
+					prevCursor: prevCursor === 0 ? 1 : prevCursor,
+					lastPage:
+						data.order === 'asc'
+							? blockCount - data.limit
+							: data.limit + 1,
 				},
 			};
 		} catch (err) {

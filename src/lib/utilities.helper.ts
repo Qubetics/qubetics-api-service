@@ -29,10 +29,14 @@ export function getDigitsAfterE(scientificNotation: string) {
 	try {
 		if (!/e-|e\+/.test(scientificNotation)) {
 			const digits = scientificNotation.split('.');
+			if (!digits[1]) {
+				return digits[0].length;
+			}
 			return digits[1].length;
 		}
 		const parts = scientificNotation.split(/e-|e\+/);
 		const exponentPart = parts[1];
+
 		const twoDigitsAfterE = exponentPart.substring(0, 2);
 		const numericValue = parseInt(twoDigitsAfterE, 10);
 		return numericValue;
@@ -310,3 +314,38 @@ export async function fetchRequest(
 			});
 	});
 }
+
+export async function formatTheDate(getDateTime: any) {
+	const year = getDateTime.getUTCFullYear();
+	const month = String(getDateTime.getUTCMonth() + 1).padStart(2, '0'); // getMonth() is zero-based
+	const day = String(getDateTime.getUTCDate()).padStart(2, '0');
+	const hours = String(getDateTime.getUTCHours()).padStart(2, '0');
+	const minutes = String(getDateTime.getUTCMinutes()).padStart(2, '0');
+	const seconds = String(getDateTime.getUTCSeconds()).padStart(2, '0');
+
+	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+// export const noExponent = function (num: number | string) {
+// 	try {
+// 		const data = String(num).split(/[eE]/);
+// 		if (data.length === 1) return data[0];
+// 		let z = '';
+// 		const sign = Number(num) < 0 ? '-' : '';
+// 		const str = data[0].replace('.', '');
+// 		let mag = Number(data[1]) + 1;
+// 		if (mag < 0) {
+// 			z = `${sign}0.`;
+// 			while (mag += 1) z += '0';
+// 			return z + str.replace(/^\-/, '');
+// 		}
+// 		mag -= str.length;
+// 		while (mag--) z += '0';
+// 		// console.log('str + z : ', str + z);
+
+// 		return str + z;
+// 	} catch (error) {
+// 		console.log('Exponent error', error);
+// 		return '0';
+// 	}
+// };

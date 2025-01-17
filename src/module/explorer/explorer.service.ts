@@ -4,12 +4,11 @@ import {
 	CONST_NAME,
 	REDIS_KEY,
 	nodeIpDetail,
-	TRANSACTION_TYPE,
 	RESPONSES,
 	STATS_CONVERTER,
 } from '../../constant/response';
 import logger from '../../lib/logger';
-import { RedisService, RabbitMqService } from '../../service/index';
+import { RedisService } from '../../service/index';
 import BlockService from '../block/block.service';
 import TransactionService from '../transaction/transaction.service';
 import {
@@ -19,23 +18,10 @@ import {
 	IPeerData,
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
-import {
-	fillMissingDatesWithZeroByhr,
-	fillMissingDatesWithZeroByDay,
-	formatDate,
-	formatDateForDay,
-	formatDateByMin,
-	fillMissingMinutes,
-	exp,
-	formatDateForYear,
-	fillMissingDatesWithZeroByMonth,
-} from '../../lib/utilities.helper';
+import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
-import { convertBigIntToNumber } from '../../helper/common.helper';
 import Web3 from 'web3';
-import { Json } from 'web3-validator';
-import { promises } from 'dns';
 import web3Helper from '../../helper/web3.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
@@ -275,7 +261,10 @@ class ExplorerService {
 			let _slice: any[] = txnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
 				_slice = _slice.slice(_slice.length - payloads.interval);
-				const txnCount = _slice.reduce((sum, item) => sum + item.count, 0);
+				const txnCount = _slice.reduce(
+					(sum, item) => sum + item.count,
+					0,
+				);
 				return {
 					error: false,
 					message: RES_MSG.SUCCESS,
@@ -604,28 +593,6 @@ class ExplorerService {
 				obj.supply = data?.supply;
 				obj.marketCap = data?.marketCap;
 			}
-			// let marketCapPrice;
-			// let price;
-			// marketCapPrice = await RedisService.getString(
-			// 	CONST_NAME.MARKET_CAP_PRICE,
-			// );
-
-			// if (marketCapPrice === null) {
-			// 	const latestEntry = await prisma.coinmarketInfo.findFirst({
-			// 		orderBy: {
-			// 			id: 'desc',
-			// 		},
-			// 		select: {
-			// 			price: true,
-			// 		},
-			// 	});
-
-			// 	price = latestEntry != null ? Number(latestEntry.price) : 0;
-			// } else {
-			// 	marketCapPrice = JSON.parse(marketCapPrice);
-
-			// 	price = Number(marketCapPrice.price);
-			// }
 
 			return {
 				error: false,
@@ -665,7 +632,7 @@ class ExplorerService {
 			]);
 
 			let _slice: any[] = addrStats[key];
-			if (!!_slice) {
+			if (_slice) {
 				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
@@ -781,9 +748,9 @@ class ExplorerService {
 			const data: any = await calculateData();
 			const [latest_block, transactionCount, userCount] =
 				await Promise.all([
-					Number(await web3Helper.getBlockNumber()),
-					await prisma.transactions.count(),
-					await prisma.users.count(),
+					web3Helper.getBlockNumber().then(Number),
+					prisma.transactions.count(),
+					prisma.users.count(),
 				]);
 			return {
 				error: false,
