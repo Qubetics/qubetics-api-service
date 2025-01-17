@@ -338,7 +338,10 @@ class ContractService {
 						},
 						where: {
 							contractAddress: data.contractAddress,
-							methodSignature: '0xddf252ad',
+							OR: [
+								{ methodSignature: '0xddf252ad' },
+								{ method: 'transfer' },
+							],
 						},
 						select: {
 							...CONTRACTLOGS,
@@ -353,7 +356,10 @@ class ContractService {
 					prisma.contractLogs.count({
 						where: {
 							contractAddress: data.contractAddress,
-							methodSignature: '0xddf252ad',
+							OR: [
+								{ methodSignature: '0xddf252ad' },
+								{ method: 'transfer' },
+							],
 						},
 					}),
 				],
