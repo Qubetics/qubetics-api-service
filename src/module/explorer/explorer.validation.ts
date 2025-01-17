@@ -423,3 +423,38 @@ export const getGraphHistoryValidationToken = (
 	}
 	next();
 };
+
+export const searchResultsValidations = (
+	req: express.Request,
+	res: express.Response,
+	next: express.NextFunction,
+) => {
+	// Joi schema for validating payload
+	const schema = Joi.object({
+		searchedWord: Joi.string().min(1).required().messages({
+			'string.base': '"Searched text" must be a string',
+			'string.empty': 'Enter something to search the explorer',
+			'any.required': 'Enter something to search the explorer',
+		}),
+		page: Joi.number().integer().messages({
+			'number.base': '"page" must be a number',
+			'number.integer': '"page" must be an integer',
+			'number.min': '"page" must be at least 1',
+			'any.required': '"page" is required',
+		}),
+		limit: Joi.number().integer().messages({
+			'number.base': '"limit" must be a number',
+			'number.integer': '"limit" must be an integer',
+			'number.min': '"limit" must be at least 1',
+			'any.required': '"limit" is required',
+		}),
+	});
+
+	const { error } = schema.validate(req.query);
+	if (error) {
+		return res
+			.status(400)
+			.json({ error: true, message: error.details[0].message });
+	}
+	next();
+};

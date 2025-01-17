@@ -29,7 +29,7 @@ const fetchRequest = async (
 
 export function convertBigIntToNumber(dataVal: any) {
 	const finalDataVal = [];
-
+	console.log('dataVal', dataVal);
 	if (dataVal && typeof dataVal === 'object') {
 		for (const dataObject of dataVal) {
 			for (const key in dataObject) {
@@ -46,4 +46,33 @@ export function convertBigIntToNumber(dataVal: any) {
 	}
 	return finalDataVal;
 }
+
+export function serializeBigInt(dataVal: any): any {
+	if (typeof dataVal === 'bigint') {
+		return dataVal.toString();
+	}
+	if (Array.isArray(dataVal)) {
+		return dataVal.map(convertBigIntToNumber);
+	}
+	if (dataVal !== null && typeof dataVal === 'object') {
+		return Object.fromEntries(
+			Object.entries(dataVal).map(([key, value]) => {
+				if (
+					(key === 'block_timestamp' ||
+						key === 'timestamp' ||
+						key === 'created_at' ||
+						key === 'updated_at' ||
+						key === 'createdAt' ||
+						key === 'updatedAt') &&
+					value instanceof Date
+				) {
+					return [key, value.toISOString()]; // Convert block_timestamp to string
+				}
+				return [key, convertBigIntToNumber(value)];
+			}),
+		);
+	}
+	return dataVal;
+}
+
 export { fetchRequest };

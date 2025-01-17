@@ -55,7 +55,12 @@ class ExplorerController implements Controller {
 				this.getContractDeployedCount,
 			)
 			.get('/market-cap', this.getMarketCap)
-			.get('/graph/tx-fee', getGraphHistoryValidation, this.getTxFeeSum);
+			.get('/graph/tx-fee', getGraphHistoryValidation, this.getTxFeeSum)
+			.get(
+				'/search-active-results',
+				// searchingValidation,
+				this.searchActiveResults,
+			);
 	}
 
 	private searching = async (request: Request, response: Response) => {
@@ -224,6 +229,23 @@ class ExplorerController implements Controller {
 			return setResponse.error(response, res);
 		}
 		return setResponse.success(response, res);
+	};
+
+	private searchActiveResults = async (
+		request: Request,
+		response: Response,
+	) => {
+		const data = {
+			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
+			limit: !request.query?.limit ? 10 : Number(request.query.limit),
+			searchedWord: <string>request.query?.searchedWord,
+		};
+		const serachingRes = await ExplorerService.activeSearchResults(data);
+
+		if (serachingRes.error) {
+			return setResponse.error(response, serachingRes);
+		}
+		return setResponse.success(response, serachingRes);
 	};
 }
 

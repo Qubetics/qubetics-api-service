@@ -23,6 +23,10 @@ import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
 import web3Helper from '../../helper/web3.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
 		try {
@@ -957,6 +961,126 @@ class ExplorerService {
 			};
 		} catch (err) {
 			logger.error('tx-fee', err);
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async activeSearchResults(payload: {
+		page: number;
+		limit: number;
+		searchedWord: string;
+	}): Promise<any> {
+		try {
+			console.log(
+				'payload',
+				payload.page,
+				payload.limit,
+				payload.searchedWord.toString(),
+			);
+			if (payload.page <= 1) {
+				payload.page = 1;
+			}
+			const offset = (payload.page - 1) * payload.limit;
+			let tokens: any = {};
+			let contracts: any = {};
+			let addresses: any = {};
+			let tabs = [];
+			let results = [];
+
+			if (
+				!payload.searchedWord.startsWith('0x') &&
+				!isNaN(Number(payload.searchedWord)) &&
+				payload.searchedWord.length > 0
+			) {
+				const result = await BlockService.getBlockByNumber(
+					Number(payload.searchedWord),
+				);
+				return result;
+			} else if (
+				payload.searchedWord?.startsWith('0x') &&
+				payload.searchedWord?.length === 66
+			) {
+				const txData = await TransactionService.getTransactionByHash(
+					payload.searchedWord?.toLowerCase(),
+				);
+				if (txData?.error) {
+					const result = await BlockService.getBlockByHash(
+						payload.searchedWord?.toLowerCase(),
+					);
+					if (result?.error) result.message = RES_MSG.DATA_NOT_FOUND;
+					return result;
+				}
+
+				return txData;
+			} else {
+				tokens =
+					await prisma.$queryRaw` SELECT t."tokenName", t."tokenSymbol", t."contractAddress", c."address" AS "contract_address",COUNT(tr."id") AS "transactionCount" FROM "Tokens" t JOIN "Contracts" c ON t."contractAddress" = c."address" LEFT JOIN "Transactions" tr ON t."contractAddress" = tr."toAddress" OR t."contractAddress" = tr."fromAddress" WHERE t."contractAddress" ILIKE ${
+						'%' + payload.searchedWord + '%'
+					} OR t."tokenName" ILIKE ${
+						'%' + payload.searchedWord + '%'
+					} OR t."tokenSymbol" ILIKE ${
+						'%' + payload.searchedWord + '%'
+					} GROUP BY t."contractAddress", t."tokenName",t."tokenSymbol", c."address" ORDER BY "transactionCount" DESC LIMIT ${
+						payload.limit
+					} OFFSET ${offset}`;
+
+				contracts =
+					await prisma.$queryRaw` SELECT c."address", COUNT(tr."id") AS "transactionCount", cv."contractname" as contract_name, cv."contractAddress" AS "contract_address" FROM "ContractVerification" cv RIGHT JOIN "Contracts" c ON cv."contractAddress" = c."address" LEFT JOIN "Transactions" tr ON c."address" = tr."toAddress" OR c."address" = tr."fromAddress" WHERE c."address" ILIKE ${
+						'%' + payload.searchedWord + '%'
+					} OR cv."contractname" ILIKE ${
+						'%' + payload.searchedWord + '%'
+					} GROUP BY c."address", cv."contractname", cv."contractAddress" ORDER BY "transactionCount" DESC LIMIT ${
+						payload.limit
+					} OFFSET ${offset}`;
+
+				addresses =
+					await prisma.$queryRaw` SELECT u."address" AS address, COUNT(tr."id") AS "transactionCount" FROM "Users" u LEFT JOIN "Transactions" tr ON u."address" = tr."toAddress" OR u."address" = tr."fromAddress" WHERE u."address" ILIKE ${
+						'%' + payload.searchedWord + '%'
+					} GROUP BY u."address" ORDER BY "transactionCount" DESC LIMIT ${
+						payload.limit
+					} OFFSET ${offset}`;
+
+				console.log('tokens', tokens);
+				console.log('contracts', contracts);
+				console.log('addresses', addresses);
+
+				if (tokens && tokens.length) {
+					tabs.push('tokens');
+					results.push(tokens);
+				}
+				if (contracts && contracts.length) {
+					tabs.push('contracts');
+					results.push(contracts);
+				}
+				if (addresses && addresses.length) {
+					tabs.push('addresses');
+					results.push(addresses);
+				}
+
+				if (tabs && tabs.length < 1) {
+					return {
+						error: true,
+						message: 'No results found',
+					};
+				}
+				return {
+					error: false,
+					message: 'Searched Results',
+					data: {
+						tabs: tabs,
+						results: serializeBigInt({
+							tokens,
+							contracts,
+							addresses,
+						}),
+					},
+				};
+			}
+		} catch (err) {
+			console.log('Catch Error', err);
+			if (err instanceof Error) {
+				return { error: true, message: RES_MSG.DATA_NOT_FOUND };
+			}
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
