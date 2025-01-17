@@ -162,14 +162,8 @@ class ExplorerService {
 					globeLocDetail = radisCountPeer;
 				} else {
 					const url = environment.nodeLink;
-					console.log('urlddd', url);
 					const response = await axios.get(url + '/net_info');
 					response.data.result.peers.push(nodeIpDetail);
-					console.log('ssss', response.data.result.peers);
-					console.log(
-						'response.data.result.peers',
-						response.data.result.peers.length,
-					);
 					for (
 						let peer = 0;
 						peer < response.data.result.peers.length;
@@ -202,7 +196,6 @@ class ExplorerService {
 							globeLocDetail.push(ipDataRes);
 						}
 					}
-					console.log('nodes ', globeLocDetail);
 					await Promise.all(globeLocDetail);
 
 					RedisService.setString(
@@ -265,18 +258,6 @@ class ExplorerService {
 	}): Promise<IGraphResponse> {
 		try {
 			const txnStats = await RedisService.getString(REDIS_KEY.TX_HISTORY);
-			// console.log('txnCountFromRedis', txnCountFromRedis);
-
-			// let txnCount = !txnCountFromRedis
-			// 	? await prisma.transactions.count()
-			// 	: txnCountFromRedis;
-			// if (!txnCountFromRedis) {
-			// 	// First time, get the count from the database
-			// 	await RedisService.setString(
-			// 		REDIS_KEY.TRANSACTIONS_COUNT,
-			// 		txnCount,
-			// 	);
-			// }
 			let _slice: any[] = txnStats[payloads.time.toLowerCase()];
 			if (!!_slice) {
 				_slice = _slice.slice(_slice.length - payloads.interval);
@@ -669,7 +650,7 @@ class ExplorerService {
 				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
-			console.log(':getAccountCounts Error', err);
+			logger.error('Error in getAccountCounts...', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
@@ -714,7 +695,7 @@ class ExplorerService {
 				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
-			console.log('Error in code', err);
+			logger.error('Error in code', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
@@ -765,8 +746,6 @@ class ExplorerService {
 	async dashboard(): Promise<IESResponse> {
 		try {
 			const data: any = await calculateData();
-			console.log('data-dashboard', data);
-
 			const [latest_block, transactionCount, userCount] =
 				await Promise.all([
 					web3Helper.getBlockNumber().then(Number),
@@ -788,7 +767,7 @@ class ExplorerService {
 				},
 			};
 		} catch (err) {
-			console.log('dashboard-Error', err);
+			logger.error('dashboard-Error', err);
 			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
 		}
 	}
@@ -852,8 +831,6 @@ class ExplorerService {
 
 	async getAddressDetail(address: string): Promise<IESResponse> {
 		try {
-			console.log('address: ', address);
-
 			const [user] = await Promise.all([
 				prisma.users.findFirst({
 					where: {
@@ -906,8 +883,6 @@ class ExplorerService {
 					},
 				});
 
-				console.log('latestEntry?.price: ', latestEntry?.price);
-
 				const price = latestEntry?.price?.toString() ?? '';
 				value = price
 					? (Number(price) * Number(actualBalance)).toString()
@@ -934,7 +909,7 @@ class ExplorerService {
 				},
 			};
 		} catch (err) {
-			console.log('error : ', err);
+			logger.error('error : ', err);
 
 			return {
 				error: true,
@@ -981,7 +956,7 @@ class ExplorerService {
 				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
-			console.log('tx-fee', err);
+			logger.error('tx-fee', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}

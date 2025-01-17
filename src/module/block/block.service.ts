@@ -10,6 +10,7 @@ import { IESResponse } from '../../interfaces/index';
 import { RabbitMqService, RedisService } from '../../service/index';
 import prisma from '../../lib/db';
 import web3Helper from '../../helper/web3.helper';
+import logger from '../../lib/logger';
 
 class BlockService {
 	async getAllLatestBlock(data: {
@@ -88,7 +89,7 @@ class BlockService {
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				console.log(err);
+				logger.error(err);
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
 				}
@@ -144,7 +145,7 @@ class BlockService {
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				console.log(err);
+				logger.error(err);
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
 				}
@@ -237,8 +238,6 @@ class BlockService {
 			if (!blockDetail) {
 				const blockData =
 					await Web3Helper.getDetailByBlockNumber(blockNumber);
-				console.log('blockData by blockchain : ', blockData);
-
 				if (blockData) {
 					RabbitMqService.inQueueData(
 						QUEUE_NAME.MISSING_BLOCK,
@@ -383,7 +382,7 @@ class BlockService {
 				data: { avgTime: Number(avg).toFixed(2) },
 			};
 		} catch (err) {
-			console.log('Error inside block avg', err);
+			logger.error('Error inside block avg', err);
 
 			return {
 				error: false,

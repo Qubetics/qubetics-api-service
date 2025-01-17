@@ -1,6 +1,7 @@
 import Web3 from 'web3';
 import { BLOCKCHAIN_ERROR_MSG } from '../constant/response';
 import { IRawTransaction } from '../interfaces/index';
+import logger from '../lib/logger';
 
 class Web3Helper {
 	public web3: Web3;
@@ -17,7 +18,7 @@ class Web3Helper {
 				new Web3.providers.HttpProvider(environment.RPCURL),
 			);
 		} catch (Error) {
-			console.log('Here s the errror', Error);
+			logger.error('Here s the errror', Error);
 		}
 	}
 
@@ -59,7 +60,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.getBalance(publicKey);
 		} catch (err) {
-			console.log('error while getting balance : ', err);
+			logger.error('error while getting balance : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
 			// if (err instanceof Error) {
 			// 	throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
@@ -85,7 +86,7 @@ class Web3Helper {
 				await this.web3.eth.accounts.privateKeyToAccount(privateKey);
 			return account;
 		} catch (err) {
-			console.log('getAccount error : ', err);
+			logger.error('getAccount error : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.INVALID_ADDRESS);
 		}
 	}
@@ -97,7 +98,7 @@ class Web3Helper {
 				privateKey,
 			);
 		} catch (err) {
-			console.log('error : ', err);
+			logger.error('error : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
 		}
 	}
@@ -106,7 +107,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.sendSignedTransaction(rawTransaction);
 		} catch (err) {
-			console.log('error : ', err);
+			logger.error('error : ', err);
 
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
 		}

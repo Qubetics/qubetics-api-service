@@ -47,8 +47,6 @@ class FaucetService {
 					environment.publicKey,
 				);
 
-				console.log('Faucet Balance: ', faucetAccountBalance);
-
 				faucetBalance =
 					Number(faucetAccountBalance.toString()) / Math.pow(10, 18);
 
@@ -101,7 +99,7 @@ class FaucetService {
 				throw new Error(RES_MSG.FAUCET_MSG);
 			}
 		} catch (err) {
-			console.log('error while fund transfer ', err);
+			logger.error('error while fund transfer ', err);
 			const errorMessage =
 				err instanceof Error ? err.message : RES_MSG.ERROR;
 			return { error: true, message: errorMessage };

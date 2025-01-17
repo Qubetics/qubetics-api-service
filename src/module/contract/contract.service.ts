@@ -3,6 +3,7 @@ import prisma from '../../lib/db';
 import { IESResponse } from '../../interfaces/index';
 import { convertBigIntToNumber } from '../../helper/common.helper';
 import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
+import logger from '../../lib/logger';
 
 class ContractService {
 	async getAllContract(data: {
@@ -17,16 +18,11 @@ class ContractService {
 			const whereClause = isFirstPage
 				? ''
 				: `WHERE "Contracts"."id" < ${data.page} `;
-
 			const orderLimitClause = `ORDER BY "Contracts"."createdAt" DESC
 				 LIMIT ${data.limit}
 				 `;
-
 			const query = baseQuery + whereClause + orderLimitClause;
-			console.log('query:Contract ', query);
-
 			const contracts: any = await prisma.$queryRawUnsafe(query);
-
 			const nextCursor =
 				contracts.length === data.limit
 					? convertBigIntToNumber(contracts)[contracts.length - 1].id
@@ -80,7 +76,7 @@ class ContractService {
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				console.log(err);
+				logger.error(err);
 
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -122,7 +118,7 @@ class ContractService {
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				console.log(err);
+				logger.error(err);
 
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -249,7 +245,8 @@ class ContractService {
 					}),
 				],
 			);
-			console.log('contractLogs : : ', contractLogs);
+
+			console.log('contractLogs....................', contractLogs);
 
 			if (!contractLogs?.length) {
 				const [contractTx, contractTxCount] = await prisma.$transaction(
@@ -274,6 +271,8 @@ class ContractService {
 
 				if (!contractTx?.length)
 					throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
+
+				console.log('iwyeiruwuerweuyrowierwer', contractTx);
 
 				return {
 					error: false,
@@ -425,7 +424,7 @@ class ContractService {
 				WHERE 
 					c."contractAddress" = ${data.contractAddress} 
 				ORDER BY 
-					c."createdAt" LIMIT ${data.limit}
+					c."createdAt" DESC LIMIT ${data.limit}
 					OFFSET ${data.page * data.limit};`,
 					prisma.contractLogs.count({
 						where: {
@@ -444,7 +443,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log('error inside getContractEvents : ', err);
+			logger.error('error inside getContractEvents : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -492,7 +491,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log('error inside getInternalTx : ', err);
+			logger.error('error inside getInternalTx : ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
@@ -561,7 +560,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log('error in getPopularTx : ', err);
+			logger.error('error in getPopularTx : ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
@@ -580,7 +579,6 @@ class ContractService {
 		contractName: string;
 	}): Promise<IESResponse> {
 		try {
-			console.log('contractName', data.contractName);
 			const [
 				contractData,
 				tokensData,
@@ -718,8 +716,6 @@ class ContractService {
 					},
 				}),
 			]);
-			console.log('contractData', contractData);
-			console.log('tokensData', tokensData);
 
 			const getTotalTokens = await Promise.all(
 				tokensData.map(async (token: any) => {
@@ -772,8 +768,6 @@ class ContractService {
 
 				contractCounting = contractCount;
 			}
-			// console.log('contracts', contracts);
-			// console.log('contractsCount', contractsCount);
 
 			return {
 				error: false,
@@ -788,7 +782,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			console.log(err, 'Error Log:: getContractsTokens');
+			logger.error('Error Log:: getContractsTokens', err);
 			if (err instanceof Error) {
 				return { error: true, message: err.message };
 			}
@@ -815,8 +809,7 @@ class ContractService {
 			}
 			return false;
 		} catch (err) {
-			console.log('error inside getInternalTx : ', err);
-
+			logger.error('error inside getInternalTx : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };

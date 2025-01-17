@@ -4,6 +4,7 @@ import { HolderData, IESResponse } from '../../interfaces/index';
 import { convertBigIntToNumber } from '../../helper/common.helper';
 import { Prisma } from '@prisma/client';
 import { off } from 'process';
+import logger from '../../lib/logger';
 
 class TokenService {
 	/**
@@ -60,7 +61,6 @@ class TokenService {
 				}),
 			);
 
-			console.log(getTotalTokens, 'getTotalTokens');
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
@@ -71,7 +71,7 @@ class TokenService {
 				},
 			};
 		} catch (err) {
-			console.log('err in getAllTokens : ', err);
+			logger.error('err in getAllTokens : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -138,7 +138,7 @@ class TokenService {
 				},
 			};
 		} catch (err) {
-			console.log('err in getAllTokens : ', err);
+			logger.error('err in getAllTokens : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -230,7 +230,7 @@ class TokenService {
 				},
 			};
 		} catch (err) {
-			console.log('err in getAllTokens : ', err);
+			logger.error('err in getAllTokens : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -263,7 +263,7 @@ class TokenService {
 				},
 			};
 		} catch (err) {
-			console.log('err in getTokenByAddress: ', err);
+			logger.error('err in getTokenByAddress: ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
@@ -327,7 +327,7 @@ class TokenService {
 				data: dataToReturn,
 			};
 		} catch (err) {
-			console.log('err in getTokenByAddress: ', err);
+			logger.error('err in getTokenByAddress: ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
@@ -416,7 +416,7 @@ class TokenService {
 				data: dataToReturn,
 			};
 		} catch (err) {
-			console.log('err in getTokenByAddress: ', err);
+			logger.error('err in getTokenByAddress: ', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
@@ -447,7 +447,7 @@ class TokenService {
 				data: convertBigIntToNumber(tokens),
 			};
 		} catch (err) {
-			console.log('error : ', err);
+			logger.error('error : ', err);
 
 			const error = err instanceof Error ? err.message : RES_MSG.ERROR;
 			return { error: true, message: error };

@@ -13,6 +13,7 @@ import { IESResponse } from '../../interfaces/index';
 import prisma from '../../lib/db';
 import { exp, txType } from '../../lib/utilities.helper';
 import { RabbitMqService, RedisService } from '../../service';
+import logger from '../../lib/logger';
 
 class TransactionService {
 	/**
@@ -159,7 +160,6 @@ class TransactionService {
 				}),
 			]);
 			// Query the count of transactions
-
 			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
@@ -184,7 +184,7 @@ class TransactionService {
 				},
 			};
 		} catch (err) {
-			console.log('err', err);
+			logger.error('err', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -520,7 +520,7 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 				},
 			};
 		} catch (err) {
-			console.log(err, 'error');
+			logger.error('error', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {

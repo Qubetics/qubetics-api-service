@@ -63,7 +63,8 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			total_supply: totalSupply.data.supply[0].amount,
 		};
 	} catch (error) {
-		console.log('getParams Error', error);
+		// logger.log('error occurred while calculating stake APR', error);
+		logger.error('getParams Error', error);
 		return false;
 	}
 }
@@ -159,7 +160,6 @@ const calculateData = async (): Promise<
 		};
 	} catch (err) {
 		logger.error('Error occurred while calculating stake APR', err);
-		console.log('calculateData-Error', err);
 		if (err instanceof Error) {
 			return { error: true, message: err.message };
 		}
