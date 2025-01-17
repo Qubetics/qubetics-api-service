@@ -99,7 +99,7 @@ class FaucetService {
 				throw new Error(RES_MSG.FAUCET_MSG);
 			}
 		} catch (err) {
-			logger.error('error while fund transfer ', err);
+			console.log('Error while fund transfer ', err);
 			const errorMessage =
 				err instanceof Error ? err.message : RES_MSG.ERROR;
 			return { error: true, message: errorMessage };
