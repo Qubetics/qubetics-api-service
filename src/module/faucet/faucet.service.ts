@@ -30,6 +30,8 @@ class FaucetService {
 
 	async fundTransfer(to: string, _captchaToken: string) {
 		try {
+			console.log("Capcha: ", to, _captchaToken, "Environment: ", environment.recaptchaUrl);
+			
 			let faucetBalance;
 			const privateKey = `0x${environment.privateKey}`;
 			const existingData = await Redis.client.get(`${to}`);
