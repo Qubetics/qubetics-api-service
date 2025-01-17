@@ -554,9 +554,9 @@ class ExplorerService {
 
 	getRedisValue = async (): Promise<
 		| {
-			supply: number;
-			marketCap: number;
-		}
+				supply: number;
+				marketCap: number;
+		  }
 		| false
 	> => {
 		try {
@@ -893,9 +893,9 @@ class ExplorerService {
 				value =
 					marketCapPrice?.price && actualBalance
 						? (
-							Number(marketCapPrice?.price) *
-							Number(actualBalance)
-						).toString()
+								Number(marketCapPrice?.price) *
+								Number(actualBalance)
+							).toString()
 						: '';
 			}
 

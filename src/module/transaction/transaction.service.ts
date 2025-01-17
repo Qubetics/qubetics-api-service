@@ -520,7 +520,7 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 				},
 			};
 		} catch (err) {
-			logger.error( 'error' , err);
+			logger.error('error', err);
 
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {

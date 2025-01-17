@@ -245,10 +245,7 @@ class ContractService {
 				],
 			);
 
-			console.log("contractLogs...................." , contractLogs);
-			
-
-
+			console.log('contractLogs....................', contractLogs);
 
 			if (!contractLogs?.length) {
 				const [contractTx, contractTxCount] = await prisma.$transaction(
@@ -274,9 +271,8 @@ class ContractService {
 				if (!contractTx?.length)
 					throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
 
+				console.log('iwyeiruwuerweuyrowierwer', contractTx);
 
-				console.log("iwyeiruwuerweuyrowierwer" ,  contractTx);
-				
 				return {
 					error: false,
 					message: RES_MSG.CONTRACT_TX,
@@ -785,7 +781,7 @@ class ContractService {
 				},
 			};
 		} catch (err) {
-			logger.error('Error Log:: getContractsTokens',err);
+			logger.error('Error Log:: getContractsTokens', err);
 			if (err instanceof Error) {
 				return { error: true, message: err.message };
 			}
