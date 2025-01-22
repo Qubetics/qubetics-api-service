@@ -259,6 +259,9 @@ class ContractService {
 							},
 							where: {
 								toAddress: data.contractAddress,
+								type: {
+									not: 'CONTRACT_TRANSFER',
+								},
 							},
 						}),
 						prisma.transactions.count({
@@ -271,8 +274,6 @@ class ContractService {
 
 				if (!contractTx?.length)
 					throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
-
-				console.log('iwyeiruwuerweuyrowierwer', contractTx);
 
 				return {
 					error: false,

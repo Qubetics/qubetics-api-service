@@ -30,6 +30,8 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			(item: any) => item.status === CONST_NAME.BOND_STATUS,
 		);
 
+		console.log('validatorvalidatorvalidator', validator);
+
 		if (validator?.length === 0) {
 			return false;
 		}
