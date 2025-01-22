@@ -754,13 +754,13 @@ class ContractService {
 				console.log('FROM VERIFICATION');
 				contractListing = verifiedContracts.map(async (item: any) => ({
 					...item,
-					address: item?.contracts.address,
+					address: item?.contracts?.address,
 					transaction_count: await this.getContractTransaction(
-						item?.contracts.address,
+						item?.contracts?.address,
 					),
-					updated_at: item?.contracts.updatedAt,
-					created_at: item.contracts.createdAt,
-					contract_name: item?.contracts.contractName,
+					updated_at: item?.contracts?.updatedAt,
+					created_at: item.contracts?.createdAt,
+					contract_name: item?.contracts?.contractName,
 				}));
 
 				contractCounting = verifiedContractCount;
