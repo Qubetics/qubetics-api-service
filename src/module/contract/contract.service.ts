@@ -591,8 +591,8 @@ class ContractService {
 				tokensData,
 				contractCount,
 				tokenCount,
-				contracts,
-				contractsCount,
+				verifiedContracts,
+				verifiedContractCount,
 			] = await Promise.all([
 				prisma.contracts.findMany({
 					skip: data.page * data.limit,
@@ -724,37 +724,15 @@ class ContractService {
 				}),
 			]);
 
-			const getTotalTokens = await Promise.all(
-				tokensData.map(async (token: any) => {
-					const holdersCount = await prisma.holders.count({
-						where: {
-							contractAddress: token.contractAddress,
-						},
-					});
-
-					token.holders = holdersCount; // Add the holders count to the token
-					return token; // Return the modified token
-				}),
-			);
-			let contractListing: any;
+			let contractListing: any = [];
+			let getTotalTokens: any = [];
 			let contractCounting: number;
+			console.log(contractData, '--contractData--');
+			console.log(verifiedContracts, '--verifiedContracts--');
+			console.log(tokensData, '--tokensData--');
 
-			if (
-				Array.isArray(contractData) &&
-				contractData.length === 0 &&
-				contracts
-			) {
-				contractListing = contracts.map(async (item: any) => ({
-					...item,
-					address: item?.contracts.address,
-					transaction_count: await this.getContractTransaction(
-						item?.contracts.address,
-					),
-					updated_at: item?.contracts.updatedAt,
-					created_at: item.contracts.createdAt,
-				}));
-
-				contractListing = await Promise.all(
+			if (tokensData) {
+				getTotalTokens = await Promise.all(
 					tokensData.map(async (token: any) => {
 						const holdersCount = await prisma.holders.count({
 							where: {
@@ -766,8 +744,28 @@ class ContractService {
 						return token; // Return the modified token
 					}),
 				);
-				contractCounting = contractsCount;
+			}
+
+			if (
+				Array.isArray(contractData) &&
+				contractData.length === 0 &&
+				verifiedContracts.length > 0
+			) {
+				console.log('FROM VERIFICATION');
+				contractListing = verifiedContracts.map(async (item: any) => ({
+					...item,
+					address: item?.address,
+					transaction_count: await this.getContractTransaction(
+						item?.address,
+					),
+					updated_at: item?.updatedAt,
+					created_at: item.createdAt,
+					contract_name: item?.contractname,
+				}));
+
+				contractCounting = verifiedContractCount;
 			} else {
+				console.log('FROM CONTRACTS');
 				contractListing = contractData.map((item: any) => ({
 					...item,
 					contract_name: item?.contractVerification?.contractname,
@@ -784,8 +782,6 @@ class ContractService {
 					tokens: convertBigIntToNumber(getTotalTokens),
 					contractCount: contractCounting,
 					tokenCount,
-					// contractName: convertBigIntToNumber(contracts),
-					// contractsCount,
 				},
 			};
 		} catch (err) {
