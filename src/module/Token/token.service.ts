@@ -67,7 +67,6 @@ class TokenService {
 				data: {
 					count: tokensCount,
 					tokens: convertBigIntToNumber(getTotalTokens),
-					erc20Count: erc20Count,
 				},
 			};
 		} catch (err) {
