@@ -764,7 +764,11 @@ class ContractService {
 				}));
 
 				contractCounting = verifiedContractCount;
-				console.log('contractListing-VERIFICATION', contractListing);
+				console.log(
+					'contractListing-VERIFICATION',
+					await contractListing,
+				);
+				contractListing = await contractListing;
 			} else {
 				console.log('FROM CONTRACTS');
 				contractListing = contractData.map((item: any) => ({
