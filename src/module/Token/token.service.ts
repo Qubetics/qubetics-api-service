@@ -25,9 +25,12 @@ class TokenService {
 						orderBy: {
 							createdAt: 'desc',
 						},
+						where: {
+							type: 'ERC-20',
+						},
 					}),
 					prisma.tokens.count(),
-					prisma.tokens.findMany({
+					prisma.tokens.count({
 						where: {
 							type: 'ERC-20',
 						},
@@ -70,7 +73,7 @@ class TokenService {
 				data: {
 					count: tokensCount,
 					tokens: convertBigIntToNumber(getTotalTokens),
-					erc20Count: erc20Count?.length,
+					erc20Count: erc20Count,
 				},
 			};
 		} catch (err) {
