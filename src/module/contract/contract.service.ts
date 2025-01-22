@@ -754,16 +754,17 @@ class ContractService {
 				console.log('FROM VERIFICATION');
 				contractListing = verifiedContracts.map(async (item: any) => ({
 					...item,
-					address: item?.address,
+					address: item?.contracts.address,
 					transaction_count: await this.getContractTransaction(
-						item?.address,
+						item?.contracts.address,
 					),
-					updated_at: item?.updatedAt,
-					created_at: item.createdAt,
-					contract_name: item?.contractname,
+					updated_at: item?.contracts.updatedAt,
+					created_at: item.contracts.createdAt,
+					contract_name: item?.contracts.contractName,
 				}));
 
 				contractCounting = verifiedContractCount;
+				console.log('contractListing-VERIFICATION', contractListing);
 			} else {
 				console.log('FROM CONTRACTS');
 				contractListing = contractData.map((item: any) => ({
@@ -772,6 +773,7 @@ class ContractService {
 				}));
 
 				contractCounting = contractCount;
+				console.log('contractListing-CONTRACTS', contractListing);
 			}
 
 			return {
