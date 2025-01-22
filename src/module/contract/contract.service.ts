@@ -236,6 +236,9 @@ class ContractService {
 						},
 						where: {
 							contractAddress: data.contractAddress,
+							method: {
+								not: 'transfer',
+							},
 						},
 					}),
 					prisma.contractLogs.count({
@@ -259,9 +262,6 @@ class ContractService {
 							},
 							where: {
 								toAddress: data.contractAddress,
-								type: {
-									not: 'CONTRACT_TRANSFER',
-								},
 							},
 						}),
 						prisma.transactions.count({

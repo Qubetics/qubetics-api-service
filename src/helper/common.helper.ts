@@ -29,7 +29,6 @@ const fetchRequest = async (
 
 export function convertBigIntToNumber(dataVal: any) {
 	const finalDataVal = [];
-	console.log('dataVal', dataVal);
 	if (dataVal && typeof dataVal === 'object') {
 		for (const dataObject of dataVal) {
 			for (const key in dataObject) {
