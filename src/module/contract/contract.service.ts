@@ -1,7 +1,10 @@
 import Web3 from 'web3';
 import prisma from '../../lib/db';
 import { IESResponse } from '../../interfaces/index';
-import { convertBigIntToNumber } from '../../helper/common.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
 import logger from '../../lib/logger';
 
@@ -217,6 +220,7 @@ class ContractService {
 		contractAddress: string;
 	}): Promise<IESResponse> {
 		try {
+			console.log(data.contractAddress, 'contractAddress');
 			const [contractLogs, contractLogsCount] = await prisma.$transaction(
 				[
 					prisma.contractLogs.findMany({
@@ -600,13 +604,25 @@ class ContractService {
 					orderBy: {
 						createdAt: 'desc',
 					},
-					include: {
+					select: {
+						contractName: true,
+						contractType: true,
+						address: true,
+						createdAt: true,
+						updatedAt: true,
+						timestamp: true,
+						blockHash: true,
+						blockNumber: true,
+						creator: true,
+						txHash: true,
+						id: true,
 						ContractVerification: {
 							select: {
 								contractname: true,
 							},
 						},
 					},
+
 					where: {
 						address: {
 							contains: data.contractName,
@@ -643,7 +659,6 @@ class ContractService {
 							},
 						],
 					},
-					// select: { hash: true, from_address: true },
 				}),
 				prisma.contracts.count({
 					where: {
@@ -699,8 +714,26 @@ class ContractService {
 							},
 						],
 					},
-					include: {
-						Contracts: true,
+					select: {
+						contractAddress: true,
+						contractname: true,
+						verificationType: true,
+						iconUrl: true,
+						Contracts: {
+							select: {
+								contractName: true,
+								contractType: true,
+								address: true,
+								createdAt: true,
+								updatedAt: true,
+								timestamp: true,
+								blockHash: true,
+								blockNumber: true,
+								creator: true,
+								txHash: true,
+								id: true,
+							},
+						},
 					},
 				}),
 
@@ -724,8 +757,8 @@ class ContractService {
 				}),
 			]);
 
-			let contractListing: any = [];
-			let getTotalTokens: any = [];
+			let contractListing: any;
+			let getTotalTokens: any;
 			let contractCounting: number;
 			console.log(contractData, '--contractData--');
 			console.log(verifiedContracts, '--verifiedContracts--');
@@ -752,23 +785,30 @@ class ContractService {
 				verifiedContracts.length > 0
 			) {
 				console.log('FROM VERIFICATION');
-				contractListing = verifiedContracts.map(async (item: any) => ({
-					...item,
-					address: item?.contracts?.address,
-					transaction_count: await this.getContractTransaction(
-						item?.contracts?.address,
-					),
-					updated_at: item?.contracts?.updatedAt,
-					created_at: item.contracts?.createdAt,
-					contract_name: item?.contracts?.contractName,
-				}));
+				contractListing = await Promise.all(
+					verifiedContracts.map(async (item: any) => ({
+						...item,
+						address: item?.Contracts?.address,
+						transaction_count: await this.getContractTxCount(
+							item?.Contracts?.address,
+						),
+						updated_at: item?.Contracts?.updatedAt,
+						created_at: item.Contracts?.createdAt,
+						contract_name: item?.Contracts?.contractName,
+
+						Contracts: {
+							...item.Contracts,
+							blockNumber: item.Contracts.blockNumber.toString(), // Convert BigInt to string
+						},
+					})),
+				);
 
 				contractCounting = verifiedContractCount;
+
 				console.log(
 					'contractListing-VERIFICATION',
-					await contractListing,
+					convertBigIntToNumber(contractListing),
 				);
-				contractListing = await contractListing;
 			} else {
 				console.log('FROM CONTRACTS');
 				contractListing = contractData.map((item: any) => ({
@@ -784,10 +824,14 @@ class ContractService {
 				error: false,
 				message: RES_MSG.CONTRACT,
 				data: {
-					contracts: convertBigIntToNumber(contractListing),
-					tokens: convertBigIntToNumber(getTotalTokens),
-					contractCount: contractCounting,
-					tokenCount,
+					contracts: contractListing
+						? convertBigIntToNumber(contractListing)
+						: [],
+					tokens: getTotalTokens
+						? convertBigIntToNumber(getTotalTokens)
+						: [],
+					contractCount: contractCounting || 0,
+					tokenCount: tokenCount || 0,
 				},
 			};
 		} catch (err) {
