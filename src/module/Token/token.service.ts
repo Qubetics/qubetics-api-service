@@ -17,29 +17,23 @@ class TokenService {
 		limit: number;
 	}): Promise<IESResponse> {
 		try {
-			const [tokens, tokensCount, erc20Count] = await prisma.$transaction(
-				[
-					prisma.tokens.findMany({
-						skip: data.page * data.limit,
-						take: data.limit,
-						orderBy: {
-							createdAt: 'desc',
-						},
-						where: {
-							type: 'ERC-20',
-						},
-					}),
-					prisma.tokens.count(),
-					prisma.tokens.count({
-						where: {
-							type: 'ERC-20',
-						},
-						orderBy: {
-							createdAt: 'desc',
-						},
-					}),
-				],
-			);
+			const [tokens, tokensCount] = await prisma.$transaction([
+				prisma.tokens.findMany({
+					skip: data.page * data.limit,
+					take: data.limit,
+					orderBy: {
+						createdAt: 'desc',
+					},
+					where: {
+						type: 'ERC-20',
+					},
+				}),
+				prisma.tokens.count({
+					where: {
+						type: 'ERC-20',
+					},
+				}),
+			]);
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
 
 			const getTotalTokens = await Promise.all(
