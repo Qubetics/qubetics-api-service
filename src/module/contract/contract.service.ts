@@ -796,6 +796,15 @@ class ContractService {
 						created_at: item.Contracts?.createdAt,
 						contract_name: item?.Contracts?.contractName,
 
+						contractName: item?.Contracts?.contractName,
+						contractType: item.Contracts?.contractType,
+						timestamp: item?.Contracts?.timestamp,
+						blockNumber: item.Contracts.blockNumber.toString(),
+						blockHash: item?.Contracts?.blockHash,
+						creator: item.Contracts?.creator,
+						txHash: item?.Contracts?.txHash,
+						id: item?.Contracts?.id,
+
 						Contracts: {
 							...item.Contracts,
 							blockNumber: item.Contracts.blockNumber.toString(), // Convert BigInt to string
@@ -819,6 +828,18 @@ class ContractService {
 				contractCounting = contractCount;
 				console.log('contractListing-CONTRACTS', contractListing);
 			}
+			const getContractsCount: any = await this.getContractsCount();
+			console.log('getContractsCount', getContractsCount);
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count,
+			} = getContractsCount.counts;
+
+			console.log(getContractsCount.counts, 'getContractsCount.counts');
 
 			return {
 				error: false,
@@ -832,6 +853,12 @@ class ContractService {
 						: [],
 					contractCount: contractCounting || 0,
 					tokenCount: tokenCount || 0,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
+					count: count ? Number(count) : 0,
 				},
 			};
 		} catch (err) {
@@ -862,7 +889,7 @@ class ContractService {
 			}
 			return false;
 		} catch (err) {
-			logger.error('error inside getInternalTx : ', err);
+			logger.error('error inside getContractTxCount : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -871,6 +898,36 @@ class ContractService {
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
 			}
+		}
+	}
+
+	async getContractsCount() {
+		try {
+			const result: any = await prisma.$queryRaw`
+  SELECT "contractType", COUNT(*) as "_count", SUM(COUNT(*)) OVER() as "totalCount" FROM "Contracts"  GROUP BY "Contracts"."contractType"`;
+			console.log('result', result[0].totalCount);
+
+			const counts = result.reduce((acc: any, item: any) => {
+				console.log('item_____', item.totalCount);
+				acc[item.contractType] = item._count;
+				return acc;
+			}, {});
+
+			counts.count = result[0].totalCount;
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count: count,
+			} = counts;
+			console.log('counts-----', counts);
+
+			return { counts };
+		} catch (err) {
+			logger.error('error inside getContractsCount : ', err);
+			return false;
 		}
 	}
 }
