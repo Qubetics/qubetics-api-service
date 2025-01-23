@@ -619,6 +619,7 @@ class ContractService {
 						ContractVerification: {
 							select: {
 								contractname: true,
+								verificationType: true,
 							},
 						},
 					},
@@ -794,8 +795,6 @@ class ContractService {
 						),
 						updated_at: item?.Contracts?.updatedAt,
 						created_at: item.Contracts?.createdAt,
-						contract_name: item?.Contracts?.contractName,
-
 						contractName: item?.Contracts?.contractName,
 						contractType: item.Contracts?.contractType,
 						timestamp: item?.Contracts?.timestamp,
@@ -822,7 +821,9 @@ class ContractService {
 				console.log('FROM CONTRACTS');
 				contractListing = contractData.map((item: any) => ({
 					...item,
-					contract_name: item?.contractVerification?.contractname,
+					contractname: item?.ContractVerification?.contractname,
+					verificationType:
+						item?.ContractVerification?.verificationType,
 				}));
 
 				contractCounting = contractCount;
