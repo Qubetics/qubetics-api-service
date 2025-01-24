@@ -793,8 +793,8 @@ class ContractService {
 						transaction_count: await this.getContractTxCount(
 							item?.Contracts?.address,
 						),
-						updated_at: item?.Contracts?.updatedAt,
-						created_at: item.Contracts?.createdAt,
+						updatedAt: item?.Contracts?.updatedAt,
+						createdAt: item.Contracts?.createdAt,
 						contractName: item?.Contracts?.contractName,
 						contractType: item.Contracts?.contractType,
 						timestamp: item?.Contracts?.timestamp,
