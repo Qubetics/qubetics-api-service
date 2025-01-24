@@ -175,6 +175,7 @@ class ContractController implements Controller {
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
 			contractName: <string>request.params[0], // to get the params
 		};
+		console.log(data.contractName, 'contractName-searchContractToken');
 		const searchContractToken =
 			await ContractService.getContractsTokens(data);
 

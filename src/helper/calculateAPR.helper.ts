@@ -30,13 +30,10 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			(item: any) => item.status === CONST_NAME.BOND_STATUS,
 		);
 
-		console.log('validatorvalidatorvalidator', validator);
-
 		if (validator?.length === 0) {
 			return false;
 		}
 
-		console.log(circulationSupplyResponse, '||circulationSupplyResponse||');
 		const circulation_supply: number =
 			Number(circulationSupplyResponse.data.amount.amount) /
 			CONST_NAME.ETH_EXP;
@@ -65,18 +62,12 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			total_supply: totalSupply.data.supply[0].amount,
 		};
 	} catch (error) {
-		// logger.log('error occurred while calculating stake APR', error);
 		logger.error('getParams Error', error);
 		return false;
 	}
 }
 
 function calculateNominalAPR(params: Params): number {
-	console.log(
-		'calculateNominalAPR RESPONSE',
-		(params.annualProvisions * (CONST_NAME.ONE - params.communityTax)) /
-			params.bondedTokens,
-	);
 	return (
 		(params.annualProvisions * (CONST_NAME.ONE - params.communityTax)) /
 		params.bondedTokens

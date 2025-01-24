@@ -1,7 +1,10 @@
 import Web3 from 'web3';
 import prisma from '../../lib/db';
 import { IESResponse } from '../../interfaces/index';
-import { convertBigIntToNumber } from '../../helper/common.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
 import logger from '../../lib/logger';
 
@@ -217,6 +220,7 @@ class ContractService {
 		contractAddress: string;
 	}): Promise<IESResponse> {
 		try {
+			console.log(data.contractAddress, 'contractAddress');
 			const [contractLogs, contractLogsCount] = await prisma.$transaction(
 				[
 					prisma.contractLogs.findMany({
@@ -591,8 +595,8 @@ class ContractService {
 				tokensData,
 				contractCount,
 				tokenCount,
-				contracts,
-				contractsCount,
+				verifiedContracts,
+				verifiedContractCount,
 			] = await Promise.all([
 				prisma.contracts.findMany({
 					skip: data.page * data.limit,
@@ -600,13 +604,26 @@ class ContractService {
 					orderBy: {
 						createdAt: 'desc',
 					},
-					include: {
+					select: {
+						contractName: true,
+						contractType: true,
+						address: true,
+						createdAt: true,
+						updatedAt: true,
+						timestamp: true,
+						blockHash: true,
+						blockNumber: true,
+						creator: true,
+						txHash: true,
+						id: true,
 						ContractVerification: {
 							select: {
 								contractname: true,
+								verificationType: true,
 							},
 						},
 					},
+
 					where: {
 						address: {
 							contains: data.contractName,
@@ -643,7 +660,6 @@ class ContractService {
 							},
 						],
 					},
-					// select: { hash: true, from_address: true },
 				}),
 				prisma.contracts.count({
 					where: {
@@ -699,8 +715,26 @@ class ContractService {
 							},
 						],
 					},
-					include: {
-						Contracts: true,
+					select: {
+						contractAddress: true,
+						contractname: true,
+						verificationType: true,
+						iconUrl: true,
+						Contracts: {
+							select: {
+								contractName: true,
+								contractType: true,
+								address: true,
+								createdAt: true,
+								updatedAt: true,
+								timestamp: true,
+								blockHash: true,
+								blockNumber: true,
+								creator: true,
+								txHash: true,
+								id: true,
+							},
+						},
 					},
 				}),
 
@@ -724,37 +758,15 @@ class ContractService {
 				}),
 			]);
 
-			const getTotalTokens = await Promise.all(
-				tokensData.map(async (token: any) => {
-					const holdersCount = await prisma.holders.count({
-						where: {
-							contractAddress: token.contractAddress,
-						},
-					});
-
-					token.holders = holdersCount; // Add the holders count to the token
-					return token; // Return the modified token
-				}),
-			);
 			let contractListing: any;
+			let getTotalTokens: any;
 			let contractCounting: number;
+			console.log(contractData, '--contractData--');
+			console.log(verifiedContracts, '--verifiedContracts--');
+			console.log(tokensData, '--tokensData--');
 
-			if (
-				Array.isArray(contractData) &&
-				contractData.length === 0 &&
-				contracts
-			) {
-				contractListing = contracts.map(async (item: any) => ({
-					...item,
-					address: item?.contracts.address,
-					transaction_count: await this.getContractTransaction(
-						item?.contracts.address,
-					),
-					updated_at: item?.contracts.updatedAt,
-					created_at: item.contracts.createdAt,
-				}));
-
-				contractListing = await Promise.all(
+			if (tokensData) {
+				getTotalTokens = await Promise.all(
 					tokensData.map(async (token: any) => {
 						const holdersCount = await prisma.holders.count({
 							where: {
@@ -766,26 +778,88 @@ class ContractService {
 						return token; // Return the modified token
 					}),
 				);
-				contractCounting = contractsCount;
+			}
+
+			if (
+				Array.isArray(contractData) &&
+				contractData.length === 0 &&
+				verifiedContracts.length > 0
+			) {
+				console.log('FROM VERIFICATION');
+				contractListing = await Promise.all(
+					verifiedContracts.map(async (item: any) => ({
+						...item,
+						address: item?.Contracts?.address,
+						transaction_count: await this.getContractTxCount(
+							item?.Contracts?.address,
+						),
+						updatedAt: item?.Contracts?.updatedAt,
+						createdAt: item.Contracts?.createdAt,
+						contractName: item?.Contracts?.contractName,
+						contractType: item.Contracts?.contractType,
+						timestamp: item?.Contracts?.timestamp,
+						blockNumber: item.Contracts.blockNumber.toString(),
+						blockHash: item?.Contracts?.blockHash,
+						creator: item.Contracts?.creator,
+						txHash: item?.Contracts?.txHash,
+						id: item?.Contracts?.id,
+
+						Contracts: {
+							...item.Contracts,
+							blockNumber: item.Contracts.blockNumber.toString(), // Convert BigInt to string
+						},
+					})),
+				);
+
+				contractCounting = verifiedContractCount;
+
+				console.log(
+					'contractListing-VERIFICATION',
+					convertBigIntToNumber(contractListing),
+				);
 			} else {
+				console.log('FROM CONTRACTS');
 				contractListing = contractData.map((item: any) => ({
 					...item,
-					contract_name: item?.contractVerification?.contractname,
+					contractname: item?.ContractVerification?.contractname,
+					verificationType:
+						item?.ContractVerification?.verificationType,
 				}));
 
 				contractCounting = contractCount;
+				console.log('contractListing-CONTRACTS', contractListing);
 			}
+			const getContractsCount: any = await this.getContractsCount();
+			console.log('getContractsCount', getContractsCount);
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count,
+			} = getContractsCount.counts;
+
+			console.log(getContractsCount.counts, 'getContractsCount.counts');
 
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT,
 				data: {
-					contracts: convertBigIntToNumber(contractListing),
-					tokens: convertBigIntToNumber(getTotalTokens),
-					contractCount: contractCounting,
-					tokenCount,
-					// contractName: convertBigIntToNumber(contracts),
-					// contractsCount,
+					contracts: contractListing
+						? convertBigIntToNumber(contractListing)
+						: [],
+					tokens: getTotalTokens
+						? convertBigIntToNumber(getTotalTokens)
+						: [],
+					contractCount: contractCounting || 0,
+					tokenCount: tokenCount || 0,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
+					count: count ? Number(count) : 0,
 				},
 			};
 		} catch (err) {
@@ -816,7 +890,7 @@ class ContractService {
 			}
 			return false;
 		} catch (err) {
-			logger.error('error inside getInternalTx : ', err);
+			logger.error('error inside getContractTxCount : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
@@ -825,6 +899,36 @@ class ContractService {
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
 			}
+		}
+	}
+
+	async getContractsCount() {
+		try {
+			const result: any = await prisma.$queryRaw`
+  SELECT "contractType", COUNT(*) as "_count", SUM(COUNT(*)) OVER() as "totalCount" FROM "Contracts"  GROUP BY "Contracts"."contractType"`;
+			console.log('result', result[0].totalCount);
+
+			const counts = result.reduce((acc: any, item: any) => {
+				console.log('item_____', item.totalCount);
+				acc[item.contractType] = item._count;
+				return acc;
+			}, {});
+
+			counts.count = result[0].totalCount;
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count: count,
+			} = counts;
+			console.log('counts-----', counts);
+
+			return { counts };
+		} catch (err) {
+			logger.error('error inside getContractsCount : ', err);
+			return false;
 		}
 	}
 }
