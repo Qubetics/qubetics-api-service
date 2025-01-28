@@ -942,6 +942,7 @@ class ContractService {
 			let isLimitFullFilled = true;
 			const isFirstPage = data.page === 1;
 			let maxId: any = 0;
+			let minId: any = 0;
 			let contracts = await prisma.contracts.findMany({
 				select: {
 					id: true,
@@ -985,11 +986,25 @@ class ContractService {
 				});
 
 				maxId = result._max.id;
+			} else {
+				const result = await prisma.contracts.aggregate({
+					_min: {
+						id: true, // Replace 'id' with your desired column
+					},
+				});
+
+				minId = result._min.id;
 			}
 
 			const contractCount = await prisma.contracts.count();
 
 			if (!contracts?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+
+			contracts = contracts.map((contract) => ({
+				...contract,
+				tokenName: contract.contractName, // Alias for "contractName"
+				contractname: contract.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
+			}));
 
 			const nextCursor =
 				contracts.length === data.limit && isLimitFullFilled
@@ -1041,6 +1056,10 @@ class ContractService {
 				UNKNOWN: unknownCount,
 			} = counts;
 
+			const offset = contractCount % data.limit || data.limit;
+			const lastPage =
+				data.order === 'asc' ? maxId - offset : minId + offset;
+
 			return {
 				error: false,
 				message: RES_MSG.ALL_BLOCK_FETCH,
@@ -1049,10 +1068,7 @@ class ContractService {
 					contracts: convertBigIntToNumber(contracts),
 					nextCursor: nextCursorValue,
 					prevCursor: prevCursor === 0 ? 1 : prevCursor,
-					lastPage:
-						data.order === 'asc'
-							? maxId - (contractCount % data.limit) || data.limit
-							: data.limit + 1,
+					lastPage: lastPage,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
 					erc721Count: erc721Count ? Number(erc721Count) : 0,
 					erc777Count: erc777Count ? Number(erc777Count) : 0,

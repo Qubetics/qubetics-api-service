@@ -125,6 +125,7 @@ class TransactionService {
 		try {
 			let transactionsData: any;
 			let maxId: any = 0;
+			let minId: any = 0;
 
 			if (data.order === 'asc') {
 				transactionsData = await this.ascPagination(
@@ -143,6 +144,13 @@ class TransactionService {
 					data.page,
 					data.limit,
 				);
+				const result = await prisma.transactions.aggregate({
+					_min: {
+						id: true, // Replace 'id' with your desired column
+					},
+				});
+
+				minId = result._min.id;
 			}
 
 			const transactionCount = await RedisService.getString(
@@ -173,8 +181,7 @@ class TransactionService {
 			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
-			console.log('data.order', data.order);
-			console.log('data.maxId', maxId, data.page);
+			console.log('MAXMIN', maxId, minId);
 			if (data.order === 'asc') {
 				if (maxId === data.page + data.limit) {
 					nextCursorValue = null;
@@ -185,6 +192,9 @@ class TransactionService {
 				}
 			}
 
+			const offset = transactionCount % data.limit || data.limit;
+			const lastPage =
+				data.order === 'asc' ? maxId - offset : minId + offset;
 			return {
 				error: false,
 				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
@@ -195,11 +205,7 @@ class TransactionService {
 					prevCursor,
 					previous30DaysTrxn,
 					activeAccount: activeAccount ? activeAccount[0].count : 0,
-					lastPage:
-						data.order === 'asc'
-							? maxId - (transactionCount % data.limit) ||
-								data.limit
-							: data.limit + 1,
+					lastPage,
 				},
 			};
 		} catch (err) {
