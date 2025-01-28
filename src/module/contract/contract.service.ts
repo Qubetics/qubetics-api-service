@@ -1004,6 +1004,9 @@ class ContractService {
 				...contract,
 				tokenName: contract.contractName, // Alias for "contractName"
 				contractname: contract.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
+				verificationType:
+					contract.ContractVerification?.verificationType,
+				iconUrl: contract.ContractVerification?.iconUrl,
 			}));
 
 			const nextCursor =
