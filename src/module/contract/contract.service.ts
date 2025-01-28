@@ -978,6 +978,9 @@ class ContractService {
 						},
 				take: data.limit,
 			});
+			if (!contracts?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+			const contractCount = await prisma.contracts.count();
+
 			if (data.order === 'asc') {
 				const result = await prisma.contracts.aggregate({
 					_max: {
@@ -986,19 +989,16 @@ class ContractService {
 				});
 
 				maxId = result._max.id;
-			} else {
-				const result = await prisma.contracts.aggregate({
-					_min: {
-						id: true, // Replace 'id' with your desired column
-					},
-				});
-
-				minId = result._min.id;
 			}
-
-			const contractCount = await prisma.contracts.count();
-
-			if (!contracts?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+			const getLastId = await prisma.contracts.findMany({
+				select: {
+					id: true, // Replace 'id' with your desired column
+				},
+				orderBy: {
+					id: 'asc',
+				},
+				take: (contractCount % data.limit) + 1 || data.limit + 1,
+			});
 
 			contracts = contracts.map((contract) => ({
 				...contract,
@@ -1036,17 +1036,17 @@ class ContractService {
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 			console.log('nextCursorValue', nextCursorValue, nextCursor);
 
-			const result = await prisma.contracts.groupBy({
+			const groupByResult = await prisma.contracts.groupBy({
 				by: ['contractType'], // Group by the 'type' column
 				_count: {
 					contractType: true, // Count occurrences of each type
 				},
 			});
-			console.log('contractTypeCount', result);
+			console.log('contractTypeCount', groupByResult);
 
-			// Loop through the result and filter each count
+			// Loop through the groupByResult and filter each count
 
-			const counts = result.reduce((acc: any, item) => {
+			const counts = groupByResult.reduce((acc: any, item) => {
 				acc[item.contractType] = item._count.contractType;
 				return acc;
 			}, {});
@@ -1061,7 +1061,9 @@ class ContractService {
 
 			const offset = contractCount % data.limit || data.limit;
 			const lastPage =
-				data.order === 'asc' ? maxId - offset : minId + offset;
+				data.order === 'asc'
+					? maxId - offset
+					: getLastId[getLastId.length - 1].id;
 
 			return {
 				error: false,

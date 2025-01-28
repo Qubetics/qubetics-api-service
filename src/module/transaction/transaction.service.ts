@@ -126,6 +126,9 @@ class TransactionService {
 			let transactionsData: any;
 			let maxId: any = 0;
 			let minId: any = 0;
+			const transactionCount = await RedisService.getString(
+				REDIS_KEY.TRANSACTIONS_COUNT,
+			);
 
 			if (data.order === 'asc') {
 				transactionsData = await this.ascPagination(
@@ -144,18 +147,16 @@ class TransactionService {
 					data.page,
 					data.limit,
 				);
-				const result = await prisma.transactions.aggregate({
-					_min: {
+				minId = await prisma.contracts.findMany({
+					select: {
 						id: true, // Replace 'id' with your desired column
 					},
+					orderBy: {
+						id: 'asc',
+					},
+					take: (transactionCount % data.limit) + 1 || data.limit + 1,
 				});
-
-				minId = result._min.id;
 			}
-
-			const transactionCount = await RedisService.getString(
-				REDIS_KEY.TRANSACTIONS_COUNT,
-			);
 
 			const { transactions, nextCursor, prevCursor } = transactionsData;
 			let nextCursorValue: number | null = nextCursor;
@@ -194,7 +195,9 @@ class TransactionService {
 
 			const offset = transactionCount % data.limit || data.limit;
 			const lastPage =
-				data.order === 'asc' ? maxId - offset : minId + offset;
+				data.order === 'asc'
+					? maxId - offset
+					: minId[minId.length - 1].id;
 			return {
 				error: false,
 				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
