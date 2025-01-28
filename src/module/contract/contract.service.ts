@@ -7,9 +7,10 @@ import {
 } from '../../helper/common.helper';
 import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
 import logger from '../../lib/logger';
+import { RedisService } from '../../service';
 
 class ContractService {
-	async getAllContract(data: {
+	async getAllContract_(data: {
 		page?: number;
 		limit: number;
 	}): Promise<IESResponse> {
@@ -929,6 +930,117 @@ class ContractService {
 		} catch (err) {
 			logger.error('error inside getContractsCount : ', err);
 			return false;
+		}
+	}
+
+	async getAllContract(data: {
+		page: number;
+		limit: number;
+		order: any;
+	}): Promise<IESResponse> {
+		try {
+			let isLimitFullFilled = true;
+			const isFirstPage = data.page === 1;
+			let maxId: any = 0;
+			let contracts = await prisma.contracts.findMany({
+				select: {
+					id: true,
+					creator: true,
+					address: true,
+					blockHash: true,
+					blockNumber: true,
+					bytecodeHash: true,
+					txHash: true,
+					timestamp: true,
+					contractName: true,
+					contractType: true,
+					createdAt: true,
+					updatedAt: true,
+					ContractVerification: {
+						select: {
+							contractname: true,
+							verificationType: true,
+							iconUrl: true,
+						},
+					},
+				},
+				orderBy: {
+					id: data.order,
+				},
+				where: isFirstPage
+					? {}
+					: {
+							id:
+								data.order === 'asc'
+									? { gt: data.page }
+									: { lt: data.page },
+						},
+				take: data.limit,
+			});
+			if (data.order === 'asc') {
+				const result = await prisma.contracts.aggregate({
+					_max: {
+						id: true, // Replace 'id' with your desired column
+					},
+				});
+
+				maxId = result._max.id;
+			}
+
+			const contractCount = await prisma.contracts.count();
+
+			if (!contracts?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+
+			const nextCursor =
+				contracts.length === data.limit && isLimitFullFilled
+					? convertBigIntToNumber(contracts)[contracts.length - 1].id
+					: null;
+			let nextCursorValue: number | null = nextCursor;
+			if (data.order === 'asc') {
+				if (maxId === data.page) {
+					nextCursorValue = null;
+				}
+			} else if (data.order === 'desc') {
+				if (contractCount === nextCursor || nextCursor === 1) {
+					nextCursorValue = null;
+				}
+			}
+			const prevCursor = isFirstPage
+				? null
+				: data.page && contracts.length > 0
+					? data.order === 'asc'
+						? convertBigIntToNumber(contracts)[0].id -
+							(data.limit + 1)
+						: convertBigIntToNumber(contracts)[0].id +
+							(data.limit + 1)
+					: null;
+
+			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
+			console.log('nextCursorValue', nextCursorValue, nextCursor);
+			return {
+				error: false,
+				message: RES_MSG.ALL_BLOCK_FETCH,
+				data: {
+					contractCount,
+					contracts: convertBigIntToNumber(contracts),
+					nextCursor: nextCursorValue,
+					prevCursor: prevCursor === 0 ? 1 : prevCursor,
+					lastPage:
+						data.order === 'asc'
+							? maxId - (contractCount % data.limit) || data.limit
+							: data.limit + 1,
+					// lastPage: data.order === 'asc' ? maxId : data.limit + 1,
+				},
+			};
+		} catch (err) {
+			if (err instanceof Error) {
+				logger.error(err);
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			}
+			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
 }

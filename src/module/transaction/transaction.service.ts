@@ -124,23 +124,33 @@ class TransactionService {
 	}): Promise<IESResponse> {
 		try {
 			let transactionsData: any;
+			let maxId: any = 0;
 
-			if (data.order === 'asc')
+			if (data.order === 'asc') {
 				transactionsData = await this.ascPagination(
 					data.page,
 					data.limit,
 				);
-			else
+				const result = await prisma.transactions.aggregate({
+					_max: {
+						id: true, // Replace 'id' with your desired column
+					},
+				});
+
+				maxId = result._max.id;
+			} else {
 				transactionsData = await this.descPagination(
 					data.page,
 					data.limit,
 				);
+			}
 
 			const transactionCount = await RedisService.getString(
 				REDIS_KEY.TRANSACTIONS_COUNT,
 			);
 
 			const { transactions, nextCursor, prevCursor } = transactionsData;
+			let nextCursorValue: number | null = nextCursor;
 
 			const todayStart = new Date();
 			todayStart.setHours(0, 0, 0, 0);
@@ -163,6 +173,17 @@ class TransactionService {
 			const activeAccount: any = convertBigIntToNumber(getActiveAccount);
 			if (!transactions.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
+			console.log('data.order', data.order);
+			console.log('data.maxId', maxId, data.page);
+			if (data.order === 'asc') {
+				if (maxId === data.page + data.limit) {
+					nextCursorValue = null;
+				}
+			} else if (data.order === 'desc') {
+				if (transactionCount === nextCursor || nextCursor === 1) {
+					nextCursorValue = null;
+				}
+			}
 
 			return {
 				error: false,
@@ -170,16 +191,14 @@ class TransactionService {
 				data: {
 					count: transactionCount,
 					transactions: convertBigIntToNumber(transactions),
-					nextCursor:
-						transactionCount === nextCursor || nextCursor === 1
-							? null
-							: nextCursor,
+					nextCursor: nextCursorValue,
 					prevCursor,
 					previous30DaysTrxn,
 					activeAccount: activeAccount ? activeAccount[0].count : 0,
 					lastPage:
 						data.order === 'asc'
-							? transactionCount - data.limit
+							? maxId - (transactionCount % data.limit) ||
+								data.limit
 							: data.limit + 1,
 				},
 			};

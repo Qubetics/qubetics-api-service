@@ -52,8 +52,8 @@ class ContractController implements Controller {
 	private getAllContract = async (request: Request, response: Response) => {
 		const data = {
 			page: request.query?.page ? Number(request.query?.page) : 1,
-
 			limit: !request.query?.limit ? 10 : Number(request.query?.limit),
+			order: request.query?.order ? request.query.order : 'desc',
 		};
 
 		const contracts = await ContractService.getAllContract(data);

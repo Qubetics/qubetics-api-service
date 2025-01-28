@@ -48,6 +48,19 @@ export const getContractValidation = (
 					'limit should be a valid integer between 1 and 200',
 				'custom.noLeadingSpaces': 'limit should not start with a space',
 			}),
+		order: Joi.string()
+			.optional()
+			.custom((value, helpers) => {
+				console.log(value !== 'dsec' || value !== 'asc');
+
+				if (value === 'desc' || value === 'asc') {
+					return value;
+				}
+				return helpers.error('custom.order');
+			})
+			.messages({
+				'custom.order': 'Order must be dsec or asc.',
+			}),
 	});
 
 	const { error, value } = schema.validate(req.query);
