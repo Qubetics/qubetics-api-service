@@ -1017,11 +1017,35 @@ class ContractService {
 
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 			console.log('nextCursorValue', nextCursorValue, nextCursor);
+
+			const result = await prisma.contracts.groupBy({
+				by: ['contractType'], // Group by the 'type' column
+				_count: {
+					contractType: true, // Count occurrences of each type
+				},
+			});
+			console.log('contractTypeCount', result);
+
+			// Loop through the result and filter each count
+
+			const counts = result.reduce((acc: any, item) => {
+				acc[item.contractType] = item._count.contractType;
+				return acc;
+			}, {});
+
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+			} = counts;
+
 			return {
 				error: false,
 				message: RES_MSG.ALL_BLOCK_FETCH,
 				data: {
-					contractCount,
+					count: contractCount,
 					contracts: convertBigIntToNumber(contracts),
 					nextCursor: nextCursorValue,
 					prevCursor: prevCursor === 0 ? 1 : prevCursor,
@@ -1029,6 +1053,11 @@ class ContractService {
 						data.order === 'asc'
 							? maxId - (contractCount % data.limit) || data.limit
 							: data.limit + 1,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
 					// lastPage: data.order === 'asc' ? maxId : data.limit + 1,
 				},
 			};
