@@ -126,10 +126,13 @@ class TransactionService {
 			let transactionsData: any;
 			let maxId: any = 0;
 			let minId: any = 0;
-			const transactionCount = await RedisService.getString(
+			let transactionCount = await RedisService.getString(
 				REDIS_KEY.TRANSACTIONS_COUNT,
 			);
 
+			if (!transactionCount) {
+				transactionCount = await prisma.transactions.count();
+			}
 			if (data.order === 'asc') {
 				transactionsData = await this.ascPagination(
 					data.page,
@@ -147,7 +150,7 @@ class TransactionService {
 					data.page,
 					data.limit,
 				);
-				minId = await prisma.contracts.findMany({
+				minId = await prisma.transactions.findMany({
 					select: {
 						id: true, // Replace 'id' with your desired column
 					},
