@@ -66,6 +66,7 @@ class TokenService {
 				message: RES_MSG.SUCCESS,
 				data: {
 					count: tokensCount,
+					erc20Count: tokensCount ? Number(tokensCount) : 0,
 					tokens: convertBigIntToNumber(getTotalTokens),
 				},
 			};
