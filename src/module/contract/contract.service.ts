@@ -838,7 +838,7 @@ class ContractService {
 				'ERC-777': erc777Count,
 				'ERC-1155': erc1155Count,
 				UNKNOWN: unknownCount,
-				// count,
+				count,
 			} = getContractsCount.counts;
 
 			console.log(getContractsCount.counts, 'getContractsCount.counts');
@@ -860,7 +860,7 @@ class ContractService {
 					erc777Count: erc777Count ? Number(erc777Count) : 0,
 					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
 					unknownCount: unknownCount ? Number(unknownCount) : 0,
-					count: erc20Count ? Number(erc20Count) : 0,
+					count: count ? Number(count) : 0,
 				},
 			};
 		} catch (err) {
