@@ -7,7 +7,7 @@ on:
 
 jobs:
   dev_deploy_Qubetics_api:
-    uses: ./.github/workflows/main.yml
+    uses: ./.github/workflows/qubetics-api.yaml
     with:
       SWR_ORGANIZATION: dev-qubetics
       ARGOCD_BRANCH: dev

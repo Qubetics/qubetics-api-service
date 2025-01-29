@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy_testnet_qubetics_api_service:
-    uses: ./.github/workflows/testnet-qubetics-api-deployment.yml
+    uses: ./.github/workflows/qubetics-api.yaml
     with:
       SWR_ORGANIZATION: testnet-qubetics
       ARGOCD_BRANCH: testnet
