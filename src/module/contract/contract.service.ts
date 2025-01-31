@@ -1219,6 +1219,15 @@ class ContractService {
 			]);
 
 			console.log('getContractsTokens Response', results, resultCount);
+
+			if (!results.length) {
+				return {
+					data: {
+						message: RES_MSG.DATA_NOT_FOUND,
+						error: true,
+					},
+				};
+			}
 			const sortedResults =
 				data.order === 'asc' ? results.reverse() : results;
 
@@ -1233,16 +1242,17 @@ class ContractService {
 			const { ...lastPageFilter } = counterFilter;
 
 			lastPageFilter.id = { gt: minimumId };
+			let lastPageResult: any;
+			if (totalContracts) {
+				lastPageResult = await prisma.contracts.findMany({
+					select: {
+						id: true,
+					},
+					where: lastPageFilter,
+					take: totalContracts % parsedLimit || parsedLimit,
+				});
+			}
 
-			const lastPageResult = await prisma.contracts.findMany({
-				select: {
-					id: true,
-				},
-				where: lastPageFilter,
-				take: totalContracts % parsedLimit || parsedLimit,
-			});
-
-			console.log(lastPageResult, 'minIdminIdXX');
 			const previousCursor =
 				results[0].id === maximumId ? null : results[0].id;
 
@@ -1262,12 +1272,34 @@ class ContractService {
 				count,
 			} = getContractsCount.counts;
 
+			const contractData = await Promise.all(
+				sortedResults.map(async (item: any) => ({
+					...item,
+					transaction_count: await this.getContractTxCount(
+						item?.address,
+					),
+					contractname:
+						item?.ContractVerification?.contractname || '',
+					verificationType:
+						item?.ContractVerification?.verificationType || 0,
+					iconUrl: item?.ContractVerification?.iconUrl || '',
+					creator: item?.Tokens?.creator,
+					decimal: item?.Tokens?.decimal,
+					totalSupply: item?.Tokens?.totalSupply,
+					type: item?.Tokens?.type,
+					tokenName: item?.Tokens?.tokenName,
+					tokenSymbol: item?.Tokens?.tokenSymbol,
+					contractAddress: item?.Tokens?.contractAddress,
+				})),
+			);
+
+			console.log('contractDataXX', contractData);
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT,
 				data: {
-					contracts: sortedResults
-						? convertBigIntToNumber(sortedResults)
+					contracts: contractData
+						? convertBigIntToNumber(contractData)
 						: [],
 					contractCount: totalContracts || 0,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
@@ -1278,14 +1310,12 @@ class ContractService {
 					count: count ? Number(count) : 0,
 					nextCursor: nextCursor,
 					prevCursor: previousCursor === 0 ? 1 : previousCursor,
-					lastPage: lastPageResult[lastPageResult.length - 1].id,
+					lastPage:
+						lastPageResult[lastPageResult.length - 1].id || null,
 				},
 			};
 		} catch (err) {
 			logger.error('Error Log:: getContractsTokens Error', err);
-			if (err instanceof Error) {
-				return { error: true, message: err.message };
-			}
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
