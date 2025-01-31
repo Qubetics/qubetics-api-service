@@ -1,4 +1,7 @@
-import { convertBigIntToNumber } from '../../helper/common.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 import Web3Helper from '../../helper/web3.helper';
 import {
 	RES_MSG,
@@ -20,6 +23,9 @@ class BlockService {
 	}): Promise<IESResponse> {
 		try {
 			let isLimitFullFilled = true;
+			let maxId = 0;
+			let minId: any = 0;
+			let zerothElement = 0;
 			const isFirstPage = data.page === 1;
 			let blocks = await prisma.blocks.findMany({
 				orderBy: {
@@ -38,24 +44,36 @@ class BlockService {
 
 			// check if limit is fullfilled with current block range
 			if (blocks.length < data.limit) {
-				const tempBlocks = await prisma.blocks.findMany({
-					orderBy: {
-						blocknumber: 'asc',
-					},
-					where: { blocknumber: { gt: data.page } },
-					take: data.limit - blocks.length,
-				});
+				// const tempBlocks = await prisma.blocks.findMany({
+				// 	orderBy: {
+				// 		blocknumber: 'asc',
+				// 	},
+				// 	where: { blocknumber: { gt: data.page } },
+				// 	take: data.limit - blocks.length,
+				// });
 
-				blocks = [...tempBlocks.reverse(), ...blocks];
+				// blocks = [...tempBlocks.reverse(), ...blocks];
 				isLimitFullFilled = false;
 			}
+			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
 
-			const blockCount = await RedisService.getString(
+			let blockCount = await RedisService.getString(
 				REDIS_KEY.BLOCKS_COUNT,
 			);
 
-			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+			// if (!blockCount) {
+			// 	blockCount = await prisma.blocks.count();
+			// }
+			if (!blockCount) {
+				const result = await prisma.blocks.aggregate({
+					_count: {
+						blocknumber: true,
+					},
+				});
+				blockCount = result._count.blocknumber;
+			}
 
+			zerothElement = serializeBigInt(blocks[0].blocknumber);
 			const nextCursor =
 				blocks.length === data.limit && isLimitFullFilled
 					? convertBigIntToNumber(blocks)[blocks.length - 1]
@@ -65,13 +83,43 @@ class BlockService {
 				? null
 				: data.page && blocks.length > 0
 					? data.order === 'asc'
-						? convertBigIntToNumber(blocks)[0].blocknumber -
-							(data.limit + 1)
-						: convertBigIntToNumber(blocks)[0].blocknumber +
-							(data.limit + 1)
+						? zerothElement - (data.limit + 1)
+						: zerothElement + (data.limit + 1)
 					: null;
 
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+			let nextCursorValue: number | null = nextCursor;
+			if (data.order === 'asc') {
+				const result = await prisma.blocks.aggregate({
+					_max: {
+						blocknumber: true,
+					},
+				});
+				maxId = serializeBigInt(result._max.blocknumber);
+				if (maxId === data.page + data.limit) {
+					nextCursorValue = null;
+				}
+			} else if (data.order === 'desc') {
+				minId = await prisma.blocks.findMany({
+					select: {
+						blocknumber: true,
+					},
+					orderBy: {
+						blocknumber: 'asc',
+					},
+					take: (blockCount % data.limit) + 1 || data.limit + 1,
+				});
+				if (blockCount === nextCursor || nextCursor === 1) {
+					nextCursorValue = null;
+				}
+			}
+			const offset: number = blockCount % data.limit || data.limit;
+
+			const lastPage: any =
+				data.order === 'asc'
+					? maxId - offset
+					: serializeBigInt(minId[minId.length - 1].blockNumber);
+			console.log('HEHREHHE', offset, blocks, minId, maxId, lastPage);
 
 			return {
 				error: false,
@@ -79,15 +127,17 @@ class BlockService {
 				data: {
 					blockCount,
 					blocks: convertBigIntToNumber(blocks),
-					nextCursor,
+					nextCursor: nextCursorValue,
 					prevCursor: prevCursor === 0 ? 1 : prevCursor,
-					lastPage:
-						data.order === 'asc'
-							? blockCount - data.limit
-							: data.limit + 1,
+					// lastPage:
+					// 	data.order === 'asc'
+					// 		? blockCount - data.limit
+					// 		: data.limit + 1,
+					lastPage,
 				},
 			};
 		} catch (err) {
+			console.log('--Error BLOCK--', err);
 			if (err instanceof Error) {
 				logger.error(err);
 				if (err.message.includes('prisma')) {
