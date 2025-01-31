@@ -1243,7 +1243,8 @@ class ContractService {
 
 			lastPageFilter.id = { gt: minimumId };
 			let lastPageResult: any;
-			if (totalContracts) {
+			if (totalContracts && totalContracts > parsedLimit) {
+				console.log('lastPageResult');
 				lastPageResult = await prisma.contracts.findMany({
 					select: {
 						id: true,
@@ -1251,6 +1252,7 @@ class ContractService {
 					where: lastPageFilter,
 					take: totalContracts % parsedLimit || parsedLimit,
 				});
+				console.log('lastPageResult1	', lastPageResult);
 			}
 
 			const previousCursor =
@@ -1310,8 +1312,9 @@ class ContractService {
 					count: count ? Number(count) : 0,
 					nextCursor: nextCursor,
 					prevCursor: previousCursor === 0 ? 1 : previousCursor,
-					lastPage:
-						lastPageResult[lastPageResult.length - 1].id || null,
+					lastPage: lastPageResult
+						? lastPageResult[lastPageResult.length - 1].id
+						: null,
 				},
 			};
 		} catch (err) {
