@@ -585,7 +585,7 @@ class ContractService {
 		}
 	}
 
-	async getContractsTokens(data: {
+	async getContractsTokens_(data: {
 		page: number;
 		limit: number;
 		contractName: string;
@@ -1088,6 +1088,202 @@ class ContractService {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
 				}
+				return { error: true, message: err.message };
+			}
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async getContractsTokens(data: {
+		page: number;
+		limit: number;
+		order: string;
+		contractName: string;
+	}): Promise<any> {
+		const { contractName, limit, page, order } = data;
+		// Validate limit
+		const parsedLimit = limit;
+
+		try {
+			const searchFilter: any = {
+				OR: [
+					{
+						address: {
+							contains: contractName,
+							mode: 'insensitive',
+						},
+					},
+					{
+						contractName: {
+							contains: contractName,
+							mode: 'insensitive',
+						},
+					},
+					{
+						Tokens: {
+							is: {
+								tokenName: {
+									contains: contractName,
+									mode: 'insensitive',
+								},
+								contractAddress: {
+									contains: contractName,
+									mode: 'insensitive',
+								},
+								tokenSymbol: {
+									contains: contractName,
+									mode: 'insensitive',
+								},
+							},
+						},
+					},
+					{
+						ContractVerification: {
+							is: {
+								contractname: {
+									contains: contractName,
+									mode: 'insensitive',
+								},
+								contractAddress: {
+									contains: contractName,
+									mode: 'insensitive',
+								},
+							},
+						},
+					},
+				],
+			};
+
+			const { ...counterFilter } = searchFilter;
+
+			if (data.page && data.page > 1) {
+				searchFilter.id =
+					data.order === 'asc'
+						? { gt: data.page }
+						: { lt: data.page };
+			}
+
+			// Perform the query with cursor-based pagination
+			console.log('searchFilter', searchFilter);
+			const [results, resultCount] = await Promise.all([
+				prisma.contracts.findMany({
+					where: searchFilter,
+					select: {
+						contractName: true,
+						contractType: true,
+						address: true,
+						createdAt: true,
+						updatedAt: true,
+						timestamp: true,
+						blockHash: true,
+						blockNumber: true,
+						creator: true,
+						txHash: true,
+						id: true,
+						ContractVerification: {
+							select: {
+								contractAddress: true,
+								contractname: true,
+								verificationType: true,
+								iconUrl: true,
+							},
+						},
+						Tokens: {
+							select: {
+								creator: true,
+								decimal: true,
+								totalSupply: true,
+								type: true,
+								tokenName: true,
+								tokenSymbol: true,
+								contractAddress: true,
+							},
+						},
+					},
+					take: parsedLimit,
+					// skip: page ? 1 : 0, // Skip the cursor for the next page
+					// cursor: page ? { id: page } : undefined, // Use the cursor for pagination
+					orderBy: {
+						id:
+							data?.order === 'asc' || data?.order === 'desc'
+								? data?.order
+								: ('desc' as const),
+					},
+				}),
+				prisma.contracts.aggregate({
+					where: counterFilter,
+					_count: { id: true },
+					_min: { id: true },
+					_max: { id: true },
+				}),
+			]);
+
+			console.log('getContractsTokens Response', results, resultCount);
+			const sortedResults =
+				data.order === 'asc' ? results.reverse() : results;
+
+			// Determine the first and last page from the search results
+			// const firstContract = results[0].id || null;
+			// const lastContract = results[results.length - 1] || null;
+
+			const totalContracts = resultCount._count.id;
+			const minimumId = resultCount._min.id;
+			const maximumId = resultCount._max.id;
+
+			const { ...lastPageFilter } = counterFilter;
+
+			lastPageFilter.id = { gt: minimumId };
+
+			const lastPageResult = await prisma.contracts.findMany({
+				select: {
+					id: true,
+				},
+				where: lastPageFilter,
+				take: totalContracts % parsedLimit || parsedLimit,
+			});
+
+			console.log(lastPageResult, 'minIdminIdXX');
+			const previousCursor =
+				results[0].id === maximumId ? null : results[0].id;
+
+			const nextCursor =
+				results.length > 0 &&
+				results[results.length - 1].id === minimumId
+					? null
+					: results[results.length - 1]?.id;
+
+			const getContractsCount: any = await this.getContractsCount();
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count,
+			} = getContractsCount.counts;
+
+			return {
+				error: false,
+				message: RES_MSG.CONTRACT,
+				data: {
+					contracts: sortedResults
+						? convertBigIntToNumber(sortedResults)
+						: [],
+					contractCount: totalContracts || 0,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
+					count: count ? Number(count) : 0,
+					nextCursor: nextCursor,
+					prevCursor: previousCursor === 0 ? 1 : previousCursor,
+					lastPage: lastPageResult[lastPageResult.length - 1].id,
+				},
+			};
+		} catch (err) {
+			logger.error('Error Log:: getContractsTokens Error', err);
+			if (err instanceof Error) {
 				return { error: true, message: err.message };
 			}
 			return { error: true, message: RES_MSG.ERROR };

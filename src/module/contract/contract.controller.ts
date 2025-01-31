@@ -45,7 +45,12 @@ class ContractController implements Controller {
 			.get('/popular', getContractValidation, this.getPopularTx)
 			.get('/events', getContractTxValidation, this.getContractEvents)
 			.get('/transfer', getContractTxValidation, this.getContractTransfer)
-			.get('/search/*', getContractValidation, this.searchContractToken);
+			.get('/search/*', getContractValidation, this.searchContractToken)
+			.get(
+				'/search-get/*',
+				getContractValidation,
+				this.searchContractToken_,
+			);
 		// https://api.evm.qa.5ire.network/5ire/contracts/search/0xeE02101Da362c9bFc616F72AbF8301Ba94f3C4fe?page=1&limit=10;
 	}
 
@@ -170,6 +175,26 @@ class ContractController implements Controller {
 		request: Request,
 		response: Response,
 	) => {
+		const data: any = {
+			page: !request.query?.page ? 0 : Number(request.query.page),
+			limit: !request.query?.limit ? 10 : Number(request.query.limit),
+			contractName: <string>request.params[0], // to get the params
+			order: request.query?.order ? request.query.order : 'desc',
+		};
+
+		const searchContractToken =
+			await ContractService.getContractsTokens(data);
+
+		if (searchContractToken.error) {
+			return setResponse.error(response, searchContractToken);
+		}
+		return setResponse.success(response, searchContractToken);
+	};
+
+	private searchContractToken_ = async (
+		request: Request,
+		response: Response,
+	) => {
 		const data = {
 			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
@@ -177,7 +202,7 @@ class ContractController implements Controller {
 		};
 		console.log(data.contractName, 'contractName-searchContractToken');
 		const searchContractToken =
-			await ContractService.getContractsTokens(data);
+			await ContractService.getContractsTokens_(data);
 
 		if (searchContractToken.error) {
 			return setResponse.error(response, searchContractToken);
