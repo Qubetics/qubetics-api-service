@@ -46,7 +46,6 @@ class ContractController implements Controller {
 			.get('/events', getContractTxValidation, this.getContractEvents)
 			.get('/transfer', getContractTxValidation, this.getContractTransfer)
 			.get('/search/*', getContractValidation, this.searchContractToken)
-
 			.get(
 				'/search-get/*',
 				getContractValidation,
