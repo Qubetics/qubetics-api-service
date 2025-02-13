@@ -60,7 +60,8 @@ class ExplorerController implements Controller {
 				'/search-active-results',
 				// searchingValidation,
 				this.searchActiveResults,
-			);
+			)
+			.get('/current-token-price', this.currentTokenPrice);
 	}
 
 	private searching = async (request: Request, response: Response) => {
@@ -246,6 +247,19 @@ class ExplorerController implements Controller {
 			return setResponse.error(response, serachingRes);
 		}
 		return setResponse.success(response, serachingRes);
+	};
+
+
+	private currentTokenPrice = async (
+		request: Request,
+		response: Response,
+	) => {
+		const tokenPriceRes = await ExplorerService.currentTokenPrice();
+
+		if (tokenPriceRes.error) {
+			return setResponse.error(response, tokenPriceRes);
+		}
+		return setResponse.success(response, tokenPriceRes);
 	};
 }
 

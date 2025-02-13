@@ -15,6 +15,8 @@ export const RESPONSES = {
 	GATEWAYTIMEOUT: 504,
 };
 
+export const CURRENT_DEFAULT_COIN_PRICE=0.07339091;
+
 export const RATE_LIMITER_MESSAGE = {
 	TOO_MANY_REQUEST:
 		'You are doing too many request. Please try again in 5 minutes.',
@@ -181,6 +183,7 @@ export const REDIS_KEY = {
 	TOP_VALIDATOR: 'TOP_VALIDATOR',
 	BLOCK_AVG_TIME: 'BLOCK_AVG_TIME',
 	VALIDATOR_LIST: 'VALIDATOR_LIST',
+	COIN_PRICE: 'COIN_PRICE',
 
 	// stats
 	TX_HISTORY: 'TxHistory',
