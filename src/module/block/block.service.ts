@@ -115,11 +115,11 @@ class BlockService {
 			}
 			const offset: number = blockCount % data.limit || data.limit;
 
-			const lastPage: any =
+			const lastPage =
 				data.order === 'asc'
 					? maxId - offset
-					: serializeBigInt(minId[minId.length - 1].blockNumber);
-			console.log('HEHREHHE', offset, blocks, minId, maxId, lastPage);
+					: serializeBigInt(minId[minId.length - 1].blocknumber);
+			console.log('HEHREHHE', minId, lastPage);
 
 			return {
 				error: false,
