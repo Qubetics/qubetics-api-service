@@ -249,7 +249,6 @@ class ExplorerController implements Controller {
 		return setResponse.success(response, serachingRes);
 	};
 
-
 	private currentTokenPrice = async (
 		request: Request,
 		response: Response,

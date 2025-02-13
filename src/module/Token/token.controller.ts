@@ -30,8 +30,7 @@ class TokenController implements Controller {
 			.get('/holders', getContractTxValidation, this.getTokenHolders)
 			.get('/token-by-wallet-address', this.getTokenDetailsByAddress)
 			.get('/token-transfer', getTokenValidation, this.getTokenTransfer)
-			.get('/curernt-token-price')
-			;
+			.get('/curernt-token-price');
 	}
 
 	/**
