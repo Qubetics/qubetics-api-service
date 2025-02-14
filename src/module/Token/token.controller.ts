@@ -3,7 +3,11 @@ import tokenService from './token.service';
 import { Request, Response } from 'express';
 import * as Helpers from '../../service/index';
 import { Controller } from '../../interfaces/index';
-import { getTokenValidation, getTokensValidation } from './token.validation';
+import {
+	getTokenValidation,
+	getTokensValidation,
+	getTxByAddressValidation,
+} from './token.validation';
 import {
 	getContractByAddressValidation,
 	getContractTxValidation,
@@ -29,8 +33,13 @@ class TokenController implements Controller {
 			)
 			.get('/holders', getContractTxValidation, this.getTokenHolders)
 			.get('/token-by-wallet-address', this.getTokenDetailsByAddress)
-			.get('/token-transfer', getTokenValidation, this.getTokenTransfer)
-			.get('/curernt-token-price');
+			// .get('/token-transfer', getTokenValidation, this.getTokenTransfer)
+			.get('/curernt-token-price')
+			.get(
+				'/token-transfer/:address',
+				getTxByAddressValidation,
+				this.getTokenTransfer_2,
+			);
 	}
 
 	/**
@@ -156,6 +165,30 @@ class TokenController implements Controller {
 			return setResponse.error(response, tokenByAddress);
 		}
 		return setResponse.success(response, tokenByAddress);
+	};
+
+	private getTokenTransfer_2 = async (
+		request: Request,
+		response: Response,
+	) => {
+		if (!request.params.address) {
+			return setResponse.error(response, {
+				error: true,
+				message: 'Address is required.',
+			});
+		}
+		const data = {
+			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
+			limit: !request.query?.limit ? 10 : Number(request.query.limit),
+			address: <string>request.params.address,
+		};
+
+		const contracts = await tokenService.getTokenTransfer_2(data);
+
+		if (contracts.error) {
+			return setResponse.error(response, contracts);
+		}
+		return setResponse.success(response, contracts);
 	};
 }
 

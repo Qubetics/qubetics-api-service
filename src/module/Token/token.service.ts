@@ -5,6 +5,7 @@ import { convertBigIntToNumber } from '../../helper/common.helper';
 import { Prisma } from '@prisma/client';
 import { off } from 'process';
 import logger from '../../lib/logger';
+import Web3 from 'web3';
 
 class TokenService {
 	/**
@@ -451,6 +452,120 @@ class TokenService {
 
 			const error = err instanceof Error ? err.message : RES_MSG.ERROR;
 			return { error: true, message: error };
+		}
+	}
+
+	async getTokenTransfer_2(data: {
+		page: number;
+		limit: number;
+		address: string;
+	}): Promise<IESResponse> {
+		try {
+			console.log('paylods', data);
+			const tokens: any = await prisma.$queryRaw`
+	        SELECT 
+            t."tokenName" ,
+            t."tokenSymbol",
+            tr.txhash,
+			tr."timestamp",
+			tr."fromAddress",
+            tr.blocknumber,
+			tr."toAddress",
+			-- dl."method",
+            dl.input,
+			tr.status,
+			dl.logs
+            FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON tr."contractAddress"=t."contractAddress"
+			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
+				data.address
+			} OR tr."contractAddress" = ${data.address}
+            ORDER BY 
+			tr.blocknumber	DESC 
+            LIMIT ${data.limit}
+			OFFSET ${data.page * data.limit}
+		  `;
+
+			const total_count: any = await prisma.$queryRaw`
+		  	SELECT COUNT(*)
+			FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON tr."contractAddress"=t."contractAddress"
+			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address}
+		`;
+
+			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
+
+			const tokenTransfers = tokens.map((element: any) => {
+				console.log('element.logs', element.logs);
+				const jsonString = JSON.stringify(element.logs);
+				console.log(jsonString, 'DEMO!');
+
+				const parsedData = JSON.parse(jsonString);
+				console.log(parsedData, 'DEMO@');
+				const fixedJsonString = this.parseAndFixJson(element.logs);
+				console.log('logs', fixedJsonString[0].events);
+				let value = 0;
+				fixedJsonString[0].events.forEach((element: any) => {
+					console.log(element.name, 'Name');
+					console.log(element.type, 'Tyope');
+					console.log(element.value, 'Valye');
+					if (element.name == 'value') {
+						value = element.value;
+						element.value = value;
+					}
+				});
+				return { ...element, value };
+			});
+			console.log('tokenTransfers', tokenTransfers);
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					tokens: convertBigIntToNumber(tokens),
+					total_count: Number(total_count[0].count),
+				},
+			};
+		} catch (err) {
+			logger.error('err in getTokenTransfer_2 : ', err);
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	public parseAndFixJson(input: any) {
+		try {
+			// Check if it's already valid JSON
+			return JSON.parse(input);
+		} catch (error) {
+			console.warn('Invalid JSON detected. Attempting to fix...');
+
+			const fixedJsonString = input
+				.replace(/([{,])(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$3":') // Quote keys
+				.replace(/:\s*([a-zA-Z_][a-zA-Z0-9_]*)\b/g, ': "$1"') // Quote unquoted string values
+				.replace(/0x[a-fA-F0-9]+/g, '"$&"'); // Quote hex values
+			console.log(JSON.parse(fixedJsonString), 'fixedJsonString');
+			try {
+				return JSON.parse(fixedJsonString);
+			} catch (finalError) {
+				console.error('Failed to fix JSON:', finalError);
+				return null; // Return null or handle the error accordingly
+			}
 		}
 	}
 }
