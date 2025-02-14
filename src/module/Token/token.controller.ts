@@ -6,7 +6,7 @@ import { Controller } from '../../interfaces/index';
 import {
 	getTokenValidation,
 	getTokensValidation,
-	getTokenValidationWithAddress,
+	getTxByAddressValidation,
 } from './token.validation';
 import {
 	getContractByAddressValidation,
@@ -37,7 +37,7 @@ class TokenController implements Controller {
 			.get('/curernt-token-price')
 			.get(
 				'/token-transfer/:address',
-				getTokenValidationWithAddress,
+				getTxByAddressValidation,
 				this.getTokenTransfer_2,
 			);
 	}
