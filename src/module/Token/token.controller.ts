@@ -36,7 +36,7 @@ class TokenController implements Controller {
 			// .get('/token-transfer', getTokenValidation, this.getTokenTransfer)
 			.get('/curernt-token-price')
 			.get(
-				'/token-transfer/:address',
+				'/token-transfer',
 				getTxByAddressValidation,
 				this.getTokenTransfer_2,
 			);
@@ -171,7 +171,7 @@ class TokenController implements Controller {
 		request: Request,
 		response: Response,
 	) => {
-		if (!request.params.address) {
+		if (!request.query.address) {
 			return setResponse.error(response, {
 				error: true,
 				message: 'Address is required.',
@@ -180,7 +180,7 @@ class TokenController implements Controller {
 		const data = {
 			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
-			address: <string>request.params.address,
+			address: <string>request.query.address,
 		};
 
 		const contracts = await tokenService.getTokenTransfer_2(data);
