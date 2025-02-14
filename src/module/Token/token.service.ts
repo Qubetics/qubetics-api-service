@@ -484,7 +484,9 @@ class TokenService {
 	        ON tr."contractAddress"=t."contractAddress"
 			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
 				data.address
-			} OR tr."contractAddress" = ${data.address}
+			} OR tr."contractAddress" = ${
+				data.address
+			} AND tr."type" = "CONTRACT_TRANSFER"
             ORDER BY 
 			tr.blocknumber	DESC 
             LIMIT ${data.limit}
@@ -500,7 +502,7 @@ class TokenService {
 	        ON tr.txhash = dl."txHash"
 	        LEFT JOIN "Tokens" t
 	        ON tr."contractAddress"=t."contractAddress"
-			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address}
+			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address} AND tr."type" = "CONTRACT_TRANSFER"
 		`;
 
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
