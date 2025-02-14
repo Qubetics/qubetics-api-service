@@ -534,7 +534,7 @@ class TokenService {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
-					tokens: convertBigIntToNumber(tokens),
+					tokens: convertBigIntToNumber(tokenTransfers),
 					total_count: Number(total_count[0].count),
 				},
 			};
