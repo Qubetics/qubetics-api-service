@@ -461,7 +461,8 @@ class TokenService {
 		address: string;
 	}): Promise<IESResponse> {
 		try {
-			console.log('paylods', data);
+			console.log('paylods12345', data);
+			const transferType = 'CONTRACT_TRANSFER';
 			const tokens: any = await prisma.$queryRaw`
 	        SELECT 
             t."tokenName" ,
@@ -486,7 +487,7 @@ class TokenService {
 				data.address
 			} OR tr."contractAddress" = ${
 				data.address
-			} AND tr."type" = "CONTRACT_TRANSFER"
+			} AND tr."type" = 'CONTRACT_TRANSFER'
             ORDER BY 
 			tr.blocknumber	DESC 
             LIMIT ${data.limit}
@@ -502,7 +503,7 @@ class TokenService {
 	        ON tr.txhash = dl."txHash"
 	        LEFT JOIN "Tokens" t
 	        ON tr."contractAddress"=t."contractAddress"
-			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address} AND tr."type" = "CONTRACT_TRANSFER"
+			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address} AND tr."type" = 'CONTRACT_TRANSFER'
 		`;
 
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
