@@ -472,6 +472,7 @@ class TokenService {
 			tr."fromAddress",
             tr.blocknumber,
 			tr."toAddress",
+			tr."type",
 			-- dl."method",
             dl.input,
 			tr.status,
@@ -483,11 +484,11 @@ class TokenService {
 	        ON tr.txhash = dl."txHash"
 	        LEFT JOIN "Tokens" t
 	        ON tr."contractAddress"=t."contractAddress"
-			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
+			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
 				data.address
 			} OR tr."contractAddress" = ${
 				data.address
-			} AND tr."type" = 'CONTRACT_TRANSFER'
+			}) AND tr."type" = 'CONTRACT_TRANSFER'
             ORDER BY 
 			tr.blocknumber	DESC 
             LIMIT ${data.limit}
@@ -503,30 +504,34 @@ class TokenService {
 	        ON tr.txhash = dl."txHash"
 	        LEFT JOIN "Tokens" t
 	        ON tr."contractAddress"=t."contractAddress"
-			WHERE tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address} AND tr."type" = 'CONTRACT_TRANSFER'
+			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address}) AND tr."type" = 'CONTRACT_TRANSFER'
 		`;
-
+			console.log(':ToKENS', tokens);
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
 
 			const tokenTransfers = tokens.map((element: any) => {
 				console.log('element.logs', element.logs);
-				const jsonString = JSON.stringify(element.logs);
-				console.log(jsonString, 'DEMO!');
-
-				const parsedData = JSON.parse(jsonString);
-				console.log(parsedData, 'DEMO@');
-				const fixedJsonString = this.parseAndFixJson(element.logs);
-				console.log('logs', fixedJsonString[0].events);
 				let value = 0;
-				fixedJsonString[0].events.forEach((element: any) => {
-					console.log(element.name, 'Name');
-					console.log(element.type, 'Tyope');
-					console.log(element.value, 'Valye');
-					if (element.name == 'value') {
-						value = element.value;
-						element.value = value;
-					}
-				});
+				if (element?.logs) {
+					const jsonString = JSON.stringify(element.logs);
+					console.log(jsonString, 'DEMO!');
+
+					const parsedData = JSON.parse(jsonString);
+					console.log(parsedData, 'DEMO@');
+					const fixedJsonString = this.parseAndFixJson(element.logs);
+					console.log('logs', fixedJsonString[0].events);
+
+					fixedJsonString[0].events.forEach((element: any) => {
+						console.log(element.name, 'Name');
+						console.log(element.type, 'Tyope');
+						console.log(element.value, 'Valye');
+						if (element.name == 'value') {
+							value = element.value;
+							element.value = value;
+						}
+					});
+				}
+
 				return { ...element, value };
 			});
 			console.log('tokenTransfers', tokenTransfers);
