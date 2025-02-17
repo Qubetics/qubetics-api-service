@@ -383,7 +383,7 @@ class TokenService {
 					address: data.address,
 				},
 			});
-
+			console.log('holdersCount', holdersCount);
 			if (!holdersData.length) {
 				throw new Error(RES_MSG.NOT_FOUND);
 			}
@@ -468,6 +468,7 @@ class TokenService {
             t."tokenName" ,
             t."tokenSymbol",
             tr.txhash,
+			t."decimal" ,
 			tr."timestamp",
 			tr."fromAddress",
             tr.blocknumber,
