@@ -484,7 +484,7 @@ class TokenService {
             "DecodedLogs" dl
 	        ON tr.txhash = dl."txHash"
 	        LEFT JOIN "Tokens" t
-	        ON tr."contractAddress"=t."contractAddress"
+	        ON dl."contractAddress"=t."contractAddress"
 			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
 				data.address
 			} OR tr."contractAddress" = ${

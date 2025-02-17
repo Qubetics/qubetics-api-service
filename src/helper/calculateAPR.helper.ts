@@ -26,9 +26,12 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			apiRes.get('/cosmos/mint/v1beta1/annual_provisions'),
 		]);
 
-		const validator = validatorResponse?.data?.validators.filter(
+		const activeValidators = validatorResponse?.data?.validators.filter(
 			(item: any) => item.status === CONST_NAME.BOND_STATUS,
 		);
+
+		const validator = validatorResponse?.data?.validators;
+		console.log('Total Validators', validator);
 
 		if (validator?.length === 0) {
 			return false;
