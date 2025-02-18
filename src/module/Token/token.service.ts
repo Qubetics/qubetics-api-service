@@ -459,10 +459,11 @@ class TokenService {
 		page: number;
 		limit: number;
 		address: string;
+		order: string;
 	}): Promise<IESResponse> {
 		try {
-			console.log('paylods12345', data);
-			const transferType = 'CONTRACT_TRANSFER';
+			const parsedLimit = data.limit;
+
 			const tokens: any = await prisma.$queryRaw`
 	        SELECT 
             t."tokenName" ,
@@ -474,7 +475,6 @@ class TokenService {
             tr.blocknumber,
 			tr."toAddress",
 			tr."type",
-			-- dl."method",
             dl.input,
 			tr.status,
 			dl.logs
@@ -497,17 +497,17 @@ class TokenService {
 		  `;
 
 			const total_count: any = await prisma.$queryRaw`
-		  	SELECT COUNT(*)
+		  	SELECT COUNT(tr.id) AS count, MIN(tr.id) AS min_id, MAX(tr.id) AS max_id
 			FROM
             "Transactions" tr
             LEFT JOIN
             "DecodedLogs" dl
 	        ON tr.txhash = dl."txHash"
 	        LEFT JOIN "Tokens" t
-	        ON tr."contractAddress"=t."contractAddress"
+	        ON dl."contractAddress"=t."contractAddress"
 			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address}) AND tr."type" = 'CONTRACT_TRANSFER'
 		`;
-			console.log(':ToKENS', tokens);
+
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
 
 			const tokenTransfers = tokens.map((element: any) => {
@@ -521,7 +521,7 @@ class TokenService {
 					console.log(parsedData, 'DEMO@');
 					const fixedJsonString = this.parseAndFixJson(element?.logs);
 
-					if (fixedJsonString && fixedJsonString[0]?.events) {
+					if (fixedJsonString[0]?.events) {
 						fixedJsonString[0]?.events?.forEach((element: any) => {
 							console.log(element.name, 'Name');
 							console.log(element.type, 'Tyope');
@@ -536,13 +536,71 @@ class TokenService {
 
 				return { ...element, value };
 			});
-			console.log('tokenTransfers', tokenTransfers);
+
+			const totalTransactions = total_count[0]?.count;
+			const minimumId = total_count[0]?.min_id;
+			const maximumId = total_count[0]?.max_id;
+
+			const sortedResults =
+				data?.order === 'asc'
+					? tokenTransfers.reverse()
+					: tokenTransfers;
+
+			const previousCursor =
+				sortedResults[0].id === maximumId || sortedResults.length === 1
+					? null
+					: sortedResults[0].id;
+
+			const nextCursor =
+				(sortedResults.length > 0 &&
+					sortedResults[sortedResults.length - 1].id === minimumId) ||
+				sortedResults.length === 1
+					? null
+					: sortedResults[sortedResults.length - 1]?.id;
+
+			let lastPageResult: any = null;
+			if (totalTransactions && totalTransactions > parsedLimit) {
+				lastPageResult = await prisma.$queryRaw`
+		  	SELECT tr.id
+			FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON dl."contractAddress"=t."contractAddress"
+			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
+				data.address
+			} OR tr."contractAddress" = ${
+				data.address
+			}) AND tr."type" = 'CONTRACT_TRANSFER' AND  tr.id > ${minimumId} 
+			ORDER BY 
+			tr.blocknumber	DESC 
+            LIMIT ${data.limit}
+			OFFSET ${totalTransactions % parsedLimit || parsedLimit}
+		`;
+			}
+			console.log(
+				'Cursors',
+				previousCursor,
+				nextCursor,
+				lastPageResult,
+				Number(totalTransactions),
+			);
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
-					tokens: convertBigIntToNumber(tokenTransfers),
-					total_count: Number(total_count[0].count),
+					tokens: convertBigIntToNumber(sortedResults),
+					total_count: Number(totalTransactions),
+
+					nextCursor: nextCursor,
+					prevCursor: previousCursor === 0 ? 1 : previousCursor,
+					lastPage: lastPageResult
+						? convertBigIntToNumber(
+								lastPageResult[lastPageResult.length - 1].id,
+							)
+						: null,
 				},
 			};
 		} catch (err) {

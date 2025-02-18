@@ -177,13 +177,14 @@ class TokenController implements Controller {
 				message: 'Address is required.',
 			});
 		}
-		const data = {
+		const data: any = {
 			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
 			address: <string>request.query.address,
+			order: <string>request.query?.order ? request.query.order : 'desc',
 		};
 
-		const contracts = await tokenService.getTokenTransfer_2(data);
+		const contracts: any = await tokenService.getTokenTransfer_2(data);
 
 		if (contracts.error) {
 			return setResponse.error(response, contracts);
