@@ -514,23 +514,24 @@ class TokenService {
 				console.log('element.logs', element.logs);
 				let value = 0;
 				if (element?.logs) {
-					const jsonString = JSON.stringify(element.logs);
+					const jsonString = JSON.stringify(element?.logs);
 					console.log(jsonString, 'DEMO!');
 
 					const parsedData = JSON.parse(jsonString);
 					console.log(parsedData, 'DEMO@');
-					const fixedJsonString = this.parseAndFixJson(element.logs);
-					console.log('logs', fixedJsonString[0].events);
+					const fixedJsonString = this.parseAndFixJson(element?.logs);
 
-					fixedJsonString[0].events.forEach((element: any) => {
-						console.log(element.name, 'Name');
-						console.log(element.type, 'Tyope');
-						console.log(element.value, 'Valye');
-						if (element.name == 'value') {
-							value = element.value;
-							element.value = value;
-						}
-					});
+					if (fixedJsonString && fixedJsonString[0]?.events) {
+						fixedJsonString[0]?.events?.forEach((element: any) => {
+							console.log(element.name, 'Name');
+							console.log(element.type, 'Tyope');
+							console.log(element.value, 'Valye');
+							if (element.name == 'value') {
+								value = element.value;
+								element.value = value;
+							}
+						});
+					}
 				}
 
 				return { ...element, value };
