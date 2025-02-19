@@ -530,8 +530,8 @@ class TokenService {
 							console.log(element.type, 'Tyope');
 							console.log(element.value, 'Valye');
 							if (element.name === 'value') {
-								value = element.value;
-								element.value = serializeBigInt(value);
+								value = BigInt(element.value);
+								element.value = serializeBigInt(BigInt(value));
 							}
 						});
 					}
