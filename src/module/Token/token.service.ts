@@ -469,6 +469,7 @@ class TokenService {
 
 			const tokens: any = await prisma.$queryRaw`
 	        SELECT 
+			tr.id,
             t."tokenName" ,
             t."tokenSymbol",
             tr.txhash,
@@ -553,7 +554,7 @@ class TokenService {
 				data?.order === 'asc'
 					? tokenTransfers.reverse()
 					: tokenTransfers;
-
+			console.log('sortedResults', sortedResults);
 			const previousCursor =
 				sortedResults[0].id === maximumId || sortedResults.length === 1
 					? null
@@ -567,7 +568,10 @@ class TokenService {
 					: sortedResults[sortedResults.length - 1]?.id;
 
 			let lastPageResult: any = null;
-			if (totalTransactions && totalTransactions > parsedLimit) {
+			if (
+				Number(totalTransactions) &&
+				Number(totalTransactions) > parsedLimit
+			) {
 				lastPageResult = await prisma.$queryRaw`
 		  	SELECT tr.id
 			FROM
@@ -585,28 +589,20 @@ class TokenService {
 			ORDER BY 
 			tr.blocknumber	DESC 
             LIMIT ${data.limit}
-			OFFSET ${totalTransactions % parsedLimit || parsedLimit}
+			OFFSET ${Number(totalTransactions) % parsedLimit || parsedLimit}
 		`;
 			}
-			console.log(
-				'Cursors',
-				previousCursor,
-				nextCursor,
-				lastPageResult,
-				// Number(totalTransactions),
-			);
+			console.log('Cursors', previousCursor, nextCursor, lastPageResult);
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
 					tokens: convertBigIntToNumber(sortedResults),
-					total_count: serializeBigInt(totalTransactions),
+					total_count: Number(totalTransactions),
 					nextCursor: nextCursor,
 					prevCursor: previousCursor === 0 ? 1 : previousCursor,
 					lastPage: lastPageResult
-						? convertBigIntToNumber(
-								lastPageResult[lastPageResult.length - 1].id,
-							)
+						? lastPageResult[lastPageResult.length - 1].id
 						: null,
 				},
 			};
