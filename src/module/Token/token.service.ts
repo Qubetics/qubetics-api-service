@@ -1,7 +1,10 @@
 import prisma from '../../lib/db';
 import { RES_MSG } from '../../constant/response';
 import { HolderData, IESResponse } from '../../interfaces/index';
-import { convertBigIntToNumber } from '../../helper/common.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 import { Prisma } from '@prisma/client';
 import { off } from 'process';
 import logger from '../../lib/logger';
@@ -585,15 +588,14 @@ class TokenService {
 				previousCursor,
 				nextCursor,
 				lastPageResult,
-				Number(totalTransactions),
+				// Number(totalTransactions),
 			);
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
 					tokens: convertBigIntToNumber(sortedResults),
-					total_count: Number(totalTransactions),
-
+					total_count: serializeBigInt(totalTransactions),
 					nextCursor: nextCursor,
 					prevCursor: previousCursor === 0 ? 1 : previousCursor,
 					lastPage: lastPageResult
