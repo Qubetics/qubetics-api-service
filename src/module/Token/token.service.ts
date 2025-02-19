@@ -525,13 +525,16 @@ class TokenService {
 					const fixedJsonString = this.parseAndFixJson(element?.logs);
 
 					if (fixedJsonString[0]?.events) {
-						fixedJsonString[0]?.events?.forEach((element: any) => {
-							console.log(element.name, 'Name');
-							console.log(element.type, 'Tyope');
-							console.log(element.value, 'Valye');
-							if (element.name === 'value') {
-								value = BigInt(element.value);
-								element.value = serializeBigInt(BigInt(value));
+						fixedJsonString[0]?.events?.forEach((event: any) => {
+							console.log(event.name, 'Name');
+							console.log(event.type, 'Tyope');
+							console.log(event.value, 'Valye');
+							if (
+								event.name === 'value' &&
+								event.value !== undefined
+							) {
+								value = BigInt(event.value);
+								event.value = value.toString();
 							}
 						});
 					}
@@ -539,6 +542,8 @@ class TokenService {
 
 				return { ...element, value };
 			});
+
+			console.log('It is Here');
 
 			const totalTransactions = total_count[0]?.count;
 			const minimumId = total_count[0]?.min_id;
