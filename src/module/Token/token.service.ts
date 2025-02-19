@@ -515,7 +515,7 @@ class TokenService {
 
 			const tokenTransfers = tokens.map((element: any) => {
 				console.log('element.logs', element.logs);
-				let value = 0;
+				let value: any;
 				if (element?.logs) {
 					const jsonString = JSON.stringify(element?.logs);
 					console.log(jsonString, 'DEMO!');
@@ -529,9 +529,9 @@ class TokenService {
 							console.log(element.name, 'Name');
 							console.log(element.type, 'Tyope');
 							console.log(element.value, 'Valye');
-							if (element.name == 'value') {
+							if (element.name === 'value') {
 								value = element.value;
-								element.value = value;
+								element.value = serializeBigInt(value);
 							}
 						});
 					}
