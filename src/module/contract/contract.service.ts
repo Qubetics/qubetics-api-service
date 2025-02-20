@@ -979,10 +979,6 @@ class ContractService {
 				take: data.limit,
 			});
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
-			// const contractCount = await prisma.contracts.count();
-
-			// const sortedResults =
-			// data.order === 'asc' ? contracts.reverse() : contracts;
 
 			const contractCount = await prisma.contracts.aggregate({
 				_count: { id: true },
@@ -1012,14 +1008,14 @@ class ContractService {
 				take: (totalContracts % data.limit) + 1 || data.limit + 1,
 			});
 
-			const contractData = contracts.map((contract) => ({
-				...contract,
-				tokenName: contract.contractName, // Alias for "contractName"
-				contractname: contract.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
-				verificationType:
-					contract.ContractVerification?.verificationType,
-				iconUrl: contract.ContractVerification?.iconUrl,
-			}));
+			// const contractData = contracts.map((contract) => ({
+			// 	...contract,
+			// 	tokenName: contract.contractName, // Alias for "contractName"
+			// 	contractname: contract.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
+			// 	verificationType:
+			// 		contract.ContractVerification?.verificationType,
+			// 	iconUrl: contract.ContractVerification?.iconUrl,
+			// }));
 
 			const previousCursor =
 				contracts[0].id === maximumId
@@ -1068,16 +1064,19 @@ class ContractService {
 					? maxId - offset
 					: getLastId[getLastId.length - 1].id;
 
-			// const contractData = await Promise.all(
-			// 	sortedResults.map(async (item: any) => ({
-			// 		...item,
-			// 		tokenName: item.contractName, // Alias for "contractName"
-			// 		contractname: item.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
-			// 		verificationType:
-			// 			item.ContractVerification?.verificationType,
-			// 		iconUrl: item.ContractVerification?.iconUrl,
-			// 	})),
-			// );
+			const sortedResults =
+				data.order === 'asc' ? contracts.reverse() : contracts;
+
+			const contractData = await Promise.all(
+				sortedResults.map(async (item: any) => ({
+					...item,
+					tokenName: item.contractName, // Alias for "contractName"
+					contractname: item.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
+					verificationType:
+						item.ContractVerification?.verificationType,
+					iconUrl: item.ContractVerification?.iconUrl,
+				})),
+			);
 
 			return {
 				error: false,
