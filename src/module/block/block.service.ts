@@ -74,18 +74,25 @@ class BlockService {
 			}
 
 			zerothElement = serializeBigInt(blocks[0].blocknumber);
+			console.log(zerothElement, 'zerothElement');
 			const nextCursor =
 				blocks.length === data.limit && isLimitFullFilled
 					? convertBigIntToNumber(blocks)[blocks.length - 1]
 							.blocknumber
 					: null;
-			const prevCursor = isFirstPage
+			// const prevCursor = isFirstPage
+			// 	? null
+			// 	: data.page && blocks.length > 0
+			// 		? data.order === 'asc'
+			// 			? zerothElement - (data.limit + 1)
+			// 			: zerothElement + (data.limit + 1)
+			// 		: null;
+
+			const prevCursor: number = isFirstPage
 				? null
-				: data.page && blocks.length > 0
-					? data.order === 'asc'
-						? zerothElement - (data.limit + 1)
-						: zerothElement + (data.limit + 1)
-					: null;
+				: data.order === 'asc'
+					? serializeBigInt(blocks[blocks.length - 1].blocknumber)
+					: serializeBigInt(blocks[0].blocknumber);
 
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
 			let nextCursorValue: number | null = nextCursor;
@@ -128,11 +135,7 @@ class BlockService {
 					blockCount,
 					blocks: convertBigIntToNumber(blocks),
 					nextCursor: nextCursorValue,
-					prevCursor: prevCursor === 0 ? 1 : prevCursor,
-					// lastPage:
-					// 	data.order === 'asc'
-					// 		? blockCount - data.limit
-					// 		: data.limit + 1,
+					prevCursor: prevCursor,
 					lastPage,
 				},
 			};
