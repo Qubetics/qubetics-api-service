@@ -978,9 +978,21 @@ class ContractService {
 						},
 				take: data.limit,
 			});
-			if (!contracts?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
-			const contractCount = await prisma.contracts.count();
+			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
+			// const contractCount = await prisma.contracts.count();
 
+			// const sortedResults =
+			// data.order === 'asc' ? contracts.reverse() : contracts;
+
+			const contractCount = await prisma.contracts.aggregate({
+				_count: { id: true },
+				_min: { id: true },
+				_max: { id: true },
+			});
+
+			const totalContracts = contractCount._count.id;
+			const minimumId = contractCount._min.id;
+			const maximumId = contractCount._max.id;
 			if (data.order === 'asc') {
 				const result = await prisma.contracts.aggregate({
 					_max: {
@@ -997,10 +1009,10 @@ class ContractService {
 				orderBy: {
 					id: 'asc',
 				},
-				take: (contractCount % data.limit) + 1 || data.limit + 1,
+				take: (totalContracts % data.limit) + 1 || data.limit + 1,
 			});
 
-			contracts = contracts.map((contract) => ({
+			const contractData = contracts.map((contract) => ({
 				...contract,
 				tokenName: contract.contractName, // Alias for "contractName"
 				contractname: contract.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
@@ -1009,32 +1021,23 @@ class ContractService {
 				iconUrl: contract.ContractVerification?.iconUrl,
 			}));
 
+			const previousCursor =
+				contracts[0].id === maximumId
+					? null
+					: data.order === 'asc'
+						? contracts[contracts.length - 1].id
+						: contracts[0].id;
+
 			const nextCursor =
-				contracts.length === data.limit && isLimitFullFilled
-					? convertBigIntToNumber(contracts)[contracts.length - 1].id
-					: null;
-			let nextCursorValue: number | null = nextCursor;
-			if (data.order === 'asc') {
-				if (maxId === data.page) {
-					nextCursorValue = null;
-				}
-			} else if (data.order === 'desc') {
-				if (contractCount === nextCursor || nextCursor === 1) {
-					nextCursorValue = null;
-				}
-			}
-			const prevCursor = isFirstPage
-				? null
-				: data.page && contracts.length > 0
-					? data.order === 'asc'
-						? convertBigIntToNumber(contracts)[0].id -
-							(data.limit + 1)
-						: convertBigIntToNumber(contracts)[0].id +
-							(data.limit + 1)
-					: null;
+				contracts.length > 0 &&
+				contracts[contracts.length - 1].id === minimumId
+					? null
+					: data.order === 'asc'
+						? contracts[0].id
+						: contracts[contracts.length - 1].id;
 
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
-			console.log('nextCursorValue', nextCursorValue, nextCursor);
+			console.log('nextCursorValue', nextCursor, previousCursor);
 
 			const groupByResult = await prisma.contracts.groupBy({
 				by: ['contractType'], // Group by the 'type' column
@@ -1059,20 +1062,31 @@ class ContractService {
 				UNKNOWN: unknownCount,
 			} = counts;
 
-			const offset = contractCount % data.limit || data.limit;
+			const offset = totalContracts % data.limit || data.limit;
 			const lastPage =
 				data.order === 'asc'
 					? maxId - offset
 					: getLastId[getLastId.length - 1].id;
 
+			// const contractData = await Promise.all(
+			// 	sortedResults.map(async (item: any) => ({
+			// 		...item,
+			// 		tokenName: item.contractName, // Alias for "contractName"
+			// 		contractname: item.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
+			// 		verificationType:
+			// 			item.ContractVerification?.verificationType,
+			// 		iconUrl: item.ContractVerification?.iconUrl,
+			// 	})),
+			// );
+
 			return {
 				error: false,
 				message: RES_MSG.ALL_BLOCK_FETCH,
 				data: {
-					count: contractCount,
-					contracts: convertBigIntToNumber(contracts),
-					nextCursor: nextCursorValue,
-					prevCursor: prevCursor === 0 ? 1 : prevCursor,
+					count: totalContracts,
+					contracts: convertBigIntToNumber(contractData),
+					nextCursor: nextCursor,
+					prevCursor: previousCursor === 0 ? 1 : previousCursor,
 					lastPage: lastPage,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
 					erc721Count: erc721Count ? Number(erc721Count) : 0,
@@ -1121,7 +1135,7 @@ class ContractService {
 					},
 					{
 						Tokens: {
-							is: {
+							some: {
 								tokenName: {
 									contains: contractName,
 									mode: 'insensitive',
@@ -1139,7 +1153,7 @@ class ContractService {
 					},
 					{
 						ContractVerification: {
-							is: {
+							some: {
 								contractname: {
 									contains: contractName,
 									mode: 'insensitive',
@@ -1156,6 +1170,11 @@ class ContractService {
 
 			const { ...counterFilter } = searchFilter;
 
+			console.log(counterFilter, 'counterFilter');
+			let orderBy: string = 'desc';
+			if (data?.order) {
+				orderBy = data?.order.toString();
+			}
 			if (data.page && data.page > 1) {
 				searchFilter.id =
 					data.order === 'asc'
@@ -1204,10 +1223,9 @@ class ContractService {
 					// skip: page ? 1 : 0, // Skip the cursor for the next page
 					// cursor: page ? { id: page } : undefined, // Use the cursor for pagination
 					orderBy: {
-						id:
-							data?.order === 'asc' || data?.order === 'desc'
-								? data?.order
-								: ('desc' as const),
+						id: (data?.order === 'asc' || data?.order === 'desc'
+							? data.order
+							: 'desc') as 'asc' | 'desc',
 					},
 				}),
 				prisma.contracts.aggregate({
@@ -1252,7 +1270,7 @@ class ContractService {
 					where: lastPageFilter,
 					take: totalContracts % parsedLimit || parsedLimit,
 				});
-				console.log('lastPageResult1	', lastPageResult);
+				console.log('lastPageResult1', lastPageResult);
 			}
 
 			const previousCursor =
