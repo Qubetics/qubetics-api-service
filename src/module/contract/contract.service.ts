@@ -1134,7 +1134,7 @@ class ContractService {
 					},
 					{
 						Tokens: {
-							some: {
+							is: {
 								tokenName: {
 									contains: contractName,
 									mode: 'insensitive',
@@ -1152,7 +1152,7 @@ class ContractService {
 					},
 					{
 						ContractVerification: {
-							some: {
+							is: {
 								contractname: {
 									contains: contractName,
 									mode: 'insensitive',
