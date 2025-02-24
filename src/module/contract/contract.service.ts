@@ -67,7 +67,7 @@ class ContractService {
 				error: false,
 				message: RES_MSG.CONTRACT,
 				data: {
-					count: Number(contractCount),
+					count: contractCount,
 					contracts: convertBigIntToNumber(contracts),
 					nextCursor,
 					prevCursor,
@@ -1377,16 +1377,16 @@ class ContractService {
 			}
 			if (data.page && data.page > 1) {
 				if (data.order === 'asc') {
-					idFilter = ` AND id > ${data.page}`;
+					idFilter = ` AND "c"."id" > ${data.page}`;
 				} else {
-					idFilter = ` AND id < ${data.page}`;
+					idFilter = ` AND "c"."id" < ${data.page}`;
 				}
 			}
 
 			// Perform the query with cursor-based pagination
 
 			const whereClause = `${searchFilter} ${idFilter}`;
-			const orderLimitClause = `ORDER BY "c"."id" ${orderBy}
+			const orderLimitClause = ` ORDER BY "c"."id" ${orderBy}
 			LIMIT ${parsedLimit}`;
 			const queryContracts =
 				selectContracts + joinFrom + whereClause + orderLimitClause;
