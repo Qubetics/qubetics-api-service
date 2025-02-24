@@ -67,7 +67,7 @@ class ContractService {
 				error: false,
 				message: RES_MSG.CONTRACT,
 				data: {
-					count: contractCount,
+					count: Number(contractCount),
 					contracts: convertBigIntToNumber(contracts),
 					nextCursor,
 					prevCursor,
@@ -1107,7 +1107,7 @@ class ContractService {
 		}
 	}
 
-	async getContractsTokens(data: {
+	async getContractsTokens_2(data: {
 		page: number;
 		limit: number;
 		order: string;
@@ -1134,7 +1134,7 @@ class ContractService {
 					},
 					{
 						Tokens: {
-							is: {
+							some: {
 								tokenName: {
 									contains: contractName,
 									mode: 'insensitive',
@@ -1167,7 +1167,8 @@ class ContractService {
 				],
 			};
 
-			const { ...counterFilter } = searchFilter;
+			// const { ...counterFilter } = searchFilter;
+			const counterFilter = { ...searchFilter };
 
 			console.log(counterFilter, 'counterFilter');
 			let orderBy: string = 'desc';
@@ -1183,7 +1184,7 @@ class ContractService {
 
 			// Perform the query with cursor-based pagination
 			console.log('searchFilter', searchFilter);
-			const [results, resultCount] = await Promise.all([
+			const results: any = await Promise.all([
 				prisma.contracts.findMany({
 					where: searchFilter,
 					select: {
@@ -1227,13 +1228,18 @@ class ContractService {
 							: 'desc') as 'asc' | 'desc',
 					},
 				}),
-				prisma.contracts.aggregate({
-					where: counterFilter,
-					_count: { id: true },
-					_min: { id: true },
-					_max: { id: true },
-				}),
 			]);
+
+			const contractIdList = results.map((c: any) => c?.contract.id); // Extract IDs
+			console.log('contractIdList', contractIdList);
+
+			const resultCount = await prisma.contracts.aggregate({
+				// where: counterFilter,
+				where: { id: { in: contractIdList } }, // Now filtering using IDs
+				_count: { id: true },
+				_min: { id: true },
+				_max: { id: true },
+			});
 
 			console.log('getContractsTokens Response', results, resultCount);
 
@@ -1309,6 +1315,163 @@ class ContractService {
 					tokenName: item?.Tokens?.tokenName,
 					tokenSymbol: item?.Tokens?.tokenSymbol,
 					contractAddress: item?.Tokens?.contractAddress,
+				})),
+			);
+
+			console.log('contractDataXX', contractData);
+			return {
+				error: false,
+				message: RES_MSG.CONTRACT,
+				data: {
+					contracts: contractData
+						? convertBigIntToNumber(contractData)
+						: [],
+					contractCount: totalContracts || 0,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
+					count: count ? Number(count) : 0,
+					nextCursor: nextCursor,
+					prevCursor: previousCursor === 0 ? 1 : previousCursor,
+					lastPage: lastPageResult
+						? lastPageResult[lastPageResult.length - 1].id
+						: null,
+				},
+			};
+		} catch (err) {
+			logger.error('Error Log:: getContractsTokens Error', err);
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async getContractsTokens(data: {
+		page: number;
+		limit: number;
+		order: string;
+		contractName: string;
+	}): Promise<any> {
+		const { contractName, limit, page, order } = data;
+		// Validate limit
+		const parsedLimit = limit;
+
+		try {
+			let selectContracts =
+				'SELECT "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply","t"."type", "t"."tokenName", "t"."tokenSymbol", "t"."contractAddress" ';
+			let selectContractsForCount =
+				' SELECT COUNT(c.id) AS count_id, MIN(c.id) AS min_id, MAX(c.id) AS max_id ';
+
+			let joinFrom =
+				'FROM "Contracts" AS "c" LEFT JOIN "ContractVerification" AS "cv" ON "cv"."contractAddress" = "c"."address" LEFT JOIN "Tokens" AS "t" ON "t"."contractAddress" = "c"."address" ';
+
+			let idFilter = '';
+			let searchFilter = `
+			    WHERE ("c"."contractName" ILIKE '%${contractName}%' OR "c"."address" ILIKE '%${contractName}%')
+			    OR ("t"."tokenName" ILIKE '%${contractName}%' OR "t"."contractAddress" ILIKE '%${contractName}%' OR "t"."tokenSymbol" ILIKE '%${contractName}%')
+			    OR ("cv"."contractname" ILIKE '%${contractName}%' OR "cv"."contractAddress" ILIKE '%${contractName}%')`;
+
+			let orderBy: string = 'desc';
+			if (data?.order) {
+				orderBy = data?.order.toString();
+			}
+			if (data.page && data.page > 1) {
+				if (data.order === 'asc') {
+					idFilter = ` AND id > ${data.page}`;
+				} else {
+					idFilter = ` AND id < ${data.page}`;
+				}
+			}
+
+			// Perform the query with cursor-based pagination
+
+			const whereClause = `${searchFilter} ${idFilter}`;
+			const orderLimitClause = `ORDER BY "c"."id" ${orderBy}
+			LIMIT ${parsedLimit}`;
+			const queryContracts =
+				selectContracts + joinFrom + whereClause + orderLimitClause;
+			const resultCountQuery =
+				selectContractsForCount + joinFrom + whereClause;
+			console.log('queryContracts', queryContracts);
+			console.log('resultCountQuery', resultCountQuery);
+
+			const results: any = await prisma.$queryRawUnsafe(queryContracts);
+			const resultCount: any =
+				await prisma.$queryRawUnsafe(resultCountQuery);
+
+			console.log('getContractsTokens Response', results, resultCount);
+
+			if (!results.length) {
+				return {
+					data: {
+						message: RES_MSG.DATA_NOT_FOUND,
+						error: true,
+					},
+				};
+			}
+			const sortedResults =
+				data.order === 'asc' ? results.reverse() : results;
+
+			// Determine the first and last page from the search results
+			// const firstContract = results[0].id || null;
+			// const lastContract = results[results.length - 1] || null;
+
+			const totalContracts = Number(resultCount[0].count_id);
+			const minimumId = resultCount[0].min_id;
+			const maximumId = resultCount[0].max_id;
+
+			// const lastPageFilter = { ...counterFilter };
+
+			const lastPageFilter = { gt: minimumId };
+			let lastPageResult: any;
+			// if (totalContracts && totalContracts > parsedLimit) {
+			// 	console.log('lastPageResult');
+			// 	lastPageResult = await prisma.contracts.findMany({
+			// 		select: {
+			// 			id: true,
+			// 		},
+			// 		where: lastPageFilter,
+			// 		take: totalContracts % parsedLimit || parsedLimit,
+			// 	});
+			// 	console.log('lastPageResult1', lastPageResult);
+			// }
+
+			const previousCursor =
+				results[0].id === maximumId ? null : results[0].id;
+
+			const nextCursor =
+				results.length > 0 &&
+				results[results.length - 1].id === minimumId
+					? null
+					: results[results.length - 1]?.id;
+
+			const getContractsCount: any = await this.getContractsCount();
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count,
+			} = getContractsCount.counts;
+			console.log('sortedResults', sortedResults);
+
+			const contractData = await Promise.all(
+				sortedResults.map(async (item: any) => ({
+					...item,
+					transaction_count: await this.getContractTxCount(
+						item?.address,
+					),
+					contractname: item?.contractname || '',
+					verificationType: item?.verificationType || 0,
+					iconUrl: item?.iconUrl || '',
+					creator: item?.creator,
+					decimal: item?.decimal,
+					totalSupply: item?.totalSupply,
+					type: item?.type,
+					tokenName: item?.tokenName,
+					tokenSymbol: item?.tokenSymbol,
+					contractAddress: item?.contractAddress,
 				})),
 			);
 

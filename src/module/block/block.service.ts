@@ -44,15 +44,6 @@ class BlockService {
 
 			// check if limit is fullfilled with current block range
 			if (blocks.length < data.limit) {
-				// const tempBlocks = await prisma.blocks.findMany({
-				// 	orderBy: {
-				// 		blocknumber: 'asc',
-				// 	},
-				// 	where: { blocknumber: { gt: data.page } },
-				// 	take: data.limit - blocks.length,
-				// });
-
-				// blocks = [...tempBlocks.reverse(), ...blocks];
 				isLimitFullFilled = false;
 			}
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
@@ -61,9 +52,6 @@ class BlockService {
 				REDIS_KEY.BLOCKS_COUNT,
 			);
 
-			// if (!blockCount) {
-			// 	blockCount = await prisma.blocks.count();
-			// }
 			if (!blockCount) {
 				const result = await prisma.blocks.aggregate({
 					_count: {
@@ -80,13 +68,6 @@ class BlockService {
 					? convertBigIntToNumber(blocks)[blocks.length - 1]
 							.blocknumber
 					: null;
-			// const prevCursor = isFirstPage
-			// 	? null
-			// 	: data.page && blocks.length > 0
-			// 		? data.order === 'asc'
-			// 			? zerothElement - (data.limit + 1)
-			// 			: zerothElement + (data.limit + 1)
-			// 		: null;
 
 			const prevCursor: number = isFirstPage
 				? null
