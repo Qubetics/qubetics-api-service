@@ -1368,9 +1368,9 @@ class ContractService {
 
 			let idFilter = '';
 			let searchFilter = `
-			    WHERE ("c"."contractName" ILIKE '%${contractName}%' OR "c"."address" ILIKE '%${contractName}%')
+			    WHERE (("c"."contractName" ILIKE '%${contractName}%' OR "c"."address" ILIKE '%${contractName}%')
 			    OR ("t"."tokenName" ILIKE '%${contractName}%' OR "t"."contractAddress" ILIKE '%${contractName}%' OR "t"."tokenSymbol" ILIKE '%${contractName}%')
-			    OR ("cv"."contractname" ILIKE '%${contractName}%' OR "cv"."contractAddress" ILIKE '%${contractName}%')`;
+			    OR ("cv"."contractname" ILIKE '%${contractName}%' OR "cv"."contractAddress" ILIKE '%${contractName}%'))`;
 
 			let orderBy: string = 'desc';
 			if (data?.order) {
@@ -1384,9 +1384,13 @@ class ContractService {
 				}
 			}
 
+			console.log('idFilter', idFilter);
+
 			// Perform the query with cursor-based pagination
 
 			const whereClause = `${searchFilter} ${idFilter}`;
+			console.log('whereClause', whereClause);
+
 			const orderLimitClause = ` ORDER BY "c"."id" ${orderBy}
 			LIMIT ${parsedLimit}`;
 			const queryContracts =
