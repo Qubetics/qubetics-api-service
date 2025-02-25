@@ -61,6 +61,8 @@ export const getBlocksValidation = (
 
 				if (value === 'desc' || value === 'asc') {
 					return value;
+				} else if (value === 'undefined') {
+					return 'desc';
 				}
 				return helpers.error('custom.order');
 			})
@@ -74,6 +76,8 @@ export const getBlocksValidation = (
 
 				if (value === 'newest' || value === 'oldest') {
 					return value;
+				} else if (value !== 'newest' && value !== 'oldest') {
+					return 'newest';
 				}
 				return helpers.error('custom.order');
 			})
