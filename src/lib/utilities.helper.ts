@@ -346,7 +346,7 @@ export function cursorPagination(
 	// 	: orderBy === 'asc' && getFilter === 'newest'
 	// 		? result.reverse()
 	// 		:
-	let sortedResults = { ...result };
+	let sortedResults = result;
 	if (
 		(orderBy === 'desc' && getFilter === 'oldest') ||
 		(orderBy === 'asc' && getFilter === 'newest') ||
