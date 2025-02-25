@@ -1053,8 +1053,8 @@ class ContractService {
 					? maximumId - offset
 					: getLastId[getLastId.length - 1].id;
 
-			const sortedResults =
-				data.order === 'asc' ? contracts.reverse() : contracts;
+			// const sortedResults =
+			// 	data.order === 'asc' ? contracts.reverse() : contracts;
 			const cursorPages = cursorPagination(
 				contracts,
 				data.order,
@@ -1063,6 +1063,10 @@ class ContractService {
 				'id',
 				totalContracts,
 			);
+
+			const sortedResults = cursorPages?.sortedResults
+				? cursorPages?.sortedResults
+				: contracts;
 
 			const contractData = await Promise.all(
 				sortedResults.map(async (item: any) => ({

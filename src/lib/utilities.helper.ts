@@ -340,19 +340,24 @@ export function cursorPagination(
 	if (filter) {
 		getFilter = filter;
 	}
-	let sortedResults = result;
+
 	// orderBy === 'desc' && getFilter === 'oldest'
 	// 	? result.reverse()
 	// 	: orderBy === 'asc' && getFilter === 'newest'
 	// 		? result.reverse()
 	// 		:
-
-	if (orderBy === 'desc' && getFilter === 'oldest') {
+	let sortedResults = { ...result };
+	if (
+		(orderBy === 'desc' && getFilter === 'oldest') ||
+		(orderBy === 'asc' && getFilter === 'newest') ||
+		orderBy === 'asc'
+	) {
+		console.log('Will reverse here');
 		sortedResults = result.reverse();
-	} else if (orderBy === 'asc' && getFilter === 'newest') {
-		sortedResults = result.reverse();
+		// sortedResults = [...result].reverse();
 	}
-	console.log('SORTED reSULT', sortedResults.length);
+
+	console.log('SORTED reSULT', sortedResults);
 	/** to get the next page :  get the last element of the result */
 	const nextCursor = sortedResults
 		? sortedResults[sortedResults.length - 1][uniqueParam]
