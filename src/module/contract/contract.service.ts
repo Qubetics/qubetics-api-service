@@ -1400,7 +1400,7 @@ class ContractService {
 			const queryContracts =
 				selectContracts + joinFrom + whereClause + orderLimitClause;
 			const resultCountQuery =
-				selectContractsForCount + joinFrom + whereClause;
+				selectContractsForCount + joinFrom + searchFilter;
 			console.log('queryContracts', queryContracts);
 
 			const results: any = await prisma.$queryRawUnsafe(queryContracts);
