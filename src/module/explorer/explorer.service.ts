@@ -776,7 +776,7 @@ class ExplorerService {
 			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
 		}
 	}
-	
+
 	async getTopValidator(): Promise<IESResponse> {
 		try {
 			// Try to get the cached result from Redis first
@@ -1098,7 +1098,7 @@ class ExplorerService {
 		}
 	};
 
-	async getCoinPriceHistory (payloads: {
+	async getCoinPriceHistory(payloads: {
 		time: string;
 		interval: number;
 	}): Promise<IGraphResponse> {
@@ -1120,7 +1120,7 @@ class ExplorerService {
 
 			let _slice: any[] = coinPriceStats[key];
 
-			if (!!_slice) {	
+			if (!!_slice) {
 				_slice = _slice.slice(Math.max(_slice.length - len, 0));
 
 				return {
@@ -1135,13 +1135,13 @@ class ExplorerService {
 
 			return {
 				error: false,
-				message: RES_MSG.DATA_NOT_FOUND, 
+				message: RES_MSG.DATA_NOT_FOUND,
 			};
 		} catch (err) {
 			logger.error('Error in code', err);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
-}	
+}
 
 export default new ExplorerService();

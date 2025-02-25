@@ -97,7 +97,7 @@ class ExplorerController implements Controller {
 		}
 		return setResponse.success(response, dashboard);
 	};
-	
+
 	private topValidator = async (request: Request, response: Response) => {
 		const dashboard = await ExplorerService.getTopValidator();
 
@@ -223,8 +223,6 @@ class ExplorerController implements Controller {
 		return setResponse.success(response, res);
 	};
 
-
-
 	private getTxFeeSum = async (request: Request, response: Response) => {
 		const data = {
 			interval: !request.query?.interval
@@ -267,9 +265,8 @@ class ExplorerController implements Controller {
 			return setResponse.error(response, tokenPriceRes);
 		}
 		return setResponse.success(response, tokenPriceRes);
-	};	
-	
-	
+	};
+
 	private getCoinPriceGraph = async (
 		request: Request,
 		response: Response,
