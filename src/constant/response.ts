@@ -192,6 +192,7 @@ export const REDIS_KEY = {
 	CONTRACT_DEPLOYMENT_HISTORY: 'ContractDeploymentHistory',
 	STAST_GENERATED: 'StatsGenerated',
 	TX_FEE_HISTORY: 'TxFeeHistory',
+	COIN_PRICE_GRAPH: 'CoinPriceGraph',
 };
 
 export const QUEUE_NAME = {
