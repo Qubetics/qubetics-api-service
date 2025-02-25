@@ -57,7 +57,7 @@ export const getBlocksValidation = (
 		order: Joi.string()
 			.optional()
 			.custom((value, helpers) => {
-				console.log(value !== 'dsec' || value !== 'asc');
+				console.log(value !== 'desc' || value !== 'asc');
 
 				if (value === 'desc' || value === 'asc') {
 					return value;
@@ -65,7 +65,20 @@ export const getBlocksValidation = (
 				return helpers.error('custom.order');
 			})
 			.messages({
-				'custom.order': 'Order must be dsec or asc.',
+				'custom.order': 'Order must be desc or asc.',
+			}),
+		filterBy: Joi.string()
+			.optional()
+			.custom((value, helpers) => {
+				console.log(value !== 'newest' || value !== 'oldest');
+
+				if (value === 'newest' || value === 'oldest') {
+					return value;
+				}
+				return helpers.error('custom.order');
+			})
+			.messages({
+				'custom.order': 'Filter must be newest or oldest.',
 			}),
 	});
 

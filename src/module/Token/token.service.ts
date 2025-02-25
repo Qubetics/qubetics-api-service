@@ -466,6 +466,7 @@ class TokenService {
 	}): Promise<IESResponse> {
 		try {
 			const parsedLimit = data.limit;
+			data.address = data.address.trim();
 
 			const tokens: any = await prisma.$queryRaw`
 	        SELECT 

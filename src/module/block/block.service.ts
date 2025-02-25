@@ -14,9 +14,10 @@ import { RabbitMqService, RedisService } from '../../service/index';
 import prisma from '../../lib/db';
 import web3Helper from '../../helper/web3.helper';
 import logger from '../../lib/logger';
+import { cursorPagination } from '../../lib/utilities.helper';
 
 class BlockService {
-	async getAllLatestBlock(data: {
+	async getAllLatestBlock_1(data: {
 		page: number;
 		limit: number;
 		order: any;
@@ -423,6 +424,155 @@ class BlockService {
 				message: RES_MSG.BLOCK_AVG_SUCCESS,
 				data: { avgTime: avgTime || environment?.averageBlockTime },
 			};
+		}
+	}
+
+	async getAllLatestBlock(data: {
+		page: number;
+		limit: number;
+		order: any;
+		filterBy: string;
+	}): Promise<IESResponse> {
+		try {
+			let isLimitFullFilled = true;
+			let maxId = 0;
+			let minId: any = 0;
+			let zerothElement = 0;
+			const isFirstPage = data.page === 1;
+			let blocks = await prisma.blocks.findMany({
+				orderBy: {
+					blocknumber: data.order,
+				},
+				// orderBy: {
+				// 	blocknumber:
+				// 		data.filterBy === 'newest' && data.order === 'desc'
+				// 			? 'asc'
+				// 			: 'desc',
+				// },
+				where: isFirstPage
+					? {}
+					: {
+							blocknumber:
+								data.order === 'asc'
+									? { gt: data.page }
+									: { lt: data.page },
+						},
+				take: data.limit,
+			});
+
+			// check if limit is fullfilled with current block range
+			if (blocks.length < data.limit) {
+				isLimitFullFilled = false;
+			}
+			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+
+			let blockCount = await RedisService.getString(
+				REDIS_KEY.BLOCKS_COUNT,
+			);
+
+			if (!blockCount) {
+				const result = await prisma.blocks.aggregate({
+					_count: {
+						blocknumber: true,
+					},
+				});
+				blockCount = result._count.blocknumber;
+			}
+
+			const blockCountData = await prisma.blocks.aggregate({
+				// _count: { id: true },
+				_min: { blocknumber: true },
+				_max: { blocknumber: true },
+			});
+
+			// blockCount = blockCountData?._count.id;
+			const minimumId: number = Number(blockCountData?._min.blocknumber);
+			const maximumId: number = Number(blockCountData?._max.blocknumber);
+
+			console.log('------blockCountData----------', blockCountData);
+
+			zerothElement = serializeBigInt(blocks[0].blocknumber);
+			console.log(zerothElement, 'zerothElement');
+
+			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
+
+			const lastPageResult = await prisma.blocks.findMany({
+				select: {
+					blocknumber: true,
+				},
+				orderBy: {
+					blocknumber:
+						data.filterBy === 'newest' && data.order === 'desc'
+							? 'asc'
+							: 'desc',
+				},
+				where: {
+					blocknumber:
+						data.order === 'asc'
+							? { lt: maximumId }
+							: { gt: minimumId },
+				},
+				take: blockCount % data.limit || data.limit,
+			});
+			console.log('lastPageResult1', lastPageResult);
+
+			const offset: number = blockCount % data.limit || data.limit;
+
+			// const lastPage =
+			// 	data.order === 'asc'
+			// 		? maximumId - offset
+			// 		: serializeBigInt(
+			// 				lastPageResult[lastPageResult.length - 1]
+			// 					.blocknumber,
+			// 			);
+			const lastPage = serializeBigInt(
+				lastPageResult[lastPageResult.length - 1].blocknumber,
+			);
+			console.log('lastPage', lastPage);
+
+			const cursorPages = cursorPagination(
+				blocks,
+				data.order,
+				data.filterBy,
+				data.limit,
+				'blocknumber',
+				blockCount,
+			);
+
+			console.log(cursorPages, 'cursorPages');
+			const exists = blocks.some(
+				(item) => serializeBigInt(item.blocknumber) === lastPage,
+			);
+			if (exists) {
+				console.log('In am on last page');
+			}
+			return {
+				error: false,
+				message: RES_MSG.ALL_BLOCK_FETCH,
+				data: {
+					blockCount: Number(blockCount),
+					blocks: convertBigIntToNumber(blocks),
+					nextCursor:
+						blocks.length < data.limit || exists
+							? null
+							: serializeBigInt(cursorPages.nextCursor),
+					prevCursor:
+						data.page === 0 || data.page === 1
+							? null
+							: serializeBigInt(cursorPages.previousCursor),
+					lastPage: exists ? null : lastPage,
+				},
+			};
+		} catch (err) {
+			console.log('--Error BLOCK--', err);
+			if (err instanceof Error) {
+				logger.error(err);
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			}
+			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
 }

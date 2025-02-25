@@ -8,6 +8,7 @@ import {
 import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService } from '../../service';
+import { cursorPagination } from '../../lib/utilities.helper';
 
 class ContractService {
 	async getAllContract_(data: {
@@ -986,18 +987,10 @@ class ContractService {
 				_max: { id: true },
 			});
 
-			const totalContracts = contractCount._count.id;
-			const minimumId = contractCount._min.id;
-			const maximumId = contractCount._max.id;
-			if (data.order === 'asc') {
-				const result = await prisma.contracts.aggregate({
-					_max: {
-						id: true, // Replace 'id' with your desired column
-					},
-				});
+			const totalContracts: number = contractCount?._count.id;
+			const minimumId: number = Number(contractCount?._min.id);
+			const maximumId: number = Number(contractCount?._max.id);
 
-				maxId = result._max.id;
-			}
 			const getLastId = await prisma.contracts.findMany({
 				select: {
 					id: true, // Replace 'id' with your desired column
@@ -1017,23 +1010,22 @@ class ContractService {
 			// 	iconUrl: contract.ContractVerification?.iconUrl,
 			// }));
 
-			const previousCursor =
-				contracts[0].id === maximumId
-					? null
-					: data.order === 'asc'
-						? contracts[contracts.length - 1].id
-						: contracts[0].id;
+			// const previousCursor =
+			// 	contracts[0].id === maximumId
+			// 		? null
+			// 		: data.order === 'asc'
+			// 			? contracts[contracts.length - 1].id
+			// 			: contracts[0].id;
 
-			const nextCursor =
-				contracts.length > 0 &&
-				contracts[contracts.length - 1].id === minimumId
-					? null
-					: data.order === 'asc'
-						? contracts[0].id
-						: contracts[contracts.length - 1].id;
+			// const nextCursor =
+			// 	contracts.length > 0 &&
+			// 	contracts[contracts.length - 1].id === minimumId
+			// 		? null
+			// 		: data.order === 'asc'
+			// 			? contracts[0].id
+			// 			: contracts[contracts.length - 1].id;
 
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
-			console.log('nextCursorValue', nextCursor, previousCursor);
 
 			const groupByResult = await prisma.contracts.groupBy({
 				by: ['contractType'], // Group by the 'type' column
@@ -1041,9 +1033,6 @@ class ContractService {
 					contractType: true, // Count occurrences of each type
 				},
 			});
-			console.log('contractTypeCount', groupByResult);
-
-			// Loop through the groupByResult and filter each count
 
 			const counts = groupByResult.reduce((acc: any, item) => {
 				acc[item.contractType] = item._count.contractType;
@@ -1061,11 +1050,19 @@ class ContractService {
 			const offset = totalContracts % data.limit || data.limit;
 			const lastPage =
 				data.order === 'asc'
-					? maxId - offset
+					? maximumId - offset
 					: getLastId[getLastId.length - 1].id;
 
 			const sortedResults =
 				data.order === 'asc' ? contracts.reverse() : contracts;
+			const cursorPages = cursorPagination(
+				contracts,
+				data.order,
+				'newest',
+				data.limit,
+				'id',
+				totalContracts,
+			);
 
 			const contractData = await Promise.all(
 				sortedResults.map(async (item: any) => ({
@@ -1084,8 +1081,11 @@ class ContractService {
 				data: {
 					count: totalContracts,
 					contracts: convertBigIntToNumber(contractData),
-					nextCursor: nextCursor,
-					prevCursor: previousCursor === 0 ? 1 : previousCursor,
+					nextCursor: cursorPages.nextCursor,
+					prevCursor:
+						data.page === 0 || data.page === 1
+							? null
+							: cursorPages.previousCursor,
 					lastPage: lastPage,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
 					erc721Count: erc721Count ? Number(erc721Count) : 0,
@@ -1360,7 +1360,8 @@ class ContractService {
 			let selectContracts =
 				'SELECT "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply","t"."type", "t"."tokenName", "t"."tokenSymbol", "t"."contractAddress" ';
 			let selectContractsForCount =
-				' SELECT COUNT(c.id) AS count_id, MIN(c.id) AS min_id, MAX(c.id) AS max_id ';
+				'SELECT COUNT(c.id) AS count_id, MIN(c.id) AS min_id, MAX(c.id) AS max_id ';
+			let lastPageSelect = ' SELECT (c.id) ';
 
 			let joinFrom =
 				'FROM "Contracts" AS "c" LEFT JOIN "ContractVerification" AS "cv" ON "cv"."contractAddress" = "c"."address" LEFT JOIN "Tokens" AS "t" ON "t"."contractAddress" = "c"."address" ';
@@ -1393,7 +1394,6 @@ class ContractService {
 			const resultCountQuery =
 				selectContractsForCount + joinFrom + whereClause;
 			console.log('queryContracts', queryContracts);
-			console.log('resultCountQuery', resultCountQuery);
 
 			const results: any = await prisma.$queryRawUnsafe(queryContracts);
 			const resultCount: any =
@@ -1420,30 +1420,50 @@ class ContractService {
 			const minimumId = resultCount[0].min_id;
 			const maximumId = resultCount[0].max_id;
 
-			// const lastPageFilter = { ...counterFilter };
+			const lastPageRemainder = totalContracts % Number(parsedLimit);
+			const lastPageFilter = ` AND "c"."id" >= ${minimumId}`;
+			const lastPageCondition = `${searchFilter} ${lastPageFilter}`;
+			const lastPageLimitCheck = lastPageRemainder
+				? lastPageRemainder
+				: parsedLimit;
+			const lastPageLimit = ` LIMIT ${lastPageLimitCheck}`;
 
-			const lastPageFilter = { gt: minimumId };
+			const cursorPages: any = cursorPagination(
+				results,
+				orderBy,
+				'newest',
+				parsedLimit,
+				'id',
+				totalContracts,
+			);
+
+			console.log('cursorPages', cursorPages);
+
 			let lastPageResult: any;
-			// if (totalContracts && totalContracts > parsedLimit) {
-			// 	console.log('lastPageResult');
-			// 	lastPageResult = await prisma.contracts.findMany({
-			// 		select: {
-			// 			id: true,
-			// 		},
-			// 		where: lastPageFilter,
-			// 		take: totalContracts % parsedLimit || parsedLimit,
-			// 	});
-			// 	console.log('lastPageResult1', lastPageResult);
-			// }
+			if (totalContracts && totalContracts > parsedLimit) {
+				const lastPageQuery =
+					lastPageSelect +
+					joinFrom +
+					lastPageCondition +
+					lastPageLimit;
+				console.log('lastPageQuery', lastPageQuery);
+				lastPageResult = await prisma.$queryRawUnsafe(lastPageQuery);
 
-			const previousCursor =
-				results[0].id === maximumId ? null : results[0].id;
+				console.log('lastPageResult', lastPageResult);
+				console.log(
+					'lastPageResult',
+					lastPageResult[lastPageResult.length - 1].id,
+				);
+			}
 
-			const nextCursor =
-				results.length > 0 &&
-				results[results.length - 1].id === minimumId
-					? null
-					: results[results.length - 1]?.id;
+			// const previousCursor =
+			// 	results[0].id === maximumId ? null : results[0].id;
+
+			// const nextCursor =
+			// 	results.length > 0 &&
+			// 	results[results.length - 1].id === minimumId
+			// 		? null
+			// 		: results[results.length - 1]?.id;
 
 			const getContractsCount: any = await this.getContractsCount();
 			const {
@@ -1454,10 +1474,9 @@ class ContractService {
 				UNKNOWN: unknownCount,
 				count,
 			} = getContractsCount.counts;
-			console.log('sortedResults', sortedResults);
 
 			const contractData = await Promise.all(
-				sortedResults.map(async (item: any) => ({
+				results.map(async (item: any) => ({
 					...item,
 					transaction_count: await this.getContractTxCount(
 						item?.address,
@@ -1480,9 +1499,7 @@ class ContractService {
 				error: false,
 				message: RES_MSG.CONTRACT,
 				data: {
-					contracts: contractData
-						? convertBigIntToNumber(contractData)
-						: [],
+					contracts: results ? convertBigIntToNumber(results) : [],
 					contractCount: totalContracts || 0,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
 					erc721Count: erc721Count ? Number(erc721Count) : 0,
@@ -1490,8 +1507,11 @@ class ContractService {
 					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
 					unknownCount: unknownCount ? Number(unknownCount) : 0,
 					count: count ? Number(count) : 0,
-					nextCursor: nextCursor,
-					prevCursor: previousCursor === 0 ? 1 : previousCursor,
+					nextCursor: cursorPages.nextCursor,
+					prevCursor:
+						page === 0 || page === 1
+							? null
+							: cursorPages.previousCursor,
 					lastPage: lastPageResult
 						? lastPageResult[lastPageResult.length - 1].id
 						: null,

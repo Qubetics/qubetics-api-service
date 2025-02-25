@@ -326,6 +326,50 @@ export async function formatTheDate(getDateTime: any) {
 	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+export function cursorPagination(
+	result: any,
+	orderBy: string,
+	filter: string,
+	limit: number,
+	uniqueParam: any,
+	totalRecords: number,
+) {
+	let getFilter = 'newest';
+	console.log(uniqueParam, 'uniqueParam');
+
+	if (filter) {
+		getFilter = filter;
+	}
+	let sortedResults = result;
+	// orderBy === 'desc' && getFilter === 'oldest'
+	// 	? result.reverse()
+	// 	: orderBy === 'asc' && getFilter === 'newest'
+	// 		? result.reverse()
+	// 		:
+
+	if (orderBy === 'desc' && getFilter === 'oldest') {
+		sortedResults = result.reverse();
+	} else if (orderBy === 'asc' && getFilter === 'newest') {
+		sortedResults = result.reverse();
+	}
+	console.log('SORTED reSULT', sortedResults.length);
+	/** to get the next page :  get the last element of the result */
+	const nextCursor = sortedResults
+		? sortedResults[sortedResults.length - 1][uniqueParam]
+		: null;
+
+	/** to get the previous page : get the first element of the result */
+	const previousCursor = sortedResults ? sortedResults[0][uniqueParam] : null;
+	const lastPageRemainder = totalRecords % Number(limit);
+
+	return {
+		sortedResults,
+		nextCursor,
+		previousCursor,
+		lastPageRemainder,
+	};
+}
+
 // export const noExponent = function (num: number | string) {
 // 	try {
 // 		const data = String(num).split(/[eE]/);
