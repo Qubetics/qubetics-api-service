@@ -1119,9 +1119,10 @@ class ExplorerService {
 			]);
 
 			let _slice: any[] = coinPriceStats[key];
+			console.log("Data: ", _slice);
 
 			if (!!_slice) {
-				_slice = _slice.slice(Math.max(_slice.length - len, 0));
+				_slice = _slice.slice(0, len).reverse();
 
 				return {
 					error: false,
