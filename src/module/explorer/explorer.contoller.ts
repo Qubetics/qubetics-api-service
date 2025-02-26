@@ -61,7 +61,12 @@ class ExplorerController implements Controller {
 				// searchingValidation,
 				this.searchActiveResults,
 			)
-			.get('/current-token-price', this.currentTokenPrice);
+			.get('/current-token-price', this.currentTokenPrice)
+			.get(
+				'/graph/coin-price',
+				// getGraphHistoryValidation,
+				this.getCoinPriceGraph,
+			);
 	}
 
 	private searching = async (request: Request, response: Response) => {
@@ -92,6 +97,7 @@ class ExplorerController implements Controller {
 		}
 		return setResponse.success(response, dashboard);
 	};
+
 	private topValidator = async (request: Request, response: Response) => {
 		const dashboard = await ExplorerService.getTopValidator();
 
@@ -259,6 +265,24 @@ class ExplorerController implements Controller {
 			return setResponse.error(response, tokenPriceRes);
 		}
 		return setResponse.success(response, tokenPriceRes);
+	};
+
+	private getCoinPriceGraph = async (
+		request: Request,
+		response: Response,
+	) => {
+		const data = {
+			interval: !request.query?.interval
+				? 1
+				: Number(request.query.interval),
+			time: !request.query?.time ? 'd' : <string>request.query.time,
+		};
+		const res = await ExplorerService.getCoinPriceHistory(data);
+
+		if (res.error) {
+			return setResponse.error(response, res);
+		}
+		return setResponse.success(response, res);
 	};
 }
 

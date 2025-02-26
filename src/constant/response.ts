@@ -15,7 +15,7 @@ export const RESPONSES = {
 	GATEWAYTIMEOUT: 504,
 };
 
-export const CURRENT_DEFAULT_COIN_PRICE = 0.07339091;
+export const CURRENT_DEFAULT_COIN_PRICE = 0.01;
 
 export const RATE_LIMITER_MESSAGE = {
 	TOO_MANY_REQUEST:
@@ -192,6 +192,7 @@ export const REDIS_KEY = {
 	CONTRACT_DEPLOYMENT_HISTORY: 'ContractDeploymentHistory',
 	STAST_GENERATED: 'StatsGenerated',
 	TX_FEE_HISTORY: 'TxFeeHistory',
+	COIN_PRICE_GRAPH: 'CoinPriceGraph',
 };
 
 export const QUEUE_NAME = {

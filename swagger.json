@@ -790,6 +790,53 @@
             }
          }
       },
+      "/qubetics/explorer/graph/coin-price":{
+         "get": {
+            "tags": ["Explorer Graph"],
+            "summary": "Get history of coin price",
+            "parameters": [
+               {
+                  "in": "query",
+                  "name": "interval",
+                  "schema": {
+                     "type": "string",
+                     "example": "1"
+                  }
+               },{
+                  "in": "query",
+                  "name": "time",
+                  "schema": {
+                     "type": "string",
+                     "example":"d"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "description": "Hidtory fetched Successfully",
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "type": "object",
+                           "properties": {
+                              "message": {
+                                 "type": "string"
+                              },
+                              "key": {
+                                 "type": "string"
+                              }
+                           }
+                        }
+                     }
+                  }
+               },
+               "400": {
+                  "description": "Oops! Something went wrong. Please try again."
+               }
+            }
+         }
+
+      },
     
       "/qubetics/faucet/transfer": {
          "post": {
