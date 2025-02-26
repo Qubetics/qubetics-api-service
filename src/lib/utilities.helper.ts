@@ -349,8 +349,7 @@ export function cursorPagination(
 	let sortedResults = result;
 	if (
 		(orderBy === 'desc' && getFilter === 'oldest') ||
-		(orderBy === 'asc' && getFilter === 'newest') ||
-		orderBy === 'asc'
+		(orderBy === 'asc' && getFilter === 'newest')
 	) {
 		console.log('Will reverse here');
 		sortedResults = result.reverse();
@@ -375,6 +374,19 @@ export function cursorPagination(
 	};
 }
 
+const CACHE_EXPIRATION = 600; // 10 minutes
+
+// Helper function to format date
+export function setFormatDate(date: any, interval: string) {
+	if (interval === 'daily') return date.toISOString().split('T')[0]; // YYYY-MM-DD
+	if (interval === 'weekly')
+		return `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
+	if (interval === 'monthly')
+		return `${date.getFullYear()}-${(date.getMonth() + 1)
+			.toString()
+			.padStart(2, '0')}`;
+	return date.toISOString();
+}
 // export const noExponent = function (num: number | string) {
 // 	try {
 // 		const data = String(num).split(/[eE]/);
