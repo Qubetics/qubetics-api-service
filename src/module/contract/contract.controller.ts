@@ -50,7 +50,8 @@ class ContractController implements Controller {
 				'/search-get/*',
 				getContractValidation,
 				this.searchContractToken_,
-			);
+			)
+			.get('/:address/graph', this.contractGraph);
 		// https://api.evm.qa.5ire.network/5ire/contracts/search/0xeE02101Da362c9bFc616F72AbF8301Ba94f3C4fe?page=1&limit=10;
 	}
 
@@ -203,6 +204,23 @@ class ContractController implements Controller {
 		console.log(data.contractName, 'contractName-searchContractToken');
 		const searchContractToken =
 			await ContractService.getContractsTokens_(data);
+
+		if (searchContractToken.error) {
+			return setResponse.error(response, searchContractToken);
+		}
+		return setResponse.success(response, searchContractToken);
+	};
+
+	private contractGraph = async (request: Request, response: Response) => {
+		const data: any = {
+			interval: !request.query?.interval
+				? 'day'
+				: <string>request.query.interval,
+			days: !request.query?.days ? 30 : Number(request.query.days),
+			address: <string>request.params.address, // to get the params
+		};
+		console.log(data.address, 'contractName-searchContractToken');
+		const searchContractToken = await ContractService.contractGraphs(data);
 
 		if (searchContractToken.error) {
 			return setResponse.error(response, searchContractToken);

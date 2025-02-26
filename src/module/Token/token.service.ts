@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 import { off } from 'process';
 import logger from '../../lib/logger';
 import Web3 from 'web3';
+import { parseAndFixJson } from '../../lib/utilities.helper';
 
 class TokenService {
 	/**
@@ -524,7 +525,7 @@ class TokenService {
 
 					const parsedData = JSON.parse(jsonString);
 					console.log(parsedData, 'DEMO@');
-					const fixedJsonString = this.parseAndFixJson(element?.logs);
+					const fixedJsonString = parseAndFixJson(element?.logs);
 
 					if (fixedJsonString[0]?.events) {
 						fixedJsonString[0]?.events?.forEach((event: any) => {
@@ -616,27 +617,6 @@ class TokenService {
 				return { error: true, message: err.message };
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
-			}
-		}
-	}
-
-	public parseAndFixJson(input: any) {
-		try {
-			// Check if it's already valid JSON
-			return JSON.parse(input);
-		} catch (error) {
-			console.warn('Invalid JSON detected. Attempting to fix...');
-
-			const fixedJsonString = input
-				.replace(/([{,])(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$3":') // Quote keys
-				.replace(/:\s*([a-zA-Z_][a-zA-Z0-9_]*)\b/g, ': "$1"') // Quote unquoted string values
-				.replace(/0x[a-fA-F0-9]+/g, '"$&"'); // Quote hex values
-			console.log(JSON.parse(fixedJsonString), 'fixedJsonString');
-			try {
-				return JSON.parse(fixedJsonString);
-			} catch (finalError) {
-				console.error('Failed to fix JSON:', finalError);
-				return null; // Return null or handle the error accordingly
 			}
 		}
 	}

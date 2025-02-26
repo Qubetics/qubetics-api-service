@@ -1,6 +1,6 @@
 import Web3 from 'web3';
 import prisma from '../../lib/db';
-import { IESResponse } from '../../interfaces/index';
+import { GraphData, IESResponse } from '../../interfaces/index';
 import {
 	convertBigIntToNumber,
 	serializeBigInt,
@@ -8,7 +8,19 @@ import {
 import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService } from '../../service';
-import { cursorPagination } from '../../lib/utilities.helper';
+import {
+	cursorPagination,
+	fillMissingDatesWithZeroByDay,
+	fillMissingDatesWithZeroByMonth,
+	fillMissingDatesWithZeroByhr,
+	fillMissingMinutes,
+	formatDate,
+	formatDateByMin,
+	formatDateForDay,
+	formatDateForYear,
+	parseAndFixJson,
+} from '../../lib/utilities.helper';
+import redisHelper from '../../service/redis.helper';
 
 class ContractService {
 	async getAllContract_(data: {
@@ -1530,6 +1542,448 @@ class ContractService {
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
+
+	// async contractGraphs(data: {
+	// 	interval: string;
+	// 	days: string;
+	// 	address: string;
+	// }): Promise<any> {
+	// 	const { address, interval = 'daily', days = 30 } = data;
+	// 	// Validate limit
+	// 	const cacheKey = `contract_graph_${address}_${interval}_${days}`;
+
+	// 	try {
+	// 		// Check Redis cache first
+	// 		const cachedData = await redisHelper.getString(cacheKey);
+	// 		if (cachedData) {
+	// 			return {
+	// 				error: false,
+	// 				message: RES_MSG.TRANSACTION_FEE_SUCCESS,
+	// 				data: {
+	// 					finalData: cachedData as Array<GraphData>,
+	// 					count: 0,
+	// 				},
+	// 			};
+	// 		}
+
+	// 		// Define time range
+	// 		const startDate = new Date();
+	// 		startDate.setDate(startDate.getDate() - days);
+
+	// 		// Fetch analytics data grouped by timestamp
+	// 		const transactions = await prisma.transactions.findMany({
+	// 			where: {
+	// 				toAddress: address,
+	// 				timestamp: { gte: startDate },
+	// 			},
+	// 			select: {
+	// 				fromAddress: true,
+	// 				toAddress: true,
+	// 				value: true,
+	// 				timestamp: true,
+	// 			},
+	// 			orderBy: { timestamp: 'asc' },
+	// 		});
+
+	// 		// Process transactions into graph data
+	// 		const graphData = {};
+
+	// 		transactions.forEach((tx) => {
+	// 			const key = formatDate(new Date(tx.timestamp), interval);
+
+	// 			if (!graphData[key]) {
+	// 				graphData[key] = {
+	// 					date: key,
+	// 					transferAmount: 0,
+	// 					transferCount: 0,
+	// 					uniqueSenders: new Set(),
+	// 					uniqueReceivers: new Set(),
+	// 				};
+	// 			}
+
+	// 			graphData[key].transferAmount += Number(tx.value) || 0;
+	// 			graphData[key].transferCount += 1;
+	// 			graphData[key].uniqueSenders.add(tx.from);
+	// 			graphData[key].uniqueReceivers.add(tx.to);
+	// 		});
+
+	// 		// Convert sets to counts and calculate total unique users
+	// 		const result = Object.values(graphData).map((data) => ({
+	// 			date: data.date,
+	// 			transferAmount: data.transferAmount,
+	// 			transferCount: data.transferCount,
+	// 			uniqueSenders: data.uniqueSenders.size,
+	// 			uniqueReceivers: data.uniqueReceivers.size,
+	// 			totalUniqueUsers: new Set([
+	// 				...data.uniqueSenders,
+	// 				...data.uniqueReceivers,
+	// 			]).size,
+	// 		}));
+
+	// 		// Cache response
+	// 		await redisHelper.setStringWithExpiry(
+	// 			cacheKey,
+	// 			JSON.stringify(result),
+	// 			600,
+	// 		);
+
+	// 		return {
+	// 			error: false,
+	// 			message: RES_MSG.TRANSACTION_FEE_SUCCESS,
+	// 			data: {
+	// 				finalData: result as Array<GraphData>,
+	// 				count: 0,
+	// 			},
+	// 		};
+	// 	} catch (err) {
+	// 		console.error('Error fetching contract graph data:', error);
+	// 		return { error: true, message: RES_MSG.ERROR };
+	// 	}
+	// }
+
+	async contractGraphs(data: {
+		interval: number;
+		time: string;
+		address: string;
+	}): Promise<any> {
+		try {
+			const { interval = 30, time = 'daily' } = data;
+			const address = Web3.utils.toChecksumAddress(data.address);
+			const currentDate = new Date();
+			console.log('data-payload', data);
+			const fromDate = new Date(currentDate);
+			fromDate.setDate(fromDate.getDate() - interval);
+			const startDate = formatDateForDay(fromDate);
+
+			// 			const graphData: any = await prisma.$queryRaw`
+			//     SELECT
+			//         DATE_TRUNC(${time}, tr."timestamp") AS createdAt,
+			//         COUNT(tr.id) AS transferCount,
+			//         -- SUM(COALESCE((dl.logs->0->'events'->0->'value')::NUMERIC, 0)) AS transferAmount,
+			//         COUNT(DISTINCT tr."fromAddress") AS uniqueSenders
+			//     FROM "Transactions" tr
+			//     LEFT JOIN "ContractLogs" cl ON cl."txHash" = tr."txhash"
+			//     LEFT JOIN "DecodedLogs" dl ON cl."txHash" = dl."txHash"
+			//     WHERE
+			//         (tr."toAddress" = ${address} OR
+			//          tr."fromAddress" = ${address} OR
+			//          tr."contractAddress" = ${address})
+			//         AND tr."type" = 'CONTRACT_TRANSFER'
+			//         AND tr."timestamp" >= ${startDate}::timestamp
+			//         AND tr."timestamp" <= ${currentDate}::timestamp
+			//     GROUP BY createdAt
+			//     ORDER BY createdAt ASC;
+			// `;
+			// 			console.log('graphData', graphData);
+			// 			const finalData = graphData.map((row: any) => ({
+			// 				createdAt: row.createdat.toISOString(), // Ensure correct date format
+			// 				count: {
+			// 					transferCount: Number(row.transfercount),
+			// 					transferAmount: Number(row.transferamount),
+			// 					uniqueSenders: Number(row.uniquesenders),
+			// 				},
+			// 			}));
+
+			const tokens: any = await prisma.$queryRaw`
+			    SELECT
+				tr.id,
+				tr.txhash,
+				tr."timestamp",
+				tr."fromAddress",
+				tr."toAddress",
+				dl.logs
+			    FROM
+			    "Transactions" tr
+				LEFT JOIN
+			    "ContractLogs" cl
+				 ON cl."txHash" = tr."txhash"
+			    LEFT JOIN
+			    "DecodedLogs" dl
+			    ON cl."txHash" = dl."txHash"
+			    LEFT JOIN "Tokens" t
+			    ON dl."contractAddress"=t."contractAddress"
+				WHERE (tr."toAddress" = ${address} OR tr."fromAddress" = ${address} OR tr."contractAddress" = ${address}) AND tr."type" = 'CONTRACT_TRANSFER' AND (tr."timestamp" >= ${startDate} :: timestamp AND  tr."timestamp" <= ${currentDate} :: timestamp ) ORDER BY tr."timestamp" ASC;
+			  `;
+
+			// 			AND "timestamp" <= ${currentDate}
+
+			// 		const graphData1: any = await prisma.$queryRaw`
+			// SELECT
+			//     DATE_TRUNC(${time}, tr."timestamp") AS date,
+			//     COUNT(tr.id) AS transferCount,
+			//     -- SUM(COALESCE(dl.decodedValue::NUMERIC, 0)) AS transferAmount,
+			//     COUNT(DISTINCT tr."fromAddress") AS uniqueSenders,
+			//     COUNT(DISTINCT tr."toAddress") AS uniqueReceivers,
+			//     COUNT(DISTINCT tr."fromAddress") + COUNT(DISTINCT tr."toAddress") AS totalUniqueUsers
+			// FROM "Transactions" tr
+			// LEFT JOIN "DecodedLogs" dl ON tr.txhash = dl."txHash"
+			// WHERE
+			//     (tr."toAddress" = ${address} OR
+			//      tr."fromAddress" = ${address} OR
+			//      tr."contractAddress" = ${address})
+			//     AND tr."type" = 'CONTRACT_TRANSFER'
+			//     AND tr."timestamp" >= NOW() - INTERVAL '${days} days'
+			// GROUP BY date
+			// ORDER BY date ASC;
+			// `;
+
+			console.log('TOKENS', tokens);
+
+			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
+
+			const tokenTransfers = tokens.map((element: any) => {
+				let value: any;
+				let toAddress: any;
+				if (element?.logs) {
+					const jsonString = JSON.stringify(element?.logs);
+					const parsedData = JSON.parse(jsonString);
+					const fixedJsonString = parseAndFixJson(element?.logs);
+
+					if (fixedJsonString[0]?.events) {
+						fixedJsonString[0]?.events?.forEach((event: any) => {
+							console.log(event.name, 'Name');
+							console.log(event.type, 'Type');
+							console.log(event.value, 'Value');
+							if (
+								event.name === 'value' &&
+								event.value !== undefined
+							) {
+								value = BigInt(event.value);
+								event.value = value.toString();
+							}
+							if (
+								event.name === 'to' &&
+								event.value !== undefined
+							) {
+								toAddress = BigInt(event.value);
+								event.toAddress = toAddress.toString();
+							}
+						});
+					}
+				}
+
+				return { ...element, value, toAddress };
+			});
+
+			// Group transactions and calculate totals
+			const graphData = tokenTransfers.reduce((acc: any, tx: any) => {
+				console.log('tx', tx);
+				const dateKey = tx.timestamp.toISOString().split('T')[0]; // Group by day
+				if (!acc[dateKey]) {
+					acc[dateKey] = {
+						date: dateKey,
+						transferCount: 0,
+						transferAmount: 0,
+						uniqueSenders: new Set(),
+						uniqueReceivers: new Set(),
+					};
+				}
+
+				acc[dateKey].transferCount += 1;
+				acc[dateKey].transferAmount += Number(tx.value || 0);
+				acc[dateKey].uniqueSenders.add(tx.fromAddress);
+				acc[dateKey].uniqueReceivers.add(tx.toAddress);
+
+				return acc;
+			}, {});
+			// const finalData = Object.keys(graphData).map((date) => ({
+			// 	createdAt: new Date(date).toISOString(),
+			// 	count: {
+			// 		transferCount: graphData[date].transferCount,
+			// 		transferAmount: graphData[date].transferAmount,
+			// 		uniqueSenders: graphData[date].uniqueSenders.size,
+			// 		uniqueReceivers: graphData[date].uniqueReceivers.size,
+			// 	},
+			// }));
+
+			// const finalData = Object.entries(graphData).map(
+			// 	([date, data]: [string, any]) => ({
+			// 		createdAt: new Date(date).toISOString(),
+			// 		count:
+			// 			data.transferCount > 0
+			// 				? {
+			// 						transferCount: data.transferCount,
+			// 						transferAmount: data.transferAmount,
+			// 						uniqueSenders: data.uniqueSenders.size,
+			// 					}
+			// 				: {}, // Return empty object if transferCount is 0
+			// 	}),
+			// );
+
+			const start = new Date(startDate);
+			const end = new Date(currentDate);
+
+			// Generate all dates in the range
+			const allDates: Record<string, any> = {};
+			for (
+				let d = new Date(start);
+				d <= end;
+				d.setDate(d.getDate() + 1)
+			) {
+				const dateStr = d.toISOString().split('T')[0];
+				allDates[dateStr] = {
+					transferCount: 0,
+					transferAmount: 0,
+					uniqueSenders: new Set(),
+				};
+			}
+
+			// Merge with actual data
+			for (const [date, data] of Object.entries(graphData)) {
+				allDates[date] = data; // Overwrite with actual data
+			}
+
+			// Convert to final structure
+			const finalData = Object.entries(allDates).map(
+				([date, data]: [string, any]) => ({
+					createdAt: new Date(date).toISOString(),
+					count:
+						data.transferCount > 0
+							? {
+									transferCount: data.transferCount,
+									transferAmount: data.transferAmount,
+									uniqueSenders: data.uniqueSenders.size,
+								}
+							: {}, // Return empty object if no transfers
+				}),
+			);
+
+			console.log(JSON.stringify({ finalData }, null, 2));
+
+			console.log(JSON.stringify({ finalData }, null, 2));
+			// console.log('It is Here', graphData);
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					finalData,
+				},
+			};
+		} catch (err) {
+			logger.error('err in getTokenTransfer_2 : ', err);
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	// computeCoinTransferHistory = async (onlyMinInterval: boolean = false) => {
+	// 	try {
+	// 		let graphData;
+	// 		let startDate = '';
+
+	// 		const currentDate = new Date();
+
+	// 		const currentDateModi = formatDateByMin(new Date());
+	// 		const oneHourAgo = new Date();
+	// 		oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+	// 		startDate = formatDateByMin(oneHourAgo);
+	// 		graphData = (await prisma.$queryRaw`
+	// 		   SELECT DATE_TRUNC('minute', "timestamp") AS "hour", COUNT(*)::int AS "count"
+	// 		   FROM "Transactions"
+	// 		   WHERE "timestamp" >= ${new Date(startDate)}
+	// 			AND "timestamp" <= ${currentDate}
+	// 			AND "type" = 'CONTRACT_TRANSFER'
+	// 		   GROUP BY "hour"
+	// 		   ORDER BY "hour";
+	// 		`) as Array<{ hour: Date; count: number }>;
+
+	// 		const mintue = await fillMissingMinutes(
+	// 			graphData,
+	// 			new Date(startDate),
+	// 			new Date(currentDateModi),
+	// 		);
+
+	// 		if (onlyMinInterval) return { mintue };
+
+	// 		const oneDayAgo = new Date();
+	// 		oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+	// 		startDate = formatDate(oneDayAgo);
+
+	// 		graphData = (await prisma.$queryRaw`
+	// 				SELECT DATE_TRUNC('hour', "timestamp") AS "hour", COUNT(*)::int AS "count"
+	// 				FROM "Transactions"
+	// 				WHERE "timestamp" >= ${new Date(startDate)}
+	// 				AND "timestamp" <= ${currentDate}
+	// 				AND "type" = 'CONTRACT_TRANSFER'
+	// 				GROUP BY "hour"
+	// 				ORDER BY "hour";
+	// 				`) as Array<{ hour: Date; count: number }>;
+	// 		const hourly = await fillMissingDatesWithZeroByhr(
+	// 			graphData,
+	// 			new Date(startDate),
+	// 		);
+
+	// 		const daysAgo = 60;
+	// 		const fromDate = new Date(currentDate);
+	// 		fromDate.setDate(fromDate.getDate() - daysAgo);
+	// 		startDate = formatDateForDay(fromDate);
+
+	// 		graphData = (await prisma.$queryRaw`
+	// 			   SELECT DATE_TRUNC('day', "timestamp") AS "day", COUNT(*)::int AS "count"
+	// 			   FROM "Transactions"
+	// 			   WHERE "timestamp" >= ${new Date(startDate)}
+	// 				AND "timestamp" <= ${currentDate}
+	// 				AND "type" = 'CONTRACT_TRANSFER'
+	// 			   GROUP BY "day"
+	// 			   ORDER BY "day";
+	// 			`) as Array<{ day: Date; count: number }>;
+
+	// 		const daily = await fillMissingDatesWithZeroByDay(
+	// 			graphData,
+	// 			new Date(startDate),
+	// 			currentDate,
+	// 		);
+
+	// 		const oneYearAgo = new Date();
+	// 		oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1); // Subtract 1 year
+	// 		startDate = formatDateForYear(oneYearAgo);
+
+	// 		graphData = (await prisma.$queryRaw`
+	// 				SELECT DATE_TRUNC('month', "timestamp") AS "month", COUNT(*)::int AS "count"
+	// 				FROM "Transactions"
+	// 				WHERE "timestamp" >= ${new Date(startDate)}
+	// 				AND "timestamp" <= ${currentDate}
+	// 				AND "type" = 'CONTRSCT'
+	// 				GROUP BY "month"
+	// 				ORDER BY "month";
+	// 			`) as Array<{ month: Date; count: number }>;
+
+	// 		const monthly = await fillMissingDatesWithZeroByMonth(
+	// 			graphData,
+	// 			new Date(startDate),
+	// 			currentDate,
+	// 		);
+
+	// 		return {
+	// 			key: REDIS_KEY.CoinTransferTxHistory,
+	// 			data: { mintue, daily, hourly, monthly },
+	// 			statsCurrents: {
+	// 				mintue: mintue[mintue.length - 1],
+	// 				hourly: hourly[hourly.length - 1],
+	// 				daily: daily[daily.length - 1],
+	// 				monthly: monthly[monthly.length - 1],
+	// 			},
+	// 		};
+
+	// 		// return {
+	// 		// 	error: false,
+	// 		// 	message: RES_MSG.TRANSACTION_HISTORY_SUCCESS,
+	// 		// 	data: {
+	// 		// 		finalData: finalData as Array<GraphData>,
+	// 		// 		count: count,
+	// 		// 	},
+	// 		// };
+	// 	} catch (err) {
+	// 		return { key: null };
+	// 	}
+	// };
 }
 
 export default new ContractService();
