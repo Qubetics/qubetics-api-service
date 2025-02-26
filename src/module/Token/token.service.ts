@@ -1,10 +1,14 @@
 import prisma from '../../lib/db';
 import { RES_MSG } from '../../constant/response';
 import { HolderData, IESResponse } from '../../interfaces/index';
-import { convertBigIntToNumber } from '../../helper/common.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 import { Prisma } from '@prisma/client';
 import { off } from 'process';
 import logger from '../../lib/logger';
+import Web3 from 'web3';
 
 class TokenService {
 	/**
@@ -382,7 +386,7 @@ class TokenService {
 					address: data.address,
 				},
 			});
-
+			console.log('holdersCount', holdersCount);
 			if (!holdersData.length) {
 				throw new Error(RES_MSG.NOT_FOUND);
 			}
@@ -451,6 +455,189 @@ class TokenService {
 
 			const error = err instanceof Error ? err.message : RES_MSG.ERROR;
 			return { error: true, message: error };
+		}
+	}
+
+	async getTokenTransfer_2(data: {
+		page: number;
+		limit: number;
+		address: string;
+		order: string;
+	}): Promise<IESResponse> {
+		try {
+			const parsedLimit = data.limit;
+			data.address = data.address.trim();
+
+			const tokens: any = await prisma.$queryRaw`
+	        SELECT 
+			tr.id,
+            t."tokenName" ,
+            t."tokenSymbol",
+            tr.txhash,
+			t."decimal" ,
+			tr."timestamp",
+			tr."fromAddress",
+            tr.blocknumber,
+			tr."toAddress",
+			tr."type",
+            dl.input,
+			tr.status,
+			dl.logs
+            FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON dl."contractAddress"=t."contractAddress"
+			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
+				data.address
+			} OR tr."contractAddress" = ${
+				data.address
+			}) AND tr."type" = 'CONTRACT_TRANSFER'
+            ORDER BY 
+			tr.blocknumber	DESC 
+            LIMIT ${data.limit}
+			OFFSET ${data.page * data.limit}
+		  `;
+
+			const total_count: any = await prisma.$queryRaw`
+		  	SELECT COUNT(tr.id) AS count, MIN(tr.id) AS min_id, MAX(tr.id) AS max_id
+			FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON dl."contractAddress"=t."contractAddress"
+			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address}) AND tr."type" = 'CONTRACT_TRANSFER'
+		`;
+
+			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
+
+			const tokenTransfers = tokens.map((element: any) => {
+				console.log('element.logs', element.logs);
+				let value: any;
+				if (element?.logs) {
+					const jsonString = JSON.stringify(element?.logs);
+					console.log(jsonString, 'DEMO!');
+
+					const parsedData = JSON.parse(jsonString);
+					console.log(parsedData, 'DEMO@');
+					const fixedJsonString = this.parseAndFixJson(element?.logs);
+
+					if (fixedJsonString[0]?.events) {
+						fixedJsonString[0]?.events?.forEach((event: any) => {
+							console.log(event.name, 'Name');
+							console.log(event.type, 'Tyope');
+							console.log(event.value, 'Valye');
+							if (
+								event.name === 'value' &&
+								event.value !== undefined
+							) {
+								value = BigInt(event.value);
+								event.value = value.toString();
+							}
+						});
+					}
+				}
+
+				return { ...element, value };
+			});
+
+			console.log('It is Here');
+
+			const totalTransactions = total_count[0]?.count;
+			const minimumId = total_count[0]?.min_id;
+			const maximumId = total_count[0]?.max_id;
+
+			const sortedResults =
+				data?.order === 'asc'
+					? tokenTransfers.reverse()
+					: tokenTransfers;
+			console.log('sortedResults', sortedResults);
+			const previousCursor =
+				sortedResults[0].id === maximumId || sortedResults.length === 1
+					? null
+					: sortedResults[0].id;
+
+			const nextCursor =
+				(sortedResults.length > 0 &&
+					sortedResults[sortedResults.length - 1].id === minimumId) ||
+				sortedResults.length === 1
+					? null
+					: sortedResults[sortedResults.length - 1]?.id;
+
+			let lastPageResult: any = null;
+			if (
+				Number(totalTransactions) &&
+				Number(totalTransactions) > parsedLimit
+			) {
+				lastPageResult = await prisma.$queryRaw`
+		  	SELECT tr.id
+			FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON dl."contractAddress"=t."contractAddress"
+			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${
+				data.address
+			} OR tr."contractAddress" = ${
+				data.address
+			}) AND tr."type" = 'CONTRACT_TRANSFER' AND  tr.id > ${minimumId} 
+			ORDER BY 
+			tr.blocknumber	DESC 
+            LIMIT ${data.limit}
+			OFFSET ${Number(totalTransactions) % parsedLimit || parsedLimit}
+		`;
+			}
+			console.log('Cursors', previousCursor, nextCursor, lastPageResult);
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					tokens: convertBigIntToNumber(sortedResults),
+					total_count: Number(totalTransactions),
+					nextCursor: nextCursor,
+					prevCursor: previousCursor === 0 ? 1 : previousCursor,
+					lastPage: lastPageResult
+						? lastPageResult[lastPageResult.length - 1].id
+						: null,
+				},
+			};
+		} catch (err) {
+			logger.error('err in getTokenTransfer_2 : ', err);
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	public parseAndFixJson(input: any) {
+		try {
+			// Check if it's already valid JSON
+			return JSON.parse(input);
+		} catch (error) {
+			console.warn('Invalid JSON detected. Attempting to fix...');
+
+			const fixedJsonString = input
+				.replace(/([{,])(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$3":') // Quote keys
+				.replace(/:\s*([a-zA-Z_][a-zA-Z0-9_]*)\b/g, ': "$1"') // Quote unquoted string values
+				.replace(/0x[a-fA-F0-9]+/g, '"$&"'); // Quote hex values
+			console.log(JSON.parse(fixedJsonString), 'fixedJsonString');
+			try {
+				return JSON.parse(fixedJsonString);
+			} catch (finalError) {
+				console.error('Failed to fix JSON:', finalError);
+				return null; // Return null or handle the error accordingly
+			}
 		}
 	}
 }

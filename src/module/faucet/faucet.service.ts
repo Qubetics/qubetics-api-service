@@ -10,6 +10,10 @@ import {
 
 class FaucetService {
 	async captchaRequest(token: string) {
+		// console.log(
+		// 	'GET TOKEN VLAUE',
+		// 	`${environment.recaptchaUrl}--------${environment.recaptchaSiteKey}------${token}`,
+		// );
 		return new Promise(async (resolve, reject) => {
 			try {
 				const res = await axios.post(
@@ -30,13 +34,13 @@ class FaucetService {
 
 	async fundTransfer(to: string, _captchaToken: string) {
 		try {
-			console.log(
-				'Capcha: ',
-				to,
-				_captchaToken,
-				'Environment: ',
-				environment.recaptchaUrl,
-			);
+			// console.log(
+			// 	'Capcha: ',
+			// 	to,
+			// 	_captchaToken,
+			// 	'Environment: ',
+			// 	environment.recaptchaUrl,
+			// );
 
 			let faucetBalance;
 			const privateKey = `0x${environment.privateKey}`;
