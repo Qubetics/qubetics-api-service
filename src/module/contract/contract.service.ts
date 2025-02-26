@@ -1053,8 +1053,8 @@ class ContractService {
 					? maximumId - offset
 					: getLastId[getLastId.length - 1].id;
 
-			const sortedResults =
-				data.order === 'asc' ? contracts.reverse() : contracts;
+			// const sortedResults =
+			// 	data.order === 'asc' ? contracts.reverse() : contracts;
 			const cursorPages = cursorPagination(
 				contracts,
 				data.order,
@@ -1063,6 +1063,10 @@ class ContractService {
 				'id',
 				totalContracts,
 			);
+
+			const sortedResults = cursorPages?.sortedResults
+				? cursorPages?.sortedResults
+				: contracts;
 
 			const contractData = await Promise.all(
 				sortedResults.map(async (item: any) => ({
@@ -1368,9 +1372,9 @@ class ContractService {
 
 			let idFilter = '';
 			let searchFilter = `
-			    WHERE ("c"."contractName" ILIKE '%${contractName}%' OR "c"."address" ILIKE '%${contractName}%')
+			    WHERE (("c"."contractName" ILIKE '%${contractName}%' OR "c"."address" ILIKE '%${contractName}%')
 			    OR ("t"."tokenName" ILIKE '%${contractName}%' OR "t"."contractAddress" ILIKE '%${contractName}%' OR "t"."tokenSymbol" ILIKE '%${contractName}%')
-			    OR ("cv"."contractname" ILIKE '%${contractName}%' OR "cv"."contractAddress" ILIKE '%${contractName}%')`;
+			    OR ("cv"."contractname" ILIKE '%${contractName}%' OR "cv"."contractAddress" ILIKE '%${contractName}%'))`;
 
 			let orderBy: string = 'desc';
 			if (data?.order) {
@@ -1384,15 +1388,19 @@ class ContractService {
 				}
 			}
 
+			console.log('idFilter', idFilter);
+
 			// Perform the query with cursor-based pagination
 
 			const whereClause = `${searchFilter} ${idFilter}`;
+			console.log('whereClause', whereClause);
+
 			const orderLimitClause = ` ORDER BY "c"."id" ${orderBy}
 			LIMIT ${parsedLimit}`;
 			const queryContracts =
 				selectContracts + joinFrom + whereClause + orderLimitClause;
 			const resultCountQuery =
-				selectContractsForCount + joinFrom + whereClause;
+				selectContractsForCount + joinFrom + searchFilter;
 			console.log('queryContracts', queryContracts);
 
 			const results: any = await prisma.$queryRawUnsafe(queryContracts);
