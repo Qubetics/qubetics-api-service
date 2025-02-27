@@ -333,6 +333,8 @@ export function cursorPagination(
 	limit: number,
 	uniqueParam: any,
 	totalRecords: number,
+	maximumId: number,
+	minimumId: number,
 ) {
 	let getFilter = 'newest';
 	console.log(uniqueParam, 'uniqueParam');
@@ -346,30 +348,45 @@ export function cursorPagination(
 	// 	: orderBy === 'asc' && getFilter === 'newest'
 	// 		? result.reverse()
 	// 		:
-	let sortedResults = result;
+	// let sortedResults = result;
+	let sortedResults = [...result];
 	if (
 		(orderBy === 'desc' && getFilter === 'oldest') ||
-		(orderBy === 'asc' && getFilter === 'newest')
+		(orderBy === 'asc' && getFilter === 'newest') ||
+		(orderBy === 'asc' && getFilter !== 'newest' && getFilter !== 'oldest')
 	) {
 		console.log('Will reverse here');
-		sortedResults = result.reverse();
+		sortedResults = sortedResults.reverse();
 		// sortedResults = [...result].reverse();
 	}
 
-	console.log('SORTED reSULT', sortedResults);
 	/** to get the next page :  get the last element of the result */
-	const nextCursor = sortedResults
-		? sortedResults[sortedResults.length - 1][uniqueParam]
-		: null;
+	let nextCursor = null;
+	let previousCursor = null;
+	if (!orderBy || orderBy === 'desc') {
+		nextCursor = sortedResults[sortedResults.length - 1][uniqueParam];
+		previousCursor = sortedResults[0][uniqueParam];
+	} else if (orderBy === 'asc') {
+		nextCursor = result[0][uniqueParam];
+		previousCursor = result[result.length - 1][uniqueParam];
+	}
+
+	// if (!orderBy || orderBy === 'desc') {
+	// 	nextCursor = sortedResults[sortedResults.length - 1][uniqueParam];
+	// }
+	// const nextCursor = sortedResults
+	// 	? sortedResults[sortedResults.length - 1][uniqueParam]
+	// 	: null;
 
 	/** to get the previous page : get the first element of the result */
-	const previousCursor = sortedResults ? sortedResults[0][uniqueParam] : null;
+	// previousCursor = result ? result[result.length - 1][uniqueParam] : null;
 	const lastPageRemainder = totalRecords % Number(limit);
-
+	console.log('minimumId', minimumId);
+	console.log('maximumId', maximumId);
 	return {
 		sortedResults,
-		nextCursor,
-		previousCursor,
+		nextCursor: nextCursor === minimumId ? null : nextCursor,
+		previousCursor: previousCursor === maximumId ? null : previousCursor,
 		lastPageRemainder,
 	};
 }

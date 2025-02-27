@@ -537,6 +537,8 @@ class BlockService {
 				data.limit,
 				'blocknumber',
 				blockCount,
+				maximumId,
+				minimumId,
 			);
 
 			console.log(cursorPages, 'cursorPages');

@@ -1119,7 +1119,7 @@ class ExplorerService {
 			]);
 
 			let _slice: any[] = coinPriceStats[key];
-			console.log("Data: ", _slice);
+			console.log('Data: ', _slice);
 
 			if (!!_slice) {
 				_slice = _slice.slice(0, len).reverse();

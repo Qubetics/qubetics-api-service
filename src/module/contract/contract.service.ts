@@ -1010,6 +1010,11 @@ class ContractService {
 				orderBy: {
 					id: 'asc',
 				},
+				where: {
+					id: {
+						gt: minimumId,
+					},
+				},
 				take: (totalContracts % data.limit) + 1 || data.limit + 1,
 			});
 
@@ -1074,6 +1079,8 @@ class ContractService {
 				data.limit,
 				'id',
 				totalContracts,
+				maximumId,
+				minimumId,
 			);
 
 			const sortedResults = cursorPages?.sortedResults
@@ -1097,12 +1104,25 @@ class ContractService {
 				data: {
 					count: totalContracts,
 					contracts: convertBigIntToNumber(contractData),
-					nextCursor: cursorPages.nextCursor,
+					// nextCursor: cursorPages.nextCursor,
+					// prevCursor:
+					// 	data.page === 0 || data.page === 1
+					// 		? null
+					// 		: cursorPages.previousCursor,
+					nextCursor:
+						data.page > 1 &&
+						cursorPages.nextCursor === cursorPages.previousCursor
+							? null
+							: cursorPages.nextCursor,
 					prevCursor:
-						data.page === 0 || data.page === 1
+						((data.page === 1 || data.page === 0 || !data.page) &&
+							!data.order) ||
+						cursorPages.nextCursor === cursorPages.previousCursor
 							? null
 							: cursorPages.previousCursor,
-					lastPage: lastPage,
+					lastPage: getLastId
+						? getLastId[getLastId.length - 1].id
+						: null,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
 					erc721Count: erc721Count ? Number(erc721Count) : 0,
 					erc777Count: erc777Count ? Number(erc777Count) : 0,
@@ -1407,13 +1427,18 @@ class ContractService {
 			const whereClause = `${searchFilter} ${idFilter}`;
 			console.log('whereClause', whereClause);
 
-			const orderLimitClause = ` ORDER BY "c"."id" ${orderBy}
-			LIMIT ${parsedLimit}`;
+			const orderClause = ` ORDER BY "c"."id" ${orderBy} `;
+			const limitClause = ` LIMIT ${parsedLimit}`;
+
 			const queryContracts =
-				selectContracts + joinFrom + whereClause + orderLimitClause;
+				selectContracts +
+				joinFrom +
+				whereClause +
+				orderClause +
+				limitClause;
 			const resultCountQuery =
 				selectContractsForCount + joinFrom + searchFilter;
-			console.log('queryContracts', queryContracts);
+			console.log('resultCountQuery', resultCountQuery);
 
 			const results: any = await prisma.$queryRawUnsafe(queryContracts);
 			const resultCount: any =
@@ -1429,8 +1454,8 @@ class ContractService {
 					},
 				};
 			}
-			const sortedResults =
-				data.order === 'asc' ? results.reverse() : results;
+			// const sortedResults =
+			// 	data.order === 'asc' ? results.reverse() : results;
 
 			// Determine the first and last page from the search results
 			// const firstContract = results[0].id || null;
@@ -1441,7 +1466,7 @@ class ContractService {
 			const maximumId = resultCount[0].max_id;
 
 			const lastPageRemainder = totalContracts % Number(parsedLimit);
-			const lastPageFilter = ` AND "c"."id" >= ${minimumId}`;
+			const lastPageFilter = ` AND "c"."id" > ${minimumId}`;
 			const lastPageCondition = `${searchFilter} ${lastPageFilter}`;
 			const lastPageLimitCheck = lastPageRemainder
 				? lastPageRemainder
@@ -1455,26 +1480,34 @@ class ContractService {
 				parsedLimit,
 				'id',
 				totalContracts,
+				maximumId,
+				minimumId,
 			);
 
 			console.log('cursorPages', cursorPages);
 
 			let lastPageResult: any;
-			if (totalContracts && totalContracts > parsedLimit) {
-				const lastPageQuery =
-					lastPageSelect +
-					joinFrom +
-					lastPageCondition +
-					lastPageLimit;
-				console.log('lastPageQuery', lastPageQuery);
-				lastPageResult = await prisma.$queryRawUnsafe(lastPageQuery);
-
-				console.log('lastPageResult', lastPageResult);
-				console.log(
-					'lastPageResult',
-					lastPageResult[lastPageResult.length - 1].id,
-				);
+			let orderClauseForLastPage = ` ORDER BY "c"."id" desc `;
+			// if (totalContracts && totalContracts < parsedLimit) {
+			if (!data.order || data.order === 'desc') {
+				console.log('IN CHECKING');
+				orderClauseForLastPage = ` ORDER BY "c"."id" asc `;
 			}
+			const lastPageQuery =
+				lastPageSelect +
+				joinFrom +
+				lastPageCondition +
+				orderClauseForLastPage +
+				lastPageLimit;
+			console.log('lastPageQuery', lastPageQuery);
+			lastPageResult = await prisma.$queryRawUnsafe(lastPageQuery);
+
+			console.log('lastPageResult', lastPageResult);
+			console.log(
+				'lastPageResult',
+				lastPageResult[lastPageResult.length - 1].id,
+			);
+			// }
 
 			// const previousCursor =
 			// 	results[0].id === maximumId ? null : results[0].id;
@@ -1519,7 +1552,9 @@ class ContractService {
 				error: false,
 				message: RES_MSG.CONTRACT,
 				data: {
-					contracts: results ? convertBigIntToNumber(results) : [],
+					contracts: cursorPages.sortedResults
+						? convertBigIntToNumber(cursorPages.sortedResults)
+						: [],
 					contractCount: totalContracts || 0,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
 					erc721Count: erc721Count ? Number(erc721Count) : 0,
@@ -1527,9 +1562,14 @@ class ContractService {
 					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
 					unknownCount: unknownCount ? Number(unknownCount) : 0,
 					count: count ? Number(count) : 0,
-					nextCursor: cursorPages.nextCursor,
+					nextCursor:
+						page > 1 &&
+						cursorPages.nextCursor === cursorPages.previousCursor
+							? null
+							: cursorPages.nextCursor,
 					prevCursor:
-						page === 0 || page === 1
+						((page === 1 || page === 0 || !page) && !data.order) ||
+						cursorPages.nextCursor === cursorPages.previousCursor
 							? null
 							: cursorPages.previousCursor,
 					lastPage: lastPageResult
@@ -1847,8 +1887,6 @@ class ContractService {
 							: {}, // Return empty object if no transfers
 				}),
 			);
-
-			console.log(JSON.stringify({ finalData }, null, 2));
 
 			console.log(JSON.stringify({ finalData }, null, 2));
 			// console.log('It is Here', graphData);
