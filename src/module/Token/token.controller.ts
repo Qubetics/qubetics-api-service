@@ -50,8 +50,11 @@ class TokenController implements Controller {
 	 */
 	private getAllTokens = async (request: Request, response: Response) => {
 		const data = {
-			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
+			page: !request.query?.page ? 1 : Number(request.query.page),
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
+			order: request.query?.order
+				? request.query.order.toString()
+				: 'desc',
 		};
 
 		const contracts = await tokenService.getAllTokens(data);

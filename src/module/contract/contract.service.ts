@@ -21,6 +21,7 @@ import {
 	parseAndFixJson,
 } from '../../lib/utilities.helper';
 import redisHelper from '../../service/redis.helper';
+import moment from 'moment';
 
 class ContractService {
 	async getAllContract_(data: {
@@ -1018,32 +1019,6 @@ class ContractService {
 				take: totalContracts % data.limit || data.limit,
 			});
 
-			// const contractData = contracts.map((contract) => ({
-			// 	...contract,
-			// 	tokenName: contract.contractName, // Alias for "contractName"
-			// 	contractname: contract.ContractVerification?.contractname, // Alias for "ContractVerification.contractname"
-			// 	verificationType:
-			// 		contract.ContractVerification?.verificationType,
-			// 	iconUrl: contract.ContractVerification?.iconUrl,
-			// }));
-
-			// const previousCursor =
-			// 	contracts[0].id === maximumId
-			// 		? null
-			// 		: data.order === 'asc'
-			// 			? contracts[contracts.length - 1].id
-			// 			: contracts[0].id;
-
-			// const nextCursor =
-			// 	contracts.length > 0 &&
-			// 	contracts[contracts.length - 1].id === minimumId
-			// 		? null
-			// 		: data.order === 'asc'
-			// 			? contracts[0].id
-			// 			: contracts[contracts.length - 1].id;
-
-			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
-
 			const groupByResult = await prisma.contracts.groupBy({
 				by: ['contractType'], // Group by the 'type' column
 				_count: {
@@ -1064,11 +1039,11 @@ class ContractService {
 				UNKNOWN: unknownCount,
 			} = counts;
 
-			const offset = totalContracts % data.limit || data.limit;
-			const lastPage =
-				data.order === 'asc'
-					? maximumId - offset
-					: getLastId[getLastId.length - 1].id;
+			// const offset = totalContracts % data.limit || data.limit;
+			// const lastPage =
+			// 	data.order === 'asc'
+			// 		? maximumId - offset
+			// 		: getLastId[getLastId.length - 1].id;
 
 			// const sortedResults =
 			// 	data.order === 'asc' ? contracts.reverse() : contracts;
@@ -1128,7 +1103,6 @@ class ContractService {
 					erc777Count: erc777Count ? Number(erc777Count) : 0,
 					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
 					unknownCount: unknownCount ? Number(unknownCount) : 0,
-					// lastPage: data.order === 'asc' ? maxId : data.limit + 1,
 				},
 			};
 		} catch (err) {
@@ -1681,7 +1655,7 @@ class ContractService {
 	// 	}
 	// }
 
-	async contractGraphs(data: {
+	async contractGraphs_(data: {
 		interval: number;
 		time: string;
 		address: string;
@@ -2022,6 +1996,77 @@ class ContractService {
 	// 		return { key: null };
 	// 	}
 	// };
+
+	async contractGraphs(data: {
+		interval: number;
+		time: string;
+		address: string;
+	}): Promise<any> {
+		try {
+			const now = moment();
+			const intervals = [
+				{
+					start: now.clone().subtract(1, 'years').startOf('year'),
+					end: now.clone().subtract(6, 'months').endOf('month'),
+				},
+				{
+					start: now.clone().subtract(6, 'months').startOf('month'),
+					end: now.clone().endOf('month'),
+				},
+			];
+
+			const analytics = [];
+			for (const interval of intervals) {
+				const transactions = await prisma.transactions.findMany({
+					where: {
+						toAddress: data.address,
+						timestamp: {
+							gte: interval.start.toDate(),
+							lte: interval.end.toDate(),
+						},
+					},
+				});
+
+				const totalTransactions = transactions.length;
+				// const totalAmount = transactions.reduce(
+				// 	(sum: number, tx: { amount: any }) =>
+				// 		sum + Number(tx.amount),
+				// 	0,
+				// );
+				const uniqueSenders = new Set(
+					transactions.map((tx) => tx.fromAddress),
+				).size;
+
+				analytics.push({
+					period: `${interval.start.format(
+						'MMM YYYY',
+					)} - ${interval.end.format('MMM YYYY')}`,
+					totalTransactions,
+					// totalAmount,
+					uniqueSenders,
+				});
+			}
+			console.log('It is Here', analytics);
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					analytics,
+				},
+			};
+		} catch (err) {
+			logger.error('err in getTokenTransfer_2 : ', err);
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
 }
 
 export default new ContractService();

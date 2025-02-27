@@ -9,7 +9,7 @@ import { Prisma } from '@prisma/client';
 import { off } from 'process';
 import logger from '../../lib/logger';
 import Web3 from 'web3';
-import { parseAndFixJson } from '../../lib/utilities.helper';
+import { cursorPagination, parseAndFixJson } from '../../lib/utilities.helper';
 
 class TokenService {
 	/**
@@ -17,7 +17,7 @@ class TokenService {
 	 * @param data
 	 * @returns
 	 */
-	async getAllTokens(data: {
+	async getAllTokens_(data: {
 		page: number;
 		limit: number;
 	}): Promise<IESResponse> {
@@ -610,6 +610,163 @@ class TokenService {
 			};
 		} catch (err) {
 			logger.error('err in getTokenTransfer_2 : ', err);
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	async getAllTokens(data: {
+		page: number;
+		limit: number;
+		order: any;
+	}): Promise<IESResponse> {
+		try {
+			const isFirstPage = data.page === 1;
+			console.log('isFirstPage', isFirstPage, data.page);
+			const a = await prisma.tokens.findMany({
+				take: data.limit,
+				orderBy: {
+					id: data?.order,
+				},
+				where: {
+					type: 'ERC-20',
+					...(isFirstPage
+						? {}
+						: {
+								id:
+									data.order === 'asc'
+										? { gt: data.page }
+										: { lt: data.page },
+							}),
+				},
+			});
+
+			console.log('a ka response', a);
+			const [tokens, tokensCount] = await prisma.$transaction([
+				prisma.tokens.findMany({
+					take: data.limit,
+					orderBy: {
+						id: data?.order,
+					},
+					where: {
+						type: 'ERC-20',
+						...(isFirstPage
+							? {}
+							: {
+									id:
+										data.order === 'asc'
+											? { gt: data.page }
+											: { lt: data.page },
+								}),
+					},
+				}),
+				prisma.tokens.aggregate({
+					_count: { id: true },
+					_min: { id: true },
+					_max: { id: true },
+					where: {
+						type: 'ERC-20',
+					},
+				}),
+			]);
+			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
+
+			const totalTokens: number = tokensCount?._count.id;
+			const minimumId: number = Number(tokensCount?._min.id);
+			const maximumId: number = Number(tokensCount?._max.id);
+
+			const getLastId = await prisma.tokens.findMany({
+				select: {
+					id: true, // Replace 'id' with your desired column
+				},
+				orderBy: {
+					id: 'asc',
+				},
+				where: {
+					type: 'ERC-20',
+					id: {
+						gt: minimumId,
+					},
+				},
+				take: totalTokens % data.limit || data.limit,
+			});
+
+			const cursorPages = cursorPagination(
+				tokens,
+				data.order,
+				'newest',
+				data.limit,
+				'id',
+				totalTokens,
+				maximumId,
+				minimumId,
+			);
+
+			const sortedResults = cursorPages?.sortedResults
+				? cursorPages?.sortedResults
+				: tokens;
+			const getTotalTokens = await Promise.all(
+				sortedResults.map(async (token: any) => {
+					const holdersCount = await prisma.holders.count({
+						where: {
+							contractAddress: token.contractAddress,
+						},
+					});
+					const getIconUrl =
+						await prisma.contractVerification.findFirst({
+							where: {
+								contractAddress: token.contractAddress,
+							},
+							select: {
+								iconUrl: true,
+								contractname: true,
+								verificationType: true,
+							},
+						});
+
+					token.holders = holdersCount; // Add the holders count to the token
+					token.iconUrl = getIconUrl?.iconUrl
+						? getIconUrl?.iconUrl
+						: '';
+					token.verificationType = getIconUrl?.verificationType;
+					token.contractname = getIconUrl?.contractname
+						? getIconUrl?.contractname
+						: '';
+					return token; // Return the modified token
+				}),
+			);
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					count: totalTokens,
+					erc20Count: totalTokens ? Number(totalTokens) : 0,
+					tokens: convertBigIntToNumber(getTotalTokens),
+					nextCursor:
+						data.page > 1 &&
+						cursorPages.nextCursor === cursorPages.previousCursor
+							? null
+							: cursorPages.nextCursor,
+					prevCursor:
+						((data.page === 1 || data.page === 0 || !data.page) &&
+							!data.order) ||
+						cursorPages.nextCursor === cursorPages.previousCursor
+							? null
+							: cursorPages.previousCursor,
+					lastPage: getLastId
+						? getLastId[getLastId.length - 1].id
+						: null,
+				},
+			};
+		} catch (err) {
+			logger.error('err in getAllTokens : ', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
