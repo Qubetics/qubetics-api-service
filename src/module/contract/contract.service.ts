@@ -1015,7 +1015,7 @@ class ContractService {
 						gt: minimumId,
 					},
 				},
-				take: (totalContracts % data.limit) + 1 || data.limit + 1,
+				take: totalContracts % data.limit || data.limit,
 			});
 
 			// const contractData = contracts.map((contract) => ({
@@ -1487,12 +1487,12 @@ class ContractService {
 			console.log('cursorPages', cursorPages);
 
 			let lastPageResult: any;
-			let orderClauseForLastPage = ` ORDER BY "c"."id" desc `;
+			// let orderClauseForLastPage = ` ORDER BY "c"."id" desc `;
 			// if (totalContracts && totalContracts < parsedLimit) {
-			if (!data.order || data.order === 'desc') {
-				console.log('IN CHECKING');
-				orderClauseForLastPage = ` ORDER BY "c"."id" asc `;
-			}
+			// if (!data.order || data.order === 'desc') {
+			// 	console.log('IN CHECKING');
+			// }
+			let orderClauseForLastPage = ` ORDER BY "c"."id" asc `;
 			const lastPageQuery =
 				lastPageSelect +
 				joinFrom +
