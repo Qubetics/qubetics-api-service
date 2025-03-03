@@ -1368,13 +1368,13 @@ class ContractService {
 
 		try {
 			let selectContracts =
-				'SELECT "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply","t"."type", "t"."tokenName", "t"."tokenSymbol", "t"."contractAddress" ';
+				'SELECT "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply","t"."type", "t"."tokenName", "t"."tokenSymbol", "t"."contractAddress", COUNT("h"."address") as holdersCount ';
 			let selectContractsForCount =
 				'SELECT COUNT(c.id) AS count_id, MIN(c.id) AS min_id, MAX(c.id) AS max_id ';
 			let lastPageSelect = ' SELECT (c.id) ';
 
 			let joinFrom =
-				'FROM "Contracts" AS "c" LEFT JOIN "ContractVerification" AS "cv" ON "cv"."contractAddress" = "c"."address" LEFT JOIN "Tokens" AS "t" ON "t"."contractAddress" = "c"."address" ';
+				'FROM "Contracts" AS "c" LEFT JOIN "ContractVerification" AS "cv" ON "cv"."contractAddress" = "c"."address" LEFT JOIN "Tokens" AS "t" ON "t"."contractAddress" = "c"."address" LEFT JOIN "Holders" as h ON "h"."contractAddress" = "t"."contractAddress"';
 
 			let idFilter = '';
 			let searchFilter = `
@@ -1403,16 +1403,22 @@ class ContractService {
 
 			const orderClause = ` ORDER BY "c"."id" ${orderBy} `;
 			const limitClause = ` LIMIT ${parsedLimit}`;
+			const groupByClause = `GROUP BY "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", 
+         "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", 
+         "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", 
+         "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply", "t"."type", 
+         "t"."tokenName", "t"."tokenSymbol", "t"."contractAddress"`;
 
 			const queryContracts =
 				selectContracts +
 				joinFrom +
 				whereClause +
+				groupByClause +
 				orderClause +
 				limitClause;
 			const resultCountQuery =
 				selectContractsForCount + joinFrom + searchFilter;
-			console.log('resultCountQuery', resultCountQuery);
+			console.log('queryContracts', queryContracts);
 
 			const results: any = await prisma.$queryRawUnsafe(queryContracts);
 			const resultCount: any =

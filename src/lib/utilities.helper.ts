@@ -352,7 +352,6 @@ export function cursorPagination(
 	let sortedResults = [...result];
 	if (
 		(orderBy === 'desc' && getFilter === 'oldest') ||
-		(orderBy === 'asc' && getFilter === 'newest') ||
 		(orderBy === 'asc' && getFilter !== 'newest' && getFilter !== 'oldest')
 	) {
 		console.log('Will reverse here');
