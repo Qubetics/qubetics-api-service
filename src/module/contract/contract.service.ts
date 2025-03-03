@@ -1657,11 +1657,11 @@ class ContractService {
 
 	async contractGraphs_(data: {
 		interval: number;
-		time: string;
+		// days: string;
 		address: string;
 	}): Promise<any> {
 		try {
-			const { interval = 30, time = 'daily' } = data;
+			const { interval = 30 } = data;
 			const address = Web3.utils.toChecksumAddress(data.address);
 			const currentDate = new Date();
 			console.log('data-payload', data);
@@ -1783,6 +1783,9 @@ class ContractService {
 			const graphData = tokenTransfers.reduce((acc: any, tx: any) => {
 				console.log('tx', tx);
 				const dateKey = tx.timestamp.toISOString().split('T')[0]; // Group by day
+				// const dateKey = Math.floor(
+				// 	new Date(tx.timestamp).getTime() / 1000,
+				// );
 				if (!acc[dateKey]) {
 					acc[dateKey] = {
 						date: dateKey,
@@ -1850,7 +1853,8 @@ class ContractService {
 			// Convert to final structure
 			const finalData = Object.entries(allDates).map(
 				([date, data]: [string, any]) => ({
-					createdAt: new Date(date).toISOString(),
+					// createdAt: new Date(date).toISOString(),
+					createdAt: Math.floor(new Date(date).getTime() / 1000),
 					count:
 						data.transferCount > 0
 							? {

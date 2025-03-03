@@ -213,14 +213,12 @@ class ContractController implements Controller {
 
 	private contractGraph = async (request: Request, response: Response) => {
 		const data: any = {
-			interval: !request.query?.interval
-				? 'day'
-				: <string>request.query.interval,
-			days: !request.query?.days ? 30 : Number(request.query.days),
+			interval: !request.query?.interval ? 30 : request.query.interval,
+			// days: !request.query?.time ? 30 : Number(request.query.time),
 			address: <string>request.params.address, // to get the params
 		};
 		console.log(data.address, 'contractName-searchContractToken');
-		const searchContractToken = await ContractService.contractGraphs(data);
+		const searchContractToken = await ContractService.contractGraphs_(data);
 
 		if (searchContractToken.error) {
 			return setResponse.error(response, searchContractToken);
