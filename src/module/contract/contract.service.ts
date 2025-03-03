@@ -1749,15 +1749,23 @@ class ContractService {
 				let value: any;
 				let toAddress: any;
 				if (element?.logs) {
+					const eventName = 'transfer';
 					const jsonString = JSON.stringify(element?.logs);
 					const parsedData = JSON.parse(jsonString);
 					const fixedJsonString = parseAndFixJson(element?.logs);
-
-					if (fixedJsonString[0]?.events) {
+					console.log(
+						'elementtxHash_fixedJsonString',
+						fixedJsonString[0].name,
+						fixedJsonString[0].name.toLowerCase(),
+					);
+					if (
+						fixedJsonString[0]?.events &&
+						fixedJsonString[0].name.toLowerCase() === eventName
+					) {
 						fixedJsonString[0]?.events?.forEach((event: any) => {
-							console.log(event.name, 'Name');
-							console.log(event.type, 'Type');
-							console.log(event.value, 'Value');
+							// console.log(event.name, 'Name');
+							// console.log(event.type, 'Type');
+							// console.log(event.value, 'Value');
 							if (
 								event.name === 'value' &&
 								event.value !== undefined
@@ -1842,6 +1850,7 @@ class ContractService {
 					transferCount: 0,
 					transferAmount: 0,
 					uniqueSenders: new Set(),
+					uniqueReceivers: new Set(),
 				};
 			}
 
@@ -1850,6 +1859,7 @@ class ContractService {
 				allDates[date] = data; // Overwrite with actual data
 			}
 
+			console.log('allDates', allDates);
 			// Convert to final structure
 			const finalData = Object.entries(allDates).map(
 				([date, data]: [string, any]) => ({
@@ -1861,6 +1871,11 @@ class ContractService {
 									transferCount: data.transferCount,
 									transferAmount: data.transferAmount,
 									uniqueSenders: data.uniqueSenders.size,
+									uniqueReceivers: data.uniqueReceivers.size,
+									totalUniques: parseInt(
+										data.uniqueSenders.size +
+											data.uniqueReceivers.size,
+									),
 								}
 							: {}, // Return empty object if no transfers
 				}),
