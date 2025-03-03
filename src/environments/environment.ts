@@ -63,6 +63,7 @@ class Environment implements IEnvironment {
 	public RPCURL: string;
 
 	public token_symbol: string;
+
 	public interval: number;
 
 	/**

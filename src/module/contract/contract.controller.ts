@@ -179,7 +179,7 @@ class ContractController implements Controller {
 		const data: any = {
 			page: !request.query?.page ? 0 : Number(request.query.page),
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
-			contractName: <string>request.params[0], // to get the params
+			contractName: request.params[0].trim(), // to get the params
 			order: request.query?.order ? request.query.order : 'desc',
 		};
 
@@ -199,7 +199,7 @@ class ContractController implements Controller {
 		const data = {
 			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
-			contractName: <string>request.params[0], // to get the params
+			contractName: request.params[0].trim(), // to get the params
 		};
 		console.log(data.contractName, 'contractName-searchContractToken');
 		const searchContractToken =
