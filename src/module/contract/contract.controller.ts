@@ -51,7 +51,7 @@ class ContractController implements Controller {
 				getContractValidation,
 				this.searchContractToken_,
 			)
-			.get('/:address/graph', this.contractGraph);
+			.get('/graph/:address', this.contractGraph);
 		// https://api.evm.qa.5ire.network/5ire/contracts/search/0xeE02101Da362c9bFc616F72AbF8301Ba94f3C4fe?page=1&limit=10;
 	}
 
@@ -213,7 +213,7 @@ class ContractController implements Controller {
 
 	private contractGraph = async (request: Request, response: Response) => {
 		const data: any = {
-			interval: !request.query?.interval ? 30 : request.query.interval,
+			// interval: !request.query?.interval ? 30 : request.query.interval,
 			// days: !request.query?.time ? 30 : Number(request.query.time),
 			address: <string>request.params.address, // to get the params
 		};

@@ -1661,8 +1661,22 @@ class ContractService {
 		address: string;
 	}): Promise<any> {
 		try {
-			const { interval = 30 } = data;
+			// const { interval = 30 } = data;
+			const interval: number = environment.interval;
 			const address = Web3.utils.toChecksumAddress(data.address);
+
+			const validateToken = await prisma.contracts.findFirst({
+				where: {
+					address: address,
+				},
+			});
+
+			if (!validateToken) {
+				return {
+					error: true,
+					message: RES_MSG.CONTRACT_NOT_FOUND,
+				};
+			}
 			const currentDate = new Date();
 			console.log('data-payload', data);
 			const fromDate = new Date(currentDate);
