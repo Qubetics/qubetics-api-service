@@ -1483,10 +1483,10 @@ class ContractService {
 			lastPageResult = await prisma.$queryRawUnsafe(lastPageQuery);
 
 			console.log('lastPageResult', lastPageResult);
-			console.log(
-				'lastPageResult',
-				lastPageResult[lastPageResult.length - 1].id,
-			);
+			// console.log(
+			// 	'lastPageResult',
+			// 	lastPageResult[lastPageResult.length - 1].id,
+			// );
 			// }
 
 			// const previousCursor =
@@ -1552,7 +1552,7 @@ class ContractService {
 						cursorPages.nextCursor === cursorPages.previousCursor
 							? null
 							: cursorPages.previousCursor,
-					lastPage: lastPageResult
+					lastPage: lastPageResult.length
 						? lastPageResult[lastPageResult.length - 1].id
 						: null,
 				},
