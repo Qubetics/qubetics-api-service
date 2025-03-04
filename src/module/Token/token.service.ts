@@ -754,12 +754,13 @@ class TokenService {
 						cursorPages.nextCursor === cursorPages.previousCursor
 							? null
 							: cursorPages.nextCursor,
-					prevCursor:
-						((data.page === 1 || data.page === 0 || !data.page) &&
-							!data.order) ||
-						cursorPages.nextCursor === cursorPages.previousCursor
-							? null
-							: cursorPages.previousCursor,
+					// prevCursor:
+					// 	((data.page === 1 || data.page === 0 || !data.page) &&
+					// 		!data.order) ||
+					// 	cursorPages.nextCursor === cursorPages.previousCursor
+					// 		? null
+					// 		: cursorPages.previousCursor,
+					prevCursor: cursorPages.previousCursor,
 					lastPage: getLastId
 						? getLastId[getLastId.length - 1].id
 						: null,

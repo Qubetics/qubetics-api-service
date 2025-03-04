@@ -514,7 +514,6 @@ class BlockService {
 				},
 				take: blockCount % data.limit || data.limit,
 			});
-			console.log('lastPageResult1', lastPageResult);
 
 			const offset: number = blockCount % data.limit || data.limit;
 
@@ -540,8 +539,7 @@ class BlockService {
 				maximumId,
 				minimumId,
 			);
-
-			console.log(cursorPages, 'cursorPages');
+			console.log('minimumId-pre', minimumId, cursorPages.previousCursor);
 			const exists = blocks.some(
 				(item) => serializeBigInt(item.blocknumber) === lastPage,
 			);
@@ -553,7 +551,7 @@ class BlockService {
 				message: RES_MSG.ALL_BLOCK_FETCH,
 				data: {
 					blockCount: Number(blockCount),
-					blocks: convertBigIntToNumber(blocks),
+					blocks: convertBigIntToNumber(cursorPages.sortedResults),
 					nextCursor:
 						blocks.length < data.limit || exists
 							? null

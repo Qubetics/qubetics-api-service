@@ -341,8 +341,7 @@ export function cursorPagination(
 	if (filter) {
 		getFilter = filter;
 	}
-	console.log('ORDER BY-', orderBy);
-	console.log('FILTER BY-', filter);
+
 	console.log('RESULT', result);
 	// orderBy === 'desc' && getFilter === 'oldest'
 	// 	? result.reverse()
@@ -360,17 +359,27 @@ export function cursorPagination(
 		// sortedResults = result.reverse();
 		sortedResults = [...result].reverse();
 	}
+	console.log('SORTED-RESULT', result);
 
 	/** to get the next page :  get the last element of the result */
 	let nextCursor = null;
 	let previousCursor = null;
-	if (!orderBy || orderBy === 'desc') {
+	if (
+		!orderBy ||
+		orderBy === 'desc' ||
+		(orderBy === 'asc' && getFilter === 'oldest')
+	) {
 		nextCursor = sortedResults[sortedResults.length - 1][uniqueParam];
 		previousCursor = sortedResults[0][uniqueParam];
-	} else if (orderBy === 'asc') {
+	} else {
 		nextCursor = result[0][uniqueParam];
 		previousCursor = result[result.length - 1][uniqueParam];
 	}
+
+	// else if () {
+	// 	nextCursor = result[0][uniqueParam];
+	// 	previousCursor = result[result.length - 1][uniqueParam];
+	// }
 
 	// if (!orderBy || orderBy === 'desc') {
 	// 	nextCursor = sortedResults[sortedResults.length - 1][uniqueParam];
@@ -382,12 +391,21 @@ export function cursorPagination(
 	/** to get the previous page : get the first element of the result */
 	// previousCursor = result ? result[result.length - 1][uniqueParam] : null;
 	const lastPageRemainder = totalRecords % Number(limit);
-	console.log('minimumId', minimumId);
-	console.log('maximumId', maximumId);
+
 	return {
 		sortedResults,
-		nextCursor: nextCursor === minimumId ? null : nextCursor,
-		previousCursor: previousCursor === maximumId ? null : previousCursor,
+		nextCursor:
+			Number(nextCursor) === Number(minimumId) ||
+			Number(nextCursor) === Number(maximumId) ||
+			Number(nextCursor) === Number(previousCursor)
+				? null
+				: nextCursor,
+		previousCursor:
+			Number(previousCursor) === Number(maximumId) ||
+			Number(previousCursor) === Number(minimumId) ||
+			Number(nextCursor) === Number(previousCursor)
+				? null
+				: previousCursor,
 		lastPageRemainder,
 	};
 }
