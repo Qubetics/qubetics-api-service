@@ -336,13 +336,14 @@ export function cursorPagination(
 	maximumId: number,
 	minimumId: number,
 ) {
-	let getFilter = 'newest';
-	console.log(uniqueParam, 'uniqueParam');
+	let getFilter = '';
 
 	if (filter) {
 		getFilter = filter;
 	}
-
+	console.log('ORDER BY-', orderBy);
+	console.log('FILTER BY-', filter);
+	console.log('RESULT', result);
 	// orderBy === 'desc' && getFilter === 'oldest'
 	// 	? result.reverse()
 	// 	: orderBy === 'asc' && getFilter === 'newest'
@@ -352,10 +353,11 @@ export function cursorPagination(
 	let sortedResults = [...result];
 	if (
 		(orderBy === 'desc' && getFilter === 'oldest') ||
+		(orderBy === 'asc' && getFilter === 'newest') ||
 		(orderBy === 'asc' && getFilter !== 'newest' && getFilter !== 'oldest')
 	) {
 		console.log('Will reverse here');
-		sortedResults = sortedResults.reverse();
+		sortedResults = result.reverse();
 		// sortedResults = [...result].reverse();
 	}
 

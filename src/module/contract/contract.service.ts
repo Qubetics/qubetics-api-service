@@ -1050,7 +1050,7 @@ class ContractService {
 			const cursorPages = cursorPagination(
 				contracts,
 				data.order,
-				'newest',
+				'',
 				data.limit,
 				'id',
 				totalContracts,
@@ -1403,7 +1403,7 @@ class ContractService {
 
 			const orderClause = ` ORDER BY "c"."id" ${orderBy} `;
 			const limitClause = ` LIMIT ${parsedLimit}`;
-			const groupByClause = `GROUP BY "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", 
+			const groupByClause = ` GROUP BY "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", 
          "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", 
          "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", 
          "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply", "t"."type", 
@@ -1456,7 +1456,7 @@ class ContractService {
 			const cursorPages: any = cursorPagination(
 				results,
 				orderBy,
-				'newest',
+				'',
 				parsedLimit,
 				'id',
 				totalContracts,

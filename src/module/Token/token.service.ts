@@ -700,7 +700,7 @@ class TokenService {
 			const cursorPages = cursorPagination(
 				tokens,
 				data.order,
-				'newest',
+				'',
 				data.limit,
 				'id',
 				totalTokens,
