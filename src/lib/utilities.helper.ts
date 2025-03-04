@@ -357,8 +357,8 @@ export function cursorPagination(
 		(orderBy === 'asc' && getFilter !== 'newest' && getFilter !== 'oldest')
 	) {
 		console.log('Will reverse here');
-		sortedResults = result.reverse();
-		// sortedResults = [...result].reverse();
+		// sortedResults = result.reverse();
+		sortedResults = [...result].reverse();
 	}
 
 	/** to get the next page :  get the last element of the result */
