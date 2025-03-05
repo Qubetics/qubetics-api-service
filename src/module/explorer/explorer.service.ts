@@ -769,6 +769,9 @@ class ExplorerService {
 					latest_block: latest_block,
 					total_transactions: transactionCount,
 					total_accounts: userCount,
+					bondedTokens: data?.bondedTokens
+						? Number(data.bondedTokens)
+						: 0,
 				},
 			};
 		} catch (err) {

@@ -124,6 +124,7 @@ const calculateData = async (): Promise<
 			apr: string;
 			circulationSupply: number;
 			validator: number;
+			bondedTokens: number;
 	  }
 	| { error: boolean; message: string }
 > => {
@@ -149,10 +150,12 @@ const calculateData = async (): Promise<
 
 		const expoValue: number = getDigitsAfterE(actualAPR.toString());
 		const actualapr = actualAPR.toFixed(expoValue);
+		console.log('params124', params);
 		return {
 			apr: actualapr,
 			circulationSupply: params?.circulation_supply,
 			validator: params?.validator,
+			bondedTokens: params?.bondedTokens,
 		};
 	} catch (err) {
 		logger.error('Error occurred while calculating stake APR', err);
