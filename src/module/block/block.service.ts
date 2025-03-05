@@ -495,26 +495,26 @@ class BlockService {
 			console.log(zerothElement, 'zerothElement');
 
 			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
-
+			console.log('data.filterBy', data.filterBy, data.order);
 			const lastPageResult = await prisma.blocks.findMany({
 				select: {
 					blocknumber: true,
 				},
 				orderBy: {
 					blocknumber:
-						data.filterBy === 'newest' && data.order === 'desc'
+						data.filterBy === 'newest' || !data.filterBy
 							? 'asc'
 							: 'desc',
 				},
 				where: {
 					blocknumber:
-						data.order === 'asc'
-							? { lt: maximumId }
-							: { gt: minimumId },
+						data.filterBy === 'newest' || !data.filterBy
+							? { gt: minimumId }
+							: { lt: maximumId },
 				},
 				take: blockCount % data.limit || data.limit,
 			});
-
+			console.log('lastPageResult', lastPageResult);
 			const offset: number = blockCount % data.limit || data.limit;
 
 			// const lastPage =
@@ -539,13 +539,13 @@ class BlockService {
 				maximumId,
 				minimumId,
 			);
-			console.log('minimumId-pre', minimumId, cursorPages.previousCursor);
-			const exists = blocks.some(
-				(item) => serializeBigInt(item.blocknumber) === lastPage,
+			console.log(
+				'minimumId-pre',
+				minimumId,
+				cursorPages.previousCursor,
+				cursorPages.nextCursor,
 			);
-			if (exists) {
-				console.log('In am on last page');
-			}
+
 			return {
 				error: false,
 				message: RES_MSG.ALL_BLOCK_FETCH,
@@ -553,14 +553,11 @@ class BlockService {
 					blockCount: Number(blockCount),
 					blocks: convertBigIntToNumber(cursorPages.sortedResults),
 					nextCursor:
-						blocks.length < data.limit || exists
+						blocks.length < data.limit
 							? null
 							: serializeBigInt(cursorPages.nextCursor),
-					prevCursor:
-						data.page === 0 || data.page === 1
-							? null
-							: serializeBigInt(cursorPages.previousCursor),
-					lastPage: exists ? null : lastPage,
+					prevCursor: serializeBigInt(cursorPages.previousCursor),
+					lastPage: lastPage,
 				},
 			};
 		} catch (err) {
