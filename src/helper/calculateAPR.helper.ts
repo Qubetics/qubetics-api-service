@@ -150,7 +150,6 @@ const calculateData = async (): Promise<
 
 		const expoValue: number = getDigitsAfterE(actualAPR.toString());
 		const actualapr = actualAPR.toFixed(expoValue);
-		console.log('params124', params);
 		return {
 			apr: actualapr,
 			circulationSupply: params?.circulation_supply,

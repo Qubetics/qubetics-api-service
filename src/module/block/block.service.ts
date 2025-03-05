@@ -376,17 +376,18 @@ class BlockService {
 
 	async getAverageBlockTime(blockCount = 10): Promise<IESResponse> {
 		const avgTime = await RedisService.getString(REDIS_KEY.BLOCK_AVG_TIME);
+		const latestBlock = await RedisService.getString(
+			CONST_NAME.LATEST_BLOCK,
+		);
 		try {
 			if (avgTime) {
 				return {
 					error: false,
 					message: RES_MSG.BLOCK_AVG_SUCCESS,
-					data: { avgTime: avgTime },
+					data: { avgTime: avgTime, currentBlock: latestBlock },
 				};
 			}
-
 			const currentBlock = await web3Helper.getBlockNumber();
-
 			const blockNumber = +currentBlock.toString();
 			const calls = [];
 			for (let i = 0; i <= blockCount; i++) {
@@ -414,7 +415,10 @@ class BlockService {
 			return {
 				error: false,
 				message: RES_MSG.BLOCK_AVG_SUCCESS,
-				data: { avgTime: Number(avg).toFixed(2) },
+				data: {
+					avgTime: Number(avg).toFixed(2),
+					currentBlock,
+				},
 			};
 		} catch (err) {
 			logger.error('Error inside block avg', err);
@@ -422,7 +426,10 @@ class BlockService {
 			return {
 				error: false,
 				message: RES_MSG.BLOCK_AVG_SUCCESS,
-				data: { avgTime: avgTime || environment?.averageBlockTime },
+				data: {
+					avgTime: avgTime || environment?.averageBlockTime,
+					currentBlock: latestBlock,
+				},
 			};
 		}
 	}
