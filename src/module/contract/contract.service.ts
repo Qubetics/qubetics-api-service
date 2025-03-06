@@ -256,13 +256,17 @@ class ContractService {
 						where: {
 							contractAddress: data.contractAddress,
 							method: {
-								not: 'transfer',
+								// not: 'transfer',
+								notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
 							},
 						},
 					}),
 					prisma.contractLogs.count({
 						where: {
 							contractAddress: data.contractAddress,
+							method: {
+								notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
+							},
 						},
 					}),
 				],
@@ -270,50 +274,50 @@ class ContractService {
 
 			console.log('contractLogs....................', contractLogs);
 
-			if (!contractLogs?.length) {
-				const [contractTx, contractTxCount] = await prisma.$transaction(
-					[
-						prisma.transactions.findMany({
-							skip: data.page * data.limit,
-							take: data.limit,
-							orderBy: {
-								createdAt: 'desc',
-							},
-							where: {
-								toAddress: data.contractAddress,
-							},
-						}),
-						prisma.transactions.count({
-							where: {
-								toAddress: data.contractAddress,
-							},
-						}),
-					],
-				);
+			// if (!contractLogs?.length) {
+			// 	const [contractTx, contractTxCount] = await prisma.$transaction(
+			// 		[
+			// 			prisma.transactions.findMany({
+			// 				skip: data.page * data.limit,
+			// 				take: data.limit,
+			// 				orderBy: {
+			// 					createdAt: 'desc',
+			// 				},
+			// 				where: {
+			// 					toAddress: data.contractAddress,
+			// 				},
+			// 			}),
+			// 			prisma.transactions.count({
+			// 				where: {
+			// 					toAddress: data.contractAddress,
+			// 				},
+			// 			}),
+			// 		],
+			// 	);
 
-				if (!contractTx?.length)
-					throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
+			// 	if (!contractTx?.length)
+			// 		throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
 
-				return {
-					error: false,
-					message: RES_MSG.CONTRACT_TX,
-					data: {
-						count: contractTxCount,
-						contracts: convertBigIntToNumber(contractTx).map(
-							(item) => ({
-								...item,
-								txHash: item.txhash,
-								blockNumber: item.blocknumber,
-								method: item?.method
-									? item.method
-									: item?.methodSignature,
-							}),
-						),
-					},
-				};
-			}
+			// 	return {
+			// 		error: false,
+			// 		message: RES_MSG.CONTRACT_TX,
+			// 		data: {
+			// 			count: contractTxCount,
+			// 			contracts: convertBigIntToNumber(contractTx).map(
+			// 				(item) => ({
+			// 					...item,
+			// 					txHash: item.txhash,
+			// 					blockNumber: item.blocknumber,
+			// 					method: item?.method
+			// 						? item.method
+			// 						: item?.methodSignature,
+			// 				}),
+			// 			),
+			// 		},
+			// 	};
+			// }
 			const dataToSend: any = [];
-			contractLogs.forEach((e: any) => {
+			contractLogs?.forEach((e: any) => {
 				const data = {
 					...e,
 					toAddress: e?.transactions?.toAddress || '',
@@ -351,57 +355,99 @@ class ContractService {
 		try {
 			const [contractLogs, contractLogsCount] = await prisma.$transaction(
 				[
-					prisma.contractLogs.findMany({
+					// prisma.contractLogs.findMany({
+					// 	skip: data.page * data.limit,
+					// 	take: data.limit,
+					// 	orderBy: {
+					// 		createdAt: 'desc',
+					// 	},
+					// 	where: {
+					// 		contractAddress: data.contractAddress,
+					// 		OR: [
+					// 			{ methodSignature: '0xddf252ad' },
+					// 			{ method: 'transfer' },
+					// 		],
+					// 	},
+					// 	select: {
+					// 		...CONTRACTLOGS,
+					// 		transactions: {
+					// 			select: {
+					// 				toAddress: true,
+					// 				fromAddress: true,
+					// 			},
+					// 		},
+					// 	},
+					// }),
+					prisma.transactions.findMany({
 						skip: data.page * data.limit,
 						take: data.limit,
-						orderBy: {
-							createdAt: 'desc',
-						},
+						orderBy: { createdAt: 'desc' },
 						where: {
-							contractAddress: data.contractAddress,
 							OR: [
-								{ methodSignature: '0xddf252ad' },
-								{ method: 'transfer' },
+								{ toAddress: data.contractAddress },
+								{ fromAddress: data.contractAddress },
 							],
 						},
 						select: {
-							...CONTRACTLOGS,
-							transactions: {
+							id: true,
+							toAddress: true,
+							fromAddress: true,
+							txhash: true,
+							blockhash: true,
+							blocknumber: true,
+							status: true,
+							timestamp: true,
+							ContractLogs: {
+								where: {
+									OR: [
+										{ methodSignature: '0xddf252ad' },
+										{ method: 'transfer' },
+									],
+								},
 								select: {
-									toAddress: true,
-									fromAddress: true,
+									...CONTRACTLOGS,
 								},
 							},
 						},
 					}),
-					prisma.contractLogs.count({
+					prisma.transactions.count({
 						where: {
-							contractAddress: data.contractAddress,
 							OR: [
-								{ methodSignature: '0xddf252ad' },
-								{ method: 'transfer' },
+								{ toAddress: data.contractAddress },
+								{ fromAddress: data.contractAddress },
 							],
 						},
 					}),
 				],
 			);
-			if (!contractLogs?.length) throw new Error(RES_MSG.NOT_FOUND);
 
+			if (!contractLogs?.length) throw new Error(RES_MSG.NOT_FOUND);
+			console.log('transferLogs', contractLogs, contractLogsCount);
 			const dataToSend: any = [];
 			contractLogs.forEach((e: any) => {
+				console.log(e, 'ResE');
 				const data = {
 					...e,
-					toAddress: e?.transactions?.toAddress || '',
-					fromAddress: e?.transactions?.fromAddress || '',
+					contractAddress: e?.ContractLogs[0]?.contractAddress || '',
+					txHash: e?.ContractLogs[0]?.txHash || '',
+					blockNumber: e?.ContractLogs[0]?.blockNumber || '',
+					blockHash: e?.ContractLogs[0]?.blockHash || '',
+
+					method: e?.ContractLogs[0]?.method || '',
+					methodSignature: e?.ContractLogs[0]?.methodSignature || '',
+					gasFee: e?.ContractLogs[0]?.gasFee || '',
+					createdAt: e?.ContractLogs[0]?.createdAt || '',
 				};
-				delete data.transactions;
+				delete data.ContractLogs;
 				dataToSend.push(data);
 			});
+			console.log('dataToSend', dataToSend);
+
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT_TX,
 				data: {
-					count: contractLogsCount,
+					count: Number(contractLogsCount),
 					contracts: convertBigIntToNumber(dataToSend),
 				},
 			};
