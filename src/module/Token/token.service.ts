@@ -627,7 +627,7 @@ class TokenService {
 		order: any;
 	}): Promise<IESResponse> {
 		try {
-			const isFirstPage = data.page === 1 && !data.order;
+			const isFirstPage = data.page === 1 && data.order !== 'asc';
 			console.log('isFirstPage', isFirstPage, data.page);
 			const a = await prisma.tokens.findMany({
 				take: data.limit,

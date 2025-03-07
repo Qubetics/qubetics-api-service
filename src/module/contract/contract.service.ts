@@ -999,7 +999,7 @@ class ContractService {
 		order: any;
 	}): Promise<IESResponse> {
 		try {
-			const isFirstPage = data.page === 1 && !data.order;
+			const isFirstPage = data.page === 1 && data.order !== 'asc';
 
 			console.log(isFirstPage ? 'firstpage' : 'working');
 

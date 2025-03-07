@@ -27,7 +27,7 @@ class BlockService {
 			let maxId = 0;
 			let minId: any = 0;
 			let zerothElement = 0;
-			const isFirstPage = data.page === 1 && !data.order;
+			let isFirstPage = data.page === 1;
 			let blocks = await prisma.blocks.findMany({
 				orderBy: {
 					blocknumber: data.order,
