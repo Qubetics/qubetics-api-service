@@ -395,15 +395,19 @@ export function cursorPagination(
 	return {
 		sortedResults,
 		nextCursor:
-			Number(nextCursor) === Number(minimumId) ||
-			Number(nextCursor) === Number(maximumId) ||
-			Number(nextCursor) === Number(previousCursor)
+			(Number(nextCursor) === Number(minimumId) &&
+				(!getFilter || getFilter === 'newest')) ||
+			(Number(nextCursor) === Number(maximumId) &&
+				getFilter === 'oldest') ||
+			Number(totalRecords) < Number(limit)
 				? null
 				: nextCursor,
 		previousCursor:
-			Number(previousCursor) === Number(maximumId) ||
-			Number(previousCursor) === Number(minimumId) ||
-			Number(nextCursor) === Number(previousCursor)
+			(Number(previousCursor) === Number(maximumId) &&
+				(!getFilter || getFilter === 'newest')) ||
+			(Number(previousCursor) === Number(minimumId) &&
+				getFilter === 'oldest') ||
+			Number(totalRecords) < Number(limit)
 				? null
 				: previousCursor,
 		lastPageRemainder,
