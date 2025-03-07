@@ -999,10 +999,10 @@ class ContractService {
 		order: any;
 	}): Promise<IESResponse> {
 		try {
-			let isLimitFullFilled = true;
-			const isFirstPage = data.page === 1;
-			let maxId: any = 0;
-			let minId: any = 0;
+			const isFirstPage = data.page === 1 && !data.order;
+
+			console.log(isFirstPage ? 'firstpage' : 'working');
+
 			let contracts = await prisma.contracts.findMany({
 				select: {
 					id: true,
@@ -1038,6 +1038,8 @@ class ContractService {
 						},
 				take: data.limit,
 			});
+
+			console.log('contractsXXX', contracts);
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 
 			const contractCount = await prisma.contracts.aggregate({
@@ -1130,11 +1132,7 @@ class ContractService {
 					// 	data.page === 0 || data.page === 1
 					// 		? null
 					// 		: cursorPages.previousCursor,
-					nextCursor:
-						data.page > 1 &&
-						cursorPages.nextCursor === cursorPages.previousCursor
-							? null
-							: cursorPages.nextCursor,
+					nextCursor: cursorPages.nextCursor,
 					// prevCursor:
 					// 	((data.page === 1 || data.page === 0 || !data.page) &&
 					// 		!data.order) ||

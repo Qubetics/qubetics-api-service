@@ -627,7 +627,7 @@ class TokenService {
 		order: any;
 	}): Promise<IESResponse> {
 		try {
-			const isFirstPage = data.page === 1;
+			const isFirstPage = data.page === 1 && !data.order;
 			console.log('isFirstPage', isFirstPage, data.page);
 			const a = await prisma.tokens.findMany({
 				take: data.limit,
@@ -647,7 +647,6 @@ class TokenService {
 				},
 			});
 
-			console.log('a ka response', a);
 			const [tokens, tokensCount] = await prisma.$transaction([
 				prisma.tokens.findMany({
 					take: data.limit,
