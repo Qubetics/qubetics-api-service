@@ -12,7 +12,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			inflationRateResponse,
 			poolResponse,
 			paramsResponse,
-			totalSupply,
+			total_Supply,
 			annualProvision,
 		] = await Promise.all([
 			apiRes.get('/cosmos/staking/v1beta1/validators'),
@@ -26,14 +26,19 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			apiRes.get('/cosmos/mint/v1beta1/annual_provisions'),
 		]);
 
-		const activeValidators = validatorResponse?.data?.validators.filter(
+		const activeValidator = validatorResponse?.data?.validators.filter(
 			(item: any) => item.status === CONST_NAME.BOND_STATUS,
 		);
 
+		if (activeValidator?.length === 0) {
+			return false;
+		}
 		const validator = validatorResponse?.data?.validators;
 		console.log('Total Validators', validator);
 
-		if (validator?.length === 0) {
+		const totalValidator: number | undefined =
+			validatorResponse?.data?.validators?.length;
+		if (totalValidator === undefined) {
 			return false;
 		}
 
@@ -54,15 +59,22 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 
 		const communityTax = Number(paramsResponse.data.params.community_tax);
 		const annualProvisions = annualProvision.data.annual_provisions;
+		const totalSupply = total_Supply.data.supply[0].amount;
+
+		const bondedRate = Number(
+			((bondedTokens / totalSupply) * 100).toFixed(3),
+		);
 		return {
 			annualProvisions,
 			blocksPerYear,
 			inflation,
 			bondedTokens,
 			communityTax,
-			validator: validator?.length,
+			activeValidator: activeValidator?.length,
+			totalValidator,
 			circulation_supply,
-			total_supply: totalSupply.data.supply[0].amount,
+			bondedRate,
+			total_supply: totalSupply,
 		};
 	} catch (error) {
 		logger.error('getParams Error', error);
@@ -125,6 +137,8 @@ const calculateData = async (): Promise<
 			circulationSupply: number;
 			validator: number;
 			bondedTokens: number;
+			bondedRate: number;
+			totalValidator: number;
 	  }
 	| { error: boolean; message: string }
 > => {
@@ -153,8 +167,10 @@ const calculateData = async (): Promise<
 		return {
 			apr: actualapr,
 			circulationSupply: params?.circulation_supply,
-			validator: params?.validator,
+			validator: params?.activeValidator,
 			bondedTokens: params?.bondedTokens,
+			bondedRate: params?.bondedRate,
+			totalValidator: params?.totalValidator,
 		};
 	} catch (err) {
 		logger.error('Error occurred while calculating stake APR', err);
