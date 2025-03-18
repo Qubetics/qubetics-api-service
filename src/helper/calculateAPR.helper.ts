@@ -69,7 +69,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			annualProvisions,
 			blocksPerYear,
 			inflation,
-			bondedTokens: bondedTokens / 10 ** 18,
+			bondedTokens,
 			communityTax,
 			activeValidator: activeValidator?.length,
 			totalValidator,
