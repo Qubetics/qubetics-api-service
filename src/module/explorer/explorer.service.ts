@@ -772,6 +772,8 @@ class ExplorerService {
 					bondedTokens: data?.bondedTokens
 						? Number(data.bondedTokens)
 						: 0,
+					bondedRate: data?.bondedRate,
+					totalValidator: data?.totalValidator,
 				},
 			};
 		} catch (err) {
