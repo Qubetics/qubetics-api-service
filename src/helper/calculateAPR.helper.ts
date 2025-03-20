@@ -54,16 +54,16 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 		blocksPerYear = Number(blocksPerYear / 2);
 		const inflation = formattedInflationRate;
 
-		// const bondedTokens =
-		// 	Number(poolResponse.data.pool.bonded_tokens) / 10 ** 18;
-		const bondedTokens = Number(poolResponse.data.pool.bonded_tokens);
+		const bondedTokens =
+			Number(poolResponse.data.pool.bonded_tokens) / 10 ** 18;
+		// const bondedTokens = Number(poolResponse.data.pool.bonded_tokens);
 		console.log('total_Supply', total_Supply);
 		const communityTax = Number(paramsResponse.data.params.community_tax);
 		const annualProvisions = annualProvision.data.annual_provisions;
 		const totalSupply = Number(total_Supply.data.supply[0].amount);
 		console.log('totalSupply', totalSupply, bondedTokens);
 
-		const bondedRate = Number(bondedTokens / totalSupply) * 100;
+		const bondedRate = Number((bondedTokens / circulation_supply) * 100);
 		console.log('bondedRate', bondedRate);
 		return {
 			annualProvisions,
