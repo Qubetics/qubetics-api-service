@@ -71,9 +71,12 @@ class Web3Helper {
 		}
 	}
 
-	async getTransactionCount(publicKey: string) {
+	async getTransactionCount(publicKey: string, nonceType: string = '') {
 		try {
-			return await this.web3.eth.getTransactionCount(publicKey);
+			return await this.web3.eth.getTransactionCount(
+				publicKey,
+				nonceType,
+			);
 		} catch (err) {
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
 			// throw new Error(BLOCKCHAIN_ERROR_MSG.TRANSACTION_COUNT);

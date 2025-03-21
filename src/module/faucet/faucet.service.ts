@@ -7,6 +7,7 @@ import {
 	isExponentialNumber,
 	getDigitsAfterE,
 } from '../../lib/utilities.helper';
+import web3Helper from '../../helper/web3.helper';
 
 class FaucetService {
 	async captchaRequest(token: string) {
@@ -71,6 +72,11 @@ class FaucetService {
 				if (Number(faucetBalance) <= Number(value))
 					throw new Error(RES_MSG.FAUCET_ACCOUNT_BALANCE_LOW);
 
+				const nonce = await web3Helper.getTransactionCount(
+					environment.publicKey,
+					'pending',
+				);
+
 				const rawTransaction = {
 					to: to,
 					gas: CONST_NAME.GAS,
@@ -78,13 +84,14 @@ class FaucetService {
 					maxFeePerGas: CONST_NAME.MAX_FEES,
 					maxPriorityFeePerGas: CONST_NAME.MAX_PRIORIY_FEES,
 					value: (Number(value) * Math.pow(10, 18)).toString(),
-					nonce: Number(
-						(
-							await Web3Helper.getTransactionCount(
-								environment.publicKey,
-							)
-						).toString(),
-					),
+					// nonce: Number(
+					// 	(
+					// 		await Web3Helper.getTransactionCount(
+					// 			environment.publicKey,
+					// 		)
+					// 	).toString(),
+					// ),
+					nonce: Number(nonce.toString()),
 				};
 
 				const signedTx = await Web3Helper.signTransaction(
