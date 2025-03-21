@@ -79,8 +79,10 @@ jobs:
               IMAGE_TAG: ${{ github.sha  }}
               HUAWEI_IMAGE: ${{ inputs.HUAWEI_IMAGE }}
             run: |
-              echo "${{ inputs.ENV }}" >> .env
-              cat .env
+              if [ -n "${{ inputs.ENV }}" ]; then
+                echo "${{ inputs.ENV }}" >> .env
+                cat .env
+              fi  
               docker build --no-cache -t $REGISTRY/$SWR_ORGANIZATION/$HUAWEI_IMAGE:${{ github.run_number }} .
               docker push $REGISTRY/$SWR_ORGANIZATION/$HUAWEI_IMAGE:${{ github.run_number }}
 
