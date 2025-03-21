@@ -79,10 +79,15 @@ jobs:
               IMAGE_TAG: ${{ github.sha  }}
               HUAWEI_IMAGE: ${{ inputs.HUAWEI_IMAGE }}
             run: |
-              if [ -n "${{ inputs.ENV }}" ]; then
-                echo "${{ inputs.ENV }}" >> .env
-                cat .env
-              fi 
+              if [ -f ".env" ]; then
+                echo ".env file exists. Using existing .env file."
+              elif [ -n "${{ inputs.ENV }}" ]; then
+                echo "${{ inputs.ENV }}" > .env
+                echo "Created new .env file with provided ENV."
+              else
+                echo "No .env file and no ENV provided. Proceeding without an .env file."
+              fi
+              cat .env || echo "No .env file present."
               docker build --no-cache -t $REGISTRY/$SWR_ORGANIZATION/$HUAWEI_IMAGE:${{ github.run_number }} .
               docker push $REGISTRY/$SWR_ORGANIZATION/$HUAWEI_IMAGE:${{ github.run_number }}
 
