@@ -66,6 +66,8 @@ class Environment implements IEnvironment {
 
 	public interval: number;
 
+	public rpcServers: string;
+
 	/**
 	 *
 	 * @param NODE_ENV
@@ -101,6 +103,7 @@ class Environment implements IEnvironment {
 		this.RPCURL = <string>process.env.HTTP_HOST;
 		this.token_symbol = <string>process.env.TOKEN_SYMBOL;
 		this.interval = Number(process.env.INTERVAL) || 90;
+		this.rpcServers = <string>process.env.RPC_SERVERS;
 	}
 
 	/**

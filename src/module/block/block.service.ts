@@ -15,6 +15,7 @@ import prisma from '../../lib/db';
 import web3Helper from '../../helper/web3.helper';
 import logger from '../../lib/logger';
 import { cursorPagination } from '../../lib/utilities.helper';
+import axios from 'axios';
 
 class BlockService {
 	async getAllLatestBlock_1(data: {
@@ -574,6 +575,30 @@ class BlockService {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
 				}
+				return { error: true, message: err.message };
+			}
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async stateSync(): Promise<IESResponse> {
+		try {
+			const url = environment.nodeLink;
+			const response: any = await axios.get(url + '/block?height');
+			console.log(response.data?.result, 'RESPONSE-getBlockHeight');
+			const rpcServers = environment.rpcServers;
+
+			return {
+				error: false,
+				message: RES_MSG.BLOCK_FETCH,
+				data: {
+					height: response.data?.result?.block?.header?.height.toString(),
+					hash: response.data?.result?.block_id?.hash?.toString(),
+					rpcServers,
+				},
+			};
+		} catch (err) {
+			if (err instanceof Error) {
 				return { error: true, message: err.message };
 			}
 			return { error: true, message: RES_MSG.ERROR };

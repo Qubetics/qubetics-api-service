@@ -28,7 +28,8 @@ class ExplorerController implements Controller {
 				this.getBlockByHash,
 			)
 			.get('/get-latest-block', this.getLatestBlock)
-			.get('/block-time', this.blockTime);
+			.get('/block-time', this.blockTime)
+			.get('/state-sync', this.getStateSync);
 	}
 
 	private getAllBlock = async (request: Request, response: Response) => {
@@ -108,6 +109,15 @@ class ExplorerController implements Controller {
 
 	private blockTime = async (request: Request, response: Response) => {
 		const res = await BlockService.getAverageBlockTime(20);
+
+		if (res.error) {
+			return setResponse.error(response, res);
+		}
+		return setResponse.success(response, res);
+	};
+
+	private getStateSync = async (request: Request, response: Response) => {
+		const res = await BlockService.stateSync();
 
 		if (res.error) {
 			return setResponse.error(response, res);
