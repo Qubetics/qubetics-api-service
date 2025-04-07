@@ -495,6 +495,10 @@ class BlockService {
 					},
 				});
 				blockCount = result._count.blocknumber;
+				await RedisService.setString(
+					REDIS_KEY.BLOCKS_COUNT,
+					blockCount.toString(),
+				);
 			}
 
 			const blockCountData = await prisma.blocks.aggregate({
@@ -606,13 +610,15 @@ class BlockService {
 				};
 			}
 			const url = environment.stateSyncUrl;
+			const rpcServers = environment.rpcServers;
 			const response: any = await axios.get(url);
 
 			console.log(response?.data?.result, 'stateSyncUrl');
 			const result = response?.data?.result?.response
 				? response.data?.result?.response
 				: '';
-
+			result.rpcServers = rpcServers ? rpcServers : '';
+			console.log('result', result);
 			await RedisService.setStringWithExpiry(
 				REDIS_KEY.STATE_SYNC,
 				result,
@@ -628,12 +634,6 @@ class BlockService {
 			};
 		} catch (err) {
 			console.log('Error stateSync', err);
-			const avgTime = await RedisService.getString(
-				REDIS_KEY.BLOCK_AVG_TIME,
-			);
-			const latestBlock = await RedisService.getString(
-				CONST_NAME.LATEST_BLOCK,
-			);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}

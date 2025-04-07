@@ -483,7 +483,10 @@ class TokenService {
 			tr."type",
             dl.input,
 			tr.status,
-			dl.logs
+			dl.logs,
+			tr.txFee,
+			tr.gas,
+			tr.gasPrice
             FROM
             "Transactions" tr
             LEFT JOIN
@@ -530,8 +533,8 @@ class TokenService {
 					if (fixedJsonString[0]?.events) {
 						fixedJsonString[0]?.events?.forEach((event: any) => {
 							console.log(event.name, 'Name');
-							console.log(event.type, 'Tyope');
-							console.log(event.value, 'Valye');
+							console.log(event.type, 'Type');
+							console.log(event.value, 'Value');
 							if (
 								event.name === 'value' &&
 								event.value !== undefined
