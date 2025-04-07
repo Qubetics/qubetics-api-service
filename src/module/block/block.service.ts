@@ -390,6 +390,16 @@ class BlockService {
 			}
 			const currentBlock = await web3Helper.getBlockNumber();
 			const blockNumber = +currentBlock.toString();
+			if (blockNumber <= blockCount) {
+				return {
+					error: false,
+					message: RES_MSG.BLOCK_AVG_SUCCESS,
+					data: {
+						avgTime: environment?.averageBlockTime,
+						currentBlock: latestBlock,
+					},
+				};
+			}
 			const calls = [];
 			for (let i = 0; i <= blockCount; i++) {
 				calls.push(
@@ -583,21 +593,23 @@ class BlockService {
 
 	async stateSync(): Promise<IESResponse> {
 		try {
-			const url = environment.nodeLink;
-			const response: any = await axios.get(url + '/block?height');
-			console.log(response.data?.result, 'RESPONSE-getBlockHeight');
-			const rpcServers = environment.rpcServers;
+			const url = environment.stateSyncUrl;
+			const response: any = await axios.get(url);
+
+			console.log(response?.data?.result, 'stateSyncUrl');
+			const result = response?.data?.result?.response
+				? response.data?.result?.response
+				: '';
 
 			return {
 				error: false,
 				message: RES_MSG.BLOCK_FETCH,
 				data: {
-					height: response.data?.result?.block?.header?.height.toString(),
-					hash: response.data?.result?.block_id?.hash?.toString(),
-					rpcServers,
+					result,
 				},
 			};
 		} catch (err) {
+			console.log('Error stateSync', err);
 			if (err instanceof Error) {
 				return { error: true, message: err.message };
 			}

@@ -68,6 +68,8 @@ class Environment implements IEnvironment {
 
 	public rpcServers: string;
 
+	public stateSyncUrl: string;
+
 	/**
 	 *
 	 * @param NODE_ENV
@@ -104,6 +106,7 @@ class Environment implements IEnvironment {
 		this.token_symbol = <string>process.env.TOKEN_SYMBOL;
 		this.interval = Number(process.env.INTERVAL) || 90;
 		this.rpcServers = <string>process.env.RPC_SERVERS;
+		this.stateSyncUrl = <string>process.env.STATE_SYNC_URL;
 	}
 
 	/**
