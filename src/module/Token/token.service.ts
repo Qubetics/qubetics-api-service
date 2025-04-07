@@ -484,9 +484,9 @@ class TokenService {
             dl.input,
 			tr.status,
 			dl.logs,
-			tr.txFee,
+			tr."txFee",
 			tr.gas,
-			tr.gasPrice
+			tr."gasPrice"
             FROM
             "Transactions" tr
             LEFT JOIN
