@@ -592,7 +592,19 @@ class BlockService {
 	}
 
 	async stateSync(): Promise<IESResponse> {
+		const stateSyncRedis = await RedisService.getString(
+			REDIS_KEY.STATE_SYNC,
+		);
+
 		try {
+			if (stateSyncRedis) {
+				console.log('Reading Redis');
+				return {
+					error: false,
+					message: RES_MSG.SUCCESS,
+					data: { result: stateSyncRedis },
+				};
+			}
 			const url = environment.stateSyncUrl;
 			const response: any = await axios.get(url);
 
@@ -601,18 +613,27 @@ class BlockService {
 				? response.data?.result?.response
 				: '';
 
+			await RedisService.setStringWithExpiry(
+				REDIS_KEY.STATE_SYNC,
+				result,
+				120,
+			);
+
 			return {
 				error: false,
-				message: RES_MSG.BLOCK_FETCH,
+				message: RES_MSG.SUCCESS,
 				data: {
 					result,
 				},
 			};
 		} catch (err) {
 			console.log('Error stateSync', err);
-			if (err instanceof Error) {
-				return { error: true, message: err.message };
-			}
+			const avgTime = await RedisService.getString(
+				REDIS_KEY.BLOCK_AVG_TIME,
+			);
+			const latestBlock = await RedisService.getString(
+				CONST_NAME.LATEST_BLOCK,
+			);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}

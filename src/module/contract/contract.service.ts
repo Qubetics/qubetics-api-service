@@ -397,6 +397,9 @@ class ContractService {
 							blocknumber: true,
 							status: true,
 							timestamp: true,
+							txFee: true,
+							gas: true,
+							gasPrice: true,
 							ContractLogs: {
 								where: {
 									OR: [
@@ -430,9 +433,6 @@ class ContractService {
 					...e,
 					contractAddress: e?.ContractLogs[0]?.contractAddress || '',
 					txHash: e?.ContractLogs[0]?.txHash || '',
-					blockNumber: e?.ContractLogs[0]?.blockNumber || '',
-					blockHash: e?.ContractLogs[0]?.blockHash || '',
-
 					method: e?.ContractLogs[0]?.method || '',
 					methodSignature: e?.ContractLogs[0]?.methodSignature || '',
 					gasFee: e?.ContractLogs[0]?.gasFee || '',
