@@ -544,6 +544,28 @@ class TokenService {
 							}
 						});
 					}
+				} else if (element?.input) {
+					const jsonString = JSON.stringify(element?.input);
+					console.log(jsonString, 'DEMO-input!');
+
+					const parsedData = JSON.parse(jsonString);
+					console.log(parsedData, 'DEMO@');
+					const fixedJsonString = parseAndFixJson(element?.input);
+
+					if (fixedJsonString[0]?.params) {
+						fixedJsonString[0]?.params?.forEach((param: any) => {
+							console.log(param.name, 'Name');
+							console.log(param.type, 'Type');
+							console.log(param.value, 'Value');
+							if (
+								param.name === 'value' &&
+								param.value !== undefined
+							) {
+								value = BigInt(param.value);
+								param.value = value.toString();
+							}
+						});
+					}
 				}
 
 				return { ...element, value };
