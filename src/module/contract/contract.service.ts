@@ -353,102 +353,211 @@ class ContractService {
 		contractAddress: string;
 	}): Promise<IESResponse> {
 		try {
-			const [contractLogs, contractLogsCount] = await prisma.$transaction(
-				[
-					// prisma.contractLogs.findMany({
-					// 	skip: data.page * data.limit,
-					// 	take: data.limit,
-					// 	orderBy: {
-					// 		createdAt: 'desc',
-					// 	},
-					// 	where: {
-					// 		contractAddress: data.contractAddress,
-					// 		OR: [
-					// 			{ methodSignature: '0xddf252ad' },
-					// 			{ method: 'transfer' },
-					// 		],
-					// 	},
-					// 	select: {
-					// 		...CONTRACTLOGS,
-					// 		transactions: {
-					// 			select: {
-					// 				toAddress: true,
-					// 				fromAddress: true,
-					// 			},
-					// 		},
-					// 	},
-					// }),
-					prisma.transactions.findMany({
-						skip: data.page * data.limit,
-						take: data.limit,
-						orderBy: { createdAt: 'desc' },
-						where: {
-							OR: [
-								{ toAddress: data.contractAddress },
-								{ fromAddress: data.contractAddress },
-							],
-						},
-						select: {
-							id: true,
-							toAddress: true,
-							fromAddress: true,
-							txhash: true,
-							blockhash: true,
-							blocknumber: true,
-							status: true,
-							timestamp: true,
-							txFee: true,
-							gas: true,
-							gasPrice: true,
-							ContractLogs: {
-								where: {
-									OR: [
-										{ methodSignature: '0xddf252ad' },
-										{ method: 'transfer' },
-									],
-								},
-								select: {
-									...CONTRACTLOGS,
-								},
-							},
-						},
-					}),
-					prisma.transactions.count({
-						where: {
-							OR: [
-								{ toAddress: data.contractAddress },
-								{ fromAddress: data.contractAddress },
-							],
-						},
-					}),
-				],
-			);
+			// const [contractLogs, contractLogsCount] = await prisma.$transaction(
+			// 	[
+			// 		// prisma.contractLogs.findMany({
+			// 		// 	skip: data.page * data.limit,
+			// 		// 	take: data.limit,
+			// 		// 	orderBy: {
+			// 		// 		createdAt: 'desc',
+			// 		// 	},
+			// 		// 	where: {
+			// 		// 		contractAddress: data.contractAddress,
+			// 		// 		OR: [
+			// 		// 			{ methodSignature: '0xddf252ad' },
+			// 		// 			{ method: 'transfer' },
+			// 		// 		],
+			// 		// 	},
+			// 		// 	select: {
+			// 		// 		...CONTRACTLOGS,
+			// 		// 		transactions: {
+			// 		// 			select: {
+			// 		// 				toAddress: true,
+			// 		// 				fromAddress: true,
+			// 		// 			},
+			// 		// 		},
+			// 		// 	},
+			// 		// }),
+			// 		prisma.transactions.findMany({
+			// 			skip: data.page * data.limit,
+			// 			take: data.limit,
+			// 			orderBy: { createdAt: 'desc' },
+			// 			where: {
+			// 				OR: [
+			// 					{ toAddress: data.contractAddress },
+			// 					{ fromAddress: data.contractAddress },
+			// 				],
+			// 			},
+			// 			select: {
+			// 				id: true,
+			// 				toAddress: true,
+			// 				fromAddress: true,
+			// 				txhash: true,
+			// 				blockhash: true,
+			// 				blocknumber: true,
+			// 				status: true,
+			// 				timestamp: true,
+			// 				txFee: true,
+			// 				gas: true,
+			// 				gasPrice: true,
+			// 				ContractLogs: {
+			// 					where: {
+			// 						OR: [
+			// 							{ methodSignature: '0xddf252ad' },
+			// 							{ method: 'transfer' },
+			// 						],
+			// 					},
+			// 					select: {
+			// 						...CONTRACTLOGS,
+			// 					},
+			// 				},
+			// 			},
+			// 		}),
+			// 		prisma.transactions.count({
+			// 			where: {
+			// 				OR: [
+			// 					{ toAddress: data.contractAddress },
+			// 					{ fromAddress: data.contractAddress },
+			// 				],
+			// 			},
+			// 		}),
+			// 	],
+			// );
 
-			if (!contractLogs?.length) throw new Error(RES_MSG.NOT_FOUND);
-			console.log('transferLogs', contractLogs, contractLogsCount);
-			const dataToSend: any = [];
-			contractLogs.forEach((e: any) => {
-				console.log(e, 'ResE');
-				const data = {
-					...e,
-					contractAddress: e?.ContractLogs[0]?.contractAddress || '',
-					txHash: e?.ContractLogs[0]?.txHash || '',
-					method: e?.ContractLogs[0]?.method || '',
-					methodSignature: e?.ContractLogs[0]?.methodSignature || '',
-					gasFee: e?.ContractLogs[0]?.gasFee || '',
-					createdAt: e?.ContractLogs[0]?.createdAt || '',
-				};
-				delete data.ContractLogs;
-				dataToSend.push(data);
+			// if (!contractLogs?.length) throw new Error(RES_MSG.NOT_FOUND);
+			// console.log('transferLogs', contractLogs, contractLogsCount);
+			// const dataToSend: any = [];
+			// contractLogs.forEach((e: any) => {
+			// 	console.log(e, 'ResE');
+			// 	const data = {
+			// 		...e,
+			// 		contractAddress: e?.ContractLogs[0]?.contractAddress || '',
+			// 		txHash: e?.ContractLogs[0]?.txHash || '',
+			// 		method: e?.ContractLogs[0]?.method || '',
+			// 		methodSignature: e?.ContractLogs[0]?.methodSignature || '',
+			// 		gasFee: e?.ContractLogs[0]?.gasFee || '',
+			// 		createdAt: e?.ContractLogs[0]?.createdAt || '',
+			// 	};
+
+			// 	delete data.ContractLogs;
+			// 	dataToSend.push(data);
+			// });
+			// console.log('dataToSend', dataToSend);
+
+			const tokens: any = await prisma.$queryRaw`
+	        SELECT 
+			tr.id,
+            t."tokenName" ,
+            t."tokenSymbol",
+            tr.txhash,
+			t."decimal" ,
+			tr."timestamp",
+			tr."fromAddress",
+            tr.blocknumber,
+			tr."toAddress",
+			tr."type",
+            dl.input,
+			tr.status,
+			dl.logs,
+			tr."txFee",
+			tr.gas,
+			tr."gasPrice"
+            FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON dl."contractAddress"=t."contractAddress"
+			WHERE (tr."toAddress" = ${data.contractAddress} OR tr."fromAddress" = ${
+				data.contractAddress
+			} OR tr."contractAddress" = ${
+				data.contractAddress
+			}) AND tr."type" = 'CONTRACT_TRANSFER'
+            ORDER BY 
+			tr.blocknumber	DESC 
+            LIMIT ${data.limit}
+			OFFSET ${data.page * data.limit}
+		  `;
+
+			const total_count: any = await prisma.$queryRaw`
+		  	SELECT COUNT(tr.id) AS count 
+			FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON dl."contractAddress"=t."contractAddress"
+			WHERE (tr."toAddress" = ${data.contractAddress} OR tr."fromAddress" = ${data.contractAddress} OR tr."contractAddress" = ${data.contractAddress}) AND tr."type" = 'CONTRACT_TRANSFER'
+		`;
+
+			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
+
+			const tokenTransfers = tokens.map((element: any) => {
+				console.log('element.logs-getContractTransfer', element.logs);
+				let value: any;
+				if (element?.logs) {
+					const jsonString = JSON.stringify(element?.logs);
+					console.log(jsonString, 'DEMO!-getContractTransfer');
+
+					const parsedData = JSON.parse(jsonString);
+					console.log(parsedData, 'DEMO@-getContractTransfer');
+					const fixedJsonString = parseAndFixJson(element?.logs);
+
+					if (fixedJsonString[0]?.events) {
+						fixedJsonString[0]?.events?.forEach((event: any) => {
+							console.log(event.name, 'Name-getContractTransfer');
+							console.log(event.type, 'Type-getContractTransfer');
+							console.log(event.value, 'v-getContractTransfer');
+							if (
+								event.name === 'value' &&
+								event.value !== undefined
+							) {
+								value = BigInt(event.value);
+								event.value = value.toString();
+							}
+						});
+					}
+				} else if (element?.input) {
+					const jsonString = JSON.stringify(element?.input);
+					console.log(jsonString, 'DEMO-input-getContractTransfer!');
+
+					const parsedData = JSON.parse(jsonString);
+					console.log(parsedData, 'DEMO@-getContractTransfer');
+					const fixedJsonString = parseAndFixJson(element?.input);
+
+					console.log('kskks', fixedJsonString);
+
+					if (fixedJsonString?.params) {
+						fixedJsonString?.params?.forEach((param: any) => {
+							console.log(param.name, 'Name');
+							console.log(param.type, 'Type');
+							console.log(param.value, 'Value');
+							if (
+								param.name === 'value' &&
+								param.value !== undefined
+							) {
+								value = BigInt(param.value);
+								param.value = value.toString();
+							}
+						});
+					}
+				}
+
+				return { ...element, value };
 			});
-			console.log('dataToSend', dataToSend);
+
+			console.log('It is Here-getContractTransfer');
+
+			const totalTransactions = total_count[0]?.count;
 
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT_TX,
 				data: {
-					count: Number(contractLogsCount),
-					contracts: convertBigIntToNumber(dataToSend),
+					count: Number(totalTransactions),
+					contracts: convertBigIntToNumber(tokenTransfers),
 				},
 			};
 		} catch (err) {
