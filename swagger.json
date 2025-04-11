@@ -2,7 +2,7 @@
    "openapi": "3.0.2",
    "info": {
       "title": "Qubetics Explorer Apis",
-      "description": "Explorer service",
+      "description": "Explorer service. In APIs, for all the listing Limit is set to 10 even if the user input anything incorrectly.",
       "version": "1.0.0"
    },
    "produces": ["application/json"],
