@@ -252,7 +252,7 @@ class ContractService {
 							status: true,
 							blockhash: true,
 							type: true,
-
+							timestamp: true,
 							ContractLogs: {
 								select: {
 									...CONTRACTLOGS,
@@ -330,25 +330,78 @@ class ContractService {
 			// 	};
 			// }
 			const dataToSend: any = [];
-			contractLogs?.forEach((e: any) => {
-				console.log(e?.blockhash, 'DDDDDDDDDD');
+			// contractLogs?.forEach((e: any) => {
+			// 	if (
+			// 		Array.isArray(e?.ContractLogs) &&
+			// 		e.ContractLogs.length > 0
+			// 	) {
+			// 		e.ContractLogs.forEach((log: any) => {
+			// 			const contractData = {
+			// 				...e,
+			// 				txHash: log?.txHash,
+			// 				contractAddress:
+			// 					log?.contractAddress || data?.contractAddress,
+			// 				blockHash: log?.blockHash || e?.blockhash,
+			// 				blockNumber: log?.blockNumber || e?.blocknumber,
+			// 				method: log?.method || e?.type,
+			// 				methodSignature: log?.methodSignature,
+			// 				gasFee: log?.gasFee || e?.txFee,
+			// 				timestamp: log?.timestamp || e?.timestamp,
+			// 				createdAt: log?.createdAt || e?.createdAt,
+			// 			};
+			// 			delete contractData.ContractLogs;
+			// 			dataToSend.push(contractData);
+			// 		});
+			// 	} else {
+			// 		const contractData = {
+			// 			...e,
+			// 			txHash: e?.ContractLogs?.txHash,
+			// 			contractAddress:
+			// 				e?.ContractLogs?.contractAddress ||
+			// 				data?.contractAddress,
+			// 			blockHash: e?.ContractLogs?.blockHash || e?.blockhash,
+			// 			blockNumber:
+			// 				e?.ContractLogs?.blockNumber || e?.blocknumber,
+			// 			method: e?.ContractLogs?.method || e?.type,
+			// 			methodSignature: e?.ContractLogs?.methodSignature,
+			// 			gasFee: e?.ContractLogs?.gasFee || e?.txFee,
+			// 			timestamp: e?.ContractLogs?.timestamp || e?.timestamp,
+			// 			createdAt: e?.ContractLogs?.createdAt || e?.createdAt,
+			// 		};
+			// 		delete contractData.ContractLogs;
+			// 		dataToSend.push(contractData);
+			// 	}
+			// });
+
+			const formatContractData = (base: any, log: any) => {
 				const contractData = {
-					...e,
-					txHash: e?.ContractLogs?.txHash,
+					...base,
+					txHash: log?.txHash,
 					contractAddress:
-						e?.ContractLogs?.contractAddress ||
-						data?.contractAddress,
-					blockHash: e?.ContractLogs?.blockHash || e?.blockhash,
-					blockNumber: e?.ContractLogs?.blockNumber || e?.blocknumber,
-					method: e?.ContractLogs?.method || e?.type,
-					methodSignature: e?.ContractLogs?.methodSignature,
-					gasFee: e?.ContractLogs?.gasFee || e?.txFee,
-					timestamp: e?.ContractLogs?.timestamp || e?.timestamp,
-					createdAt: e?.ContractLogs?.createdAt || e?.createdAt,
+						log?.contractAddress || data?.contractAddress,
+					blockHash: log?.blockHash || base?.blockhash,
+					blockNumber: log?.blockNumber || base?.blocknumber,
+					method: log?.method || base?.type,
+					methodSignature: log?.methodSignature,
+					gasFee: log?.gasFee || base?.txFee,
+					timestamp: log?.timestamp || base?.timestamp,
+					createdAt: log?.createdAt || base?.createdAt,
 				};
-				console.log('DATATTAT', contractData);
 				delete contractData.ContractLogs;
-				dataToSend.push(contractData);
+				return contractData;
+			};
+
+			contractLogs?.forEach((e: any) => {
+				const logs =
+					Array.isArray(e?.ContractLogs) && e.ContractLogs.length > 0
+						? e.ContractLogs
+						: [e?.ContractLogs];
+
+				logs.forEach((log: any) => {
+					if (log) {
+						dataToSend.push(formatContractData(e, log));
+					}
+				});
 			});
 
 			return {
