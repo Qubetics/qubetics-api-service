@@ -368,10 +368,16 @@ class TokenService {
 						select: {
 							contractName: true,
 							contractType: true,
+							ContractVerification: {
+								select: {
+									contractname: true,
+								},
+							},
 							Tokens: {
 								select: {
 									decimal: true,
 									tokenSymbol: true,
+									tokenName: true,
 								},
 							},
 						},
@@ -381,6 +387,7 @@ class TokenService {
 					address: data?.address,
 				},
 			});
+			console.log('holdersCount', holdersData[0].contract.Tokens);
 
 			const holdersCount = await prisma.holders.count({
 				where: {
@@ -402,8 +409,12 @@ class TokenService {
 			for (const i of holdersData) {
 				const dataToPush = {
 					...i,
-					tokenName: i?.contract?.contractName ?? '',
-					tokenType: i?.contract?.contractType ?? '',
+					tokenName:
+						i?.contract?.contractName ||
+						i?.contract.Tokens?.tokenName ||
+						i?.contract?.ContractVerification?.contractname ||
+						'',
+					tokenType: i?.contract?.contractType || '',
 					tokenSymbol: i?.contract?.Tokens?.tokenSymbol ?? '',
 					decimals: i?.contract?.Tokens?.decimal,
 				};
