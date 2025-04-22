@@ -855,7 +855,7 @@ class ExplorerService {
 
 			let txnCount = user ? user.txn : '';
 
-			let userBalance;
+			let userBalance: any;
 			// Check if USER_BALANCE is in Redis
 			// let userBalance = await RedisService.getString(
 			// 	REDIS_KEY.USER_BALANCE,
@@ -875,14 +875,15 @@ class ExplorerService {
 			} catch (error) {
 				userBalance = '';
 			}
-			const actualBalance = userBalance
+			const actualBalance: any = userBalance
 				? (Number(userBalance) / Math.pow(10, 18)).toString()
 				: '';
+			console.log('actualBalanceAS', actualBalance);
 
 			let marketCapPrice = await RedisService.getString(
 				CONST_NAME.MARKET_CAP_PRICE,
 			);
-
+			console.log('marketCapPrice', marketCapPrice);
 			let value: string;
 			if (!marketCapPrice) {
 				const latestEntry = await prisma.coinmarketInfo.findFirst({
@@ -893,6 +894,7 @@ class ExplorerService {
 						price: true,
 					},
 				});
+				console.log('latestEntry', latestEntry);
 
 				const price = latestEntry?.price?.toString() ?? '';
 				value = price
@@ -900,6 +902,7 @@ class ExplorerService {
 					: '';
 			} else {
 				marketCapPrice = JSON.parse(marketCapPrice);
+				console.log('marketCapPriceELSE', marketCapPrice);
 
 				value =
 					marketCapPrice?.price && actualBalance
@@ -910,12 +913,18 @@ class ExplorerService {
 						: '';
 			}
 
+			let price = await RedisService.getString(REDIS_KEY.COIN_PRICE);
+			price = price ? Number(price) : CURRENT_DEFAULT_COIN_PRICE;
+
+			const priceInUSD: any = price * actualBalance;
+			console.log('priceInUSD', priceInUSD);
+
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
 					coinBalance: exp(actualBalance),
-					value: exp(value),
+					value: value ? exp(value) : exp(priceInUSD),
 					transactionCount: Number(txnCount),
 				},
 			};
