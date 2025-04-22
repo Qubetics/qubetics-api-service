@@ -255,18 +255,18 @@ class ContractService {
 						},
 						where: {
 							contractAddress: data.contractAddress,
-							method: {
-								// not: 'transfer',
-								notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
-							},
+							// method: {
+							// 	// not: 'transfer',
+							// 	// notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
+							// },
 						},
 					}),
 					prisma.contractLogs.count({
 						where: {
 							contractAddress: data.contractAddress,
-							method: {
-								notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
-							},
+							// method: {
+							// 	notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
+							// },
 						},
 					}),
 				],
