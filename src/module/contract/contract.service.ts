@@ -238,32 +238,45 @@ class ContractService {
 			console.log(data.contractAddress, 'contractAddress');
 			const [contractLogs, contractLogsCount] = await prisma.$transaction(
 				[
-					prisma.contractLogs.findMany({
+					prisma.transactions.findMany({
 						skip: data.page * data.limit,
 						take: data.limit,
 						orderBy: {
 							createdAt: 'desc',
 						},
 						select: {
-							...CONTRACTLOGS,
-							transactions: {
+							toAddress: true,
+							fromAddress: true,
+							txhash: true,
+							blocknumber: true,
+							status: true,
+							blockhash: true,
+							type: true,
+
+							ContractLogs: {
 								select: {
-									toAddress: true,
-									fromAddress: true,
+									...CONTRACTLOGS,
 								},
 							},
 						},
 						where: {
-							contractAddress: data.contractAddress,
+							OR: [
+								{ toAddress: data.contractAddress },
+								{ fromAddress: data.contractAddress },
+							],
 							// method: {
 							// 	// not: 'transfer',
 							// 	// notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
 							// },
 						},
 					}),
-					prisma.contractLogs.count({
+					prisma.transactions.count({
 						where: {
-							contractAddress: data.contractAddress,
+							OR: [
+								{ toAddress: data.contractAddress },
+								{ fromAddress: data.contractAddress },
+							],
+							// contractAddress: data.contractAddress,
 							// method: {
 							// 	notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
 							// },
@@ -318,13 +331,24 @@ class ContractService {
 			// }
 			const dataToSend: any = [];
 			contractLogs?.forEach((e: any) => {
-				const data = {
+				console.log(e?.blockhash, 'DDDDDDDDDD');
+				const contractData = {
 					...e,
-					toAddress: e?.transactions?.toAddress || '',
-					fromAddress: e?.transactions?.fromAddress || '',
+					txHash: e?.ContractLogs?.txHash,
+					contractAddress:
+						e?.ContractLogs?.contractAddress ||
+						data?.contractAddress,
+					blockHash: e?.ContractLogs?.blockHash || e?.blockhash,
+					blockNumber: e?.ContractLogs?.blockNumber || e?.blocknumber,
+					method: e?.ContractLogs?.method || e?.type,
+					methodSignature: e?.ContractLogs?.methodSignature,
+					gasFee: e?.ContractLogs?.gasFee || e?.txFee,
+					timestamp: e?.ContractLogs?.timestamp || e?.timestamp,
+					createdAt: e?.ContractLogs?.createdAt || e?.createdAt,
 				};
-				delete data.transactions;
-				dataToSend.push(data);
+				console.log('DATATTAT', contractData);
+				delete contractData.ContractLogs;
+				dataToSend.push(contractData);
 			});
 
 			return {
