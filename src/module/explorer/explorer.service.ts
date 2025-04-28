@@ -24,10 +24,7 @@ import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
 import web3Helper from '../../helper/web3.helper';
-import {
-	convertBigIntToNumber,
-	serializeBigInt,
-} from '../../helper/common.helper';
+import { serializeBigInt } from '../../helper/common.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
 		try {

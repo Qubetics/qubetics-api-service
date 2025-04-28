@@ -157,7 +157,17 @@ class ContractService {
 					address,
 				},
 				select: {
-					...CONTRACT,
+					// ...CONTRACT,
+					timestamp: true,
+					contractName: true,
+					contractType: true,
+					blockHash: true,
+					blockNumber: true,
+					creator: true,
+					address: true,
+					txHash: true,
+					createdAt: true,
+					updatedAt: true,
 					Tokens: {
 						select: {
 							decimal: true,
@@ -175,18 +185,22 @@ class ContractService {
 				},
 			});
 
-			const contractLogsCount = await prisma.contractLogs.count({
-				where: { contractAddress: contractAddress },
-			});
+			// const contractLogsCount = await prisma.contractLogs.count({
+			// 	where: { contractAddress: contractAddress },
+			// });
 
 			let txCount;
-			if (contractLogsCount === 0) {
-				txCount = await prisma.transactions.count({
-					where: { toAddress: contractAddress },
-				});
-			} else {
-				txCount = contractLogsCount;
-			}
+			// if (contractLogsCount === 0) {
+			// 	txCount = await prisma.transactions.count({
+			// 		where: { toAddress: contractAddress },
+			// 	});
+			// } else {
+			// 	txCount = contractLogsCount;
+			// }
+
+			txCount = await prisma.transactions.count({
+				where: { toAddress: contractAddress },
+			});
 
 			// Get updatedAt value only if contractType is 'UNKNOWN'
 			// const updatedAt =
