@@ -46,6 +46,48 @@ export function convertBigIntToNumber_1(dataVal: any) {
 	return finalDataVal;
 }
 
+export function convertBigIntToNumber(dataVal: any): any {
+	if (typeof dataVal === 'bigint') {
+		return Number(dataVal);
+	}
+
+	if (Array.isArray(dataVal)) {
+		return dataVal.map(convertBigIntToNumber);
+	}
+
+	// if (dataVal !== null && typeof dataVal === 'object') {
+	// 	const result: any = {};
+	// 	for (const key in dataVal) {
+	// 		if (Object.prototype.hasOwnProperty.call(dataVal, key)) {
+	// 			const value = dataVal[key];
+	// 			result[key] = convertBigIntToNumber(value);
+	// 		}
+	// 	}
+	// 	return result;
+	// }
+
+	if (dataVal !== null && typeof dataVal === 'object') {
+		return Object.fromEntries(
+			Object.entries(dataVal).map(([key, value]) => {
+				if (
+					(key === 'block_timestamp' ||
+						key === 'timestamp' ||
+						key === 'created_at' ||
+						key === 'updated_at' ||
+						key === 'createdAt' ||
+						key === 'updatedAt') &&
+					value instanceof Date
+				) {
+					return [key, value.toISOString()]; // Convert block_timestamp to string
+				}
+				return [key, convertBigIntToNumber(value)];
+			}),
+		);
+	}
+
+	return dataVal;
+}
+
 export function serializeBigInt(dataVal: any): any {
 	if (typeof dataVal === 'bigint') {
 		return dataVal.toString();
@@ -71,29 +113,6 @@ export function serializeBigInt(dataVal: any): any {
 			}),
 		);
 	}
-	return dataVal;
-}
-
-export function convertBigIntToNumber(dataVal: any): any {
-	if (typeof dataVal === 'bigint') {
-		return Number(dataVal);
-	}
-
-	if (Array.isArray(dataVal)) {
-		return dataVal.map(convertBigIntToNumber);
-	}
-
-	if (dataVal !== null && typeof dataVal === 'object') {
-		const result: any = {};
-		for (const key in dataVal) {
-			if (Object.prototype.hasOwnProperty.call(dataVal, key)) {
-				const value = dataVal[key];
-				result[key] = convertBigIntToNumber(value);
-			}
-		}
-		return result;
-	}
-
 	return dataVal;
 }
 
