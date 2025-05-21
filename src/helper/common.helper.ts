@@ -27,7 +27,7 @@ const fetchRequest = async (
 		}
 	});
 
-export function convertBigIntToNumber(dataVal: any) {
+export function convertBigIntToNumber_1(dataVal: any) {
 	const finalDataVal = [];
 	if (dataVal && typeof dataVal === 'object') {
 		for (const dataObject of dataVal) {
@@ -71,6 +71,29 @@ export function serializeBigInt(dataVal: any): any {
 			}),
 		);
 	}
+	return dataVal;
+}
+
+export function convertBigIntToNumber(dataVal: any): any {
+	if (typeof dataVal === 'bigint') {
+		return Number(dataVal);
+	}
+
+	if (Array.isArray(dataVal)) {
+		return dataVal.map(convertBigIntToNumber);
+	}
+
+	if (dataVal !== null && typeof dataVal === 'object') {
+		const result: any = {};
+		for (const key in dataVal) {
+			if (Object.prototype.hasOwnProperty.call(dataVal, key)) {
+				const value = dataVal[key];
+				result[key] = convertBigIntToNumber(value);
+			}
+		}
+		return result;
+	}
+
 	return dataVal;
 }
 

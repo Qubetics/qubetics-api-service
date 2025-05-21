@@ -6,7 +6,10 @@ import {
 	TRANSACTION_STATUS,
 	REDIS_KEY,
 } from '../../constant/response';
-import { convertBigIntToNumber } from '../../helper/common.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 import Web3 from 'web3';
 import web3Helper from '../../helper/web3.helper';
 import { IESResponse } from '../../interfaces/index';
@@ -227,7 +230,7 @@ class TransactionService {
 		}
 	}
 
-	async getTransactionByHash(txHash: string): Promise<IESResponse> {
+	async getTransactionByHash_1(txHash: string): Promise<IESResponse> {
 		try {
 			let tokenInfo;
 			let transactionData: any = await prisma.$queryRaw`
@@ -239,9 +242,9 @@ class TransactionService {
 			// 	where: { txhash: txHash },
 			// });
 
-			transactionData = convertBigIntToNumber(transactionData);
+			transactionData = convertBigIntToNumber(transactionData[0]);
 
-			if (!transactionData.length) {
+			if (!transactionData?.length) {
 				try {
 					const txData = await web3Helper.getTxByHash(txHash);
 					if (txData) {
@@ -290,6 +293,7 @@ class TransactionService {
 						])[0];
 					}
 				} catch (error) {
+					console.log('found error', error);
 					throw new Error(RES_MSG.NOT_FOUND);
 				}
 			}
@@ -398,7 +402,11 @@ class TransactionService {
 
 			const updatedTransactions = convertBigIntToNumber(transactions);
 			const isContractAddress = updatedTransactions.some(
-				(transaction) =>
+				(transaction: {
+					contractAddress: string;
+					toAddress: string;
+					type: string;
+				}) =>
 					transaction.contractAddress === address ||
 					(transaction.toAddress === address &&
 						transaction.type !== 'COIN_TRANSFER'),
@@ -555,6 +563,114 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
 				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	async getTransactionByHash(txHash: string): Promise<IESResponse> {
+		try {
+			let tokenInfo;
+			let transactionData: any;
+			let transactionDataInDB: any = await prisma.$queryRaw`
+			   SELECT "Transactions".*,"DecodedLogs"."input","DecodedLogs"."logs" FROM "Transactions"
+			   LEFT JOIN "DecodedLogs" ON "Transactions"."txhash" = "DecodedLogs"."txHash"
+			   WHERE "Transactions"."txhash" = ${txHash};`;
+
+			// let transactionData = await prisma.transactions.findUnique({
+			// 	where: { txhash: txHash },
+			// });
+
+			transactionData = serializeBigInt(transactionDataInDB[0]);
+			console.log(transactionData, 'transactionDataInDB');
+			if (!transactionData?.length) {
+				console.log('Not in DB');
+				try {
+					const txData = await web3Helper.getTxByHash(txHash);
+					if (txData) {
+						RabbitMqService.inQueueData(
+							QUEUE_NAME.MISSING_BLOCK,
+							JSON.stringify(Number(txData?.blockNumber)),
+						);
+						const txReceipt =
+							await web3Helper.getTransactionReceipt(txHash);
+						const amount =
+							Number(`${txData?.value}`) / CONST_NAME.ETH_EXP;
+						const gasPrice = txData?.gasPrice
+							? Number(txData?.gasPrice)
+							: CONST_NAME.ZERO;
+
+						const fee =
+							(Number(txData?.gas) * gasPrice) /
+							CONST_NAME.ETH_EXP;
+
+						let transactionDetail = {
+							blocknumber: Number(txData?.blockNumber),
+							blockhash: txData?.blockHash,
+							txhash: txData?.hash,
+							type: txType(`${txData.to}`, txData.input),
+							status: txReceipt?.status
+								? TRANSACTION_STATUS.SUCCESS
+								: TRANSACTION_STATUS.FAILED,
+
+							fromAddress: <string>txData?.from,
+							toAddress: <string>txData?.to ?? CONST_NAME.NA,
+							contractAddress:
+								txReceipt?.contractAddress ?? CONST_NAME.NA,
+							timestamp: new Date().getTime(),
+							token: CONST_NAME.ZERO.toString(),
+							createdAt: new Date(),
+							gasPrice,
+							gas: txReceipt?.gasUsed
+								? Number(txReceipt?.gasUsed)
+								: Number(txData?.gas) || 0,
+							value: exp(`${amount}`),
+							txFee: exp(`${fee}`),
+						};
+						console.log('transactionDetail', transactionDetail);
+						transactionData = serializeBigInt(transactionDetail);
+					}
+				} catch (error) {
+					console.log(error, 'Display Error in searching');
+					throw new Error(RES_MSG.NOT_FOUND);
+				}
+			}
+
+			const contractLogs = await prisma.contractLogs.findMany({
+				where: { txHash: txHash },
+				select: {
+					contractAddress: true,
+					topics: true,
+					methodSignature: true,
+					method: true,
+				},
+			});
+			console.log('transactionData', transactionData);
+			if (
+				transactionData.type === TRANSFER_TYPE.CONTRACT_CREATION ||
+				transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER
+			) {
+				tokenInfo = await this.getContractAddress(transactionData);
+			}
+			// const tx = transactionData;
+			// console.log(tx, 'txtxtx');
+			const mergedTransaction = {
+				...transactionData,
+				tokenInfo: tokenInfo ? serializeBigInt([tokenInfo])[0] : {},
+			};
+			return {
+				error: false,
+				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+				data: {
+					transaction: mergedTransaction,
+					contractLogs: contractLogs,
+				},
+			};
+		} catch (err) {
+			console.log(err, 'Caught the error');
+			if (err instanceof Error) {
 				return { error: true, message: err.message };
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
