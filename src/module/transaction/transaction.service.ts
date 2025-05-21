@@ -305,14 +305,12 @@ class TransactionService {
 			});
 
 			if (
-				transactionData[0].type === TRANSFER_TYPE.CONTRACT_CREATION ||
-				transactionData[0].type === TRANSFER_TYPE.CONTRACT_TRANSFER
+				transactionData.type === TRANSFER_TYPE.CONTRACT_CREATION ||
+				transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER
 			) {
-				tokenInfo = await this.getContractAddress(transactionData[0]);
+				tokenInfo = await this.getContractAddress(transactionData);
 			}
-			const tx = transactionData.length
-				? transactionData[0]
-				: transactionData;
+			const tx = transactionData;
 			const mergedTransaction = {
 				...tx,
 				tokenInfo: tokenInfo
