@@ -15,7 +15,7 @@ class ValidatorService {
 			let totalValidators: number;
 			let activeValidators;
 
-			let redis_key = `${REDIS_KEY.VALIDATOR_LIST}_Page_${page}_limit_${limit}`;
+			let redis_key = `${REDIS_KEY.VALIDATOR_LIST}_page_${page}_limit_${limit}`;
 			const redisData = await redisHelper.getString(redis_key);
 
 			if (redisData) {
@@ -23,7 +23,7 @@ class ValidatorService {
 				totalValidators = redisData.totalValidators;
 				activeValidators = redisData.activeValidators;
 			} else {
-				const [validators, validatorCount, activeValidators] =
+				const [validators, validatorCount, activeValidatorCount] =
 					await prisma.$transaction([
 						prisma.validator.findMany({
 							orderBy: {
@@ -33,15 +33,13 @@ class ValidatorService {
 							take: data.limit,
 						}),
 						prisma.validator.count(),
-						prisma.validator.findMany({
+						prisma.validator.count({
 							where: {
 								status: 'active',
 							},
-							select: {
-								status: true,
-							},
 						}),
 					]);
+
 				if (!validators?.length)
 					throw new Error(RES_MSG.VALIDATOR_NOT_FOUND);
 
@@ -50,12 +48,13 @@ class ValidatorService {
 					{
 						validators: validators || [],
 						totalValidators: validatorCount,
-						activeValidators: activeValidators,
+						activeValidators: activeValidatorCount,
 					},
 					600,
 				);
 				totalValidators = validatorCount;
 				validatorData = validators;
+				activeValidators = activeValidatorCount;
 			}
 
 			return {
@@ -63,9 +62,7 @@ class ValidatorService {
 				message: RES_MSG.ALL_VALIDATOR_FETCH,
 				data: {
 					count: totalValidators,
-					activeValidators: activeValidators?.length
-						? activeValidators.length
-						: 0,
+					activeValidators: activeValidators,
 					validators: convertBigIntToNumber(validatorData),
 				},
 			};
