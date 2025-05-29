@@ -582,10 +582,10 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			// let transactionData = await prisma.transactions.findUnique({
 			// 	where: { txhash: txHash },
 			// });
-
+			console.log('transactionDataInDB', transactionDataInDB);
 			transactionData = serializeBigInt(transactionDataInDB[0]);
-			console.log(transactionData, 'transactionDataInDB');
-			if (!transactionData?.length) {
+			console.log(transactionData, 'transactionDataA');
+			if (transactionDataInDB.length < 1) {
 				console.log('Not in DB');
 				try {
 					const txData = await web3Helper.getTxByHash(txHash);
@@ -654,10 +654,10 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			) {
 				tokenInfo = await this.getContractAddress(transactionData);
 			}
-			// const tx = transactionData;
+			const tx = transactionData;
 			// console.log(tx, 'txtxtx');
 			const mergedTransaction = {
-				...transactionData,
+				...tx,
 				tokenInfo: tokenInfo ? serializeBigInt([tokenInfo])[0] : {},
 			};
 			return {
