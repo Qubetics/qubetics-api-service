@@ -440,66 +440,57 @@ class TransactionService {
 		value: string;
 	}): Promise<IESResponse> {
 		try {
-			// if (!payloads.value || isNaN(Number(payloads.value))) {
-			// 	return {
-			// 		error: true,
-			// 		message: RES_MSG.NOT_VALID_QUERY,
-			// 	};
+			let lastPage = null;
 
-			let transactionData;
-			//check if there is blockhash or blocknumber for checking the block details
-			if (payloads.value.startsWith('0x')) {
-				transactionData = await prisma.transactions.findMany({
-					where: { blockhash: payloads.value },
-					orderBy: {
-						createdAt: 'desc',
-					},
-					skip: payloads.page * payloads.limit,
-					take: payloads.limit,
-				});
-			} else {
-				transactionData = await prisma.transactions.findMany({
-					where: { blocknumber: +payloads.value },
-					orderBy: {
-						createdAt: 'desc',
-					},
-					skip: payloads.page * payloads.limit,
-					take: payloads.limit,
-				});
-			}
+			const isHash = payloads.value.startsWith('0x');
+			const whereClause = isHash
+				? { blockhash: payloads.value }
+				: { blocknumber: Number(payloads.value) };
+			console.log('whereClause', whereClause);
+			const [transactionData, transactionCount] =
+				await prisma.$transaction([
+					prisma.transactions.findMany({
+						where: whereClause,
+						orderBy: {
+							id: 'desc',
+						},
+						select: {
+							txhash: true,
+							fromAddress: true,
+							toAddress: true,
+							value: true,
+							timestamp: true,
+							type: true,
+							id: true,
+							status: true,
+							blocknumber: true,
+						},
+						skip: payloads.page * payloads.limit,
+						take: payloads.limit,
+					}),
+
+					prisma.transactions.count({
+						where: whereClause,
+					}),
+				]);
+			const totalPages = Math.ceil(transactionCount / payloads.limit);
+
+			console.log('transactionData', transactionData);
 
 			if (!transactionData.length)
 				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
-
-			let txCount;
-
-			if (payloads.value.startsWith('0x')) {
-				txCount = await prisma.blocks.findUnique({
-					select: {
-						transactionCount: true,
-					},
-					where: { blockhash: payloads.value },
-				});
-			} else {
-				txCount = await prisma.blocks.findUnique({
-					select: {
-						transactionCount: true,
-					},
-					where: { blocknumber: +payloads.value },
-				});
-			}
 
 			return {
 				message: RES_MSG.BLOCK_TRANSACTION_FETCH,
 				error: false,
 				data: {
 					transaction: convertBigIntToNumber(transactionData),
-					count: txCount
-						? convertBigIntToNumber([txCount])[0].transactionCount
-						: 0,
+					count: transactionCount,
+					lastPage: totalPages,
 				},
 			};
 		} catch (err) {
+			console.log('catch the error', err);
 			if (err instanceof Error) {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
