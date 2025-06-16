@@ -1673,11 +1673,32 @@ class ContractService {
 
 			console.log('getContractsTokens Response', results, resultCount);
 
+			const getContractsCount: any = await this.getContractsCount();
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count,
+			} = getContractsCount.counts;
+
 			if (!results.length) {
 				return {
 					data: {
 						message: RES_MSG.DATA_NOT_FOUND,
 						error: true,
+						data: {
+							erc20Count: erc20Count ? Number(erc20Count) : 0,
+							erc721Count: erc721Count ? Number(erc721Count) : 0,
+							erc777Count: erc777Count ? Number(erc777Count) : 0,
+							erc1155Count: erc1155Count
+								? Number(erc1155Count)
+								: 0,
+							unknownCount: unknownCount
+								? Number(unknownCount)
+								: 0,
+						},
 					},
 				};
 			}
@@ -1744,16 +1765,6 @@ class ContractService {
 			// 	results[results.length - 1].id === minimumId
 			// 		? null
 			// 		: results[results.length - 1]?.id;
-
-			const getContractsCount: any = await this.getContractsCount();
-			const {
-				'ERC-20': erc20Count,
-				'ERC-721': erc721Count,
-				'ERC-777': erc777Count,
-				'ERC-1155': erc1155Count,
-				UNKNOWN: unknownCount,
-				count,
-			} = getContractsCount.counts;
 
 			const contractData = await Promise.all(
 				results.map(async (item: any) => ({
