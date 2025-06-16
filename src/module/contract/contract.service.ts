@@ -1685,29 +1685,18 @@ class ContractService {
 
 			if (!results.length) {
 				return {
+					message: RES_MSG.DATA_NOT_FOUND,
+					error: true,
 					data: {
-						message: RES_MSG.DATA_NOT_FOUND,
-						error: true,
-						data: {
-							erc20Count: erc20Count ? Number(erc20Count) : 0,
-							erc721Count: erc721Count ? Number(erc721Count) : 0,
-							erc777Count: erc777Count ? Number(erc777Count) : 0,
-							erc1155Count: erc1155Count
-								? Number(erc1155Count)
-								: 0,
-							unknownCount: unknownCount
-								? Number(unknownCount)
-								: 0,
-						},
+						count: count ? Number(count) : 0,
+						erc20Count: erc20Count ? Number(erc20Count) : 0,
+						erc721Count: erc721Count ? Number(erc721Count) : 0,
+						erc777Count: erc777Count ? Number(erc777Count) : 0,
+						erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+						unknownCount: unknownCount ? Number(unknownCount) : 0,
 					},
 				};
 			}
-			// const sortedResults =
-			// 	data.order === 'asc' ? results.reverse() : results;
-
-			// Determine the first and last page from the search results
-			// const firstContract = results[0].id || null;
-			// const lastContract = results[results.length - 1] || null;
 
 			const totalContracts = Number(resultCount[0].count_id);
 			const minimumId = resultCount[0].min_id;
@@ -1735,11 +1724,7 @@ class ContractService {
 			console.log('cursorPages', cursorPages);
 
 			let lastPageResult: any;
-			// let orderClauseForLastPage = ` ORDER BY "c"."id" desc `;
-			// if (totalContracts && totalContracts < parsedLimit) {
-			// if (!data.order || data.order === 'desc') {
-			// 	console.log('IN CHECKING');
-			// }
+
 			let orderClauseForLastPage = ` ORDER BY "c"."id" asc `;
 			const lastPageQuery =
 				lastPageSelect +
