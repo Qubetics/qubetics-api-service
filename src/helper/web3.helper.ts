@@ -26,6 +26,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.getBlockNumber();
 		} catch (err) {
+			return false;
 			throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
 		}
 	}
@@ -35,6 +36,7 @@ class Web3Helper {
 			const res = await this.web3.eth.getBlock(latestBlock);
 			return res;
 		} catch (err) {
+			return false;
 			throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
 		}
 	}
