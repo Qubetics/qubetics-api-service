@@ -408,7 +408,7 @@ class BlockService {
 					),
 				);
 			}
-			const blocks = await Promise.all(calls);
+			const blocks: any = await Promise.all(calls);
 			let total = 0;
 			for (let i = 1; i <= blockCount; i++) {
 				const diff =
