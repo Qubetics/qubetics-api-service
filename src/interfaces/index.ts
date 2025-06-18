@@ -105,7 +105,7 @@ export interface CoinMarketData {
 export interface Params {
 	annualProvisions: number;
 	blocksPerYear: number;
-	inflation: string;
+	inflation: number;
 	bondedTokens: number;
 	communityTax: number;
 	activeValidator: number;

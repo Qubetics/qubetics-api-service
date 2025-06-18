@@ -26,7 +26,8 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.getBlockNumber();
 		} catch (err) {
-			throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
+			// throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
+			return false;
 		}
 	}
 
@@ -35,6 +36,7 @@ class Web3Helper {
 			const res = await this.web3.eth.getBlock(latestBlock);
 			return res;
 		} catch (err) {
+			return false;
 			throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
 		}
 	}
@@ -43,6 +45,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.getTransaction(txHash);
 		} catch (err) {
+			return false;
 			throw new Error(BLOCKCHAIN_ERROR_MSG.TRANSACTION_FETCH);
 		}
 	}

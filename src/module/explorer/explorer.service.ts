@@ -21,7 +21,10 @@ import {
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
 import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
-import { calculateData } from '../../helper/calculateAPR.helper';
+import {
+	calculateData,
+	getDashboardData,
+} from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
 import web3Helper from '../../helper/web3.helper';
@@ -746,41 +749,6 @@ class ExplorerService {
 		}
 	}
 
-	async dashboard(): Promise<IESResponse> {
-		try {
-			const data: any = await calculateData();
-			const [latest_block, transactionCount, userCount] =
-				await Promise.all([
-					web3Helper.getBlockNumber().then(Number),
-					prisma.transactions.count(),
-					prisma.users.count(),
-				]);
-			return {
-				error: false,
-				message: RES_MSG.SUCCESS,
-				data: {
-					// apr: data?.apr ? Number(data?.apr) : 0,
-					apr: CURRENT_DEFAULT_APR,
-					validators: data?.validator ? data?.validator : 0,
-					circulationSupply: data?.circulationSupply
-						? data.circulationSupply
-						: 0,
-					latest_block: latest_block,
-					total_transactions: transactionCount,
-					total_accounts: userCount,
-					bondedTokens: data?.bondedTokens
-						? Number(data.bondedTokens)
-						: 0,
-					bondedRate: data?.bondedRate,
-					totalValidator: data?.totalValidator,
-				},
-			};
-		} catch (err) {
-			logger.error('dashboard-Error', err);
-			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
-		}
-	}
-
 	async getTopValidator(): Promise<IESResponse> {
 		try {
 			// Try to get the cached result from Redis first
@@ -1154,6 +1122,121 @@ class ExplorerService {
 		} catch (err) {
 			logger.error('Error in code', err);
 			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async dashboard_v2(): Promise<IESResponse> {
+		try {
+			// const data: any = await calculateData();
+			let dashboardData = await RedisService.getString(
+				REDIS_KEY.DASHBOARD_DATA,
+			);
+
+			if (!dashboardData) {
+				console.log('dashboardData NOT found in REDIS');
+				dashboardData = await getDashboardData();
+			} else {
+				dashboardData = JSON.parse(dashboardData);
+			}
+
+			console.log('THE DASHBOARD DATA', dashboardData);
+			function isInvalid(val: string | null | undefined): boolean {
+				return val === null || val === undefined || val === '';
+			}
+
+			const latestBlockRedis = await RedisService.getString(
+				CONST_NAME.LATEST_BLOCK,
+			);
+
+			const totalTransactionsRedis = await RedisService.getString(
+				REDIS_KEY.TRANSACTIONS_COUNT,
+			);
+			const totalAccountsRedis = await RedisService.getString(
+				REDIS_KEY.TOTAL_ADDRESSES,
+			);
+
+			const latestBlock = isInvalid(latestBlockRedis)
+				? String(await web3Helper.getBlockNumber())
+				: latestBlockRedis;
+
+			const totalTransactions = isInvalid(totalTransactionsRedis)
+				? String(await prisma.transactions.count())
+				: totalTransactionsRedis;
+
+			const totalAccounts = isInvalid(totalAccountsRedis)
+				? String(await prisma.users.count())
+				: totalAccountsRedis;
+			let marketCap = dashboardData?.marketCap;
+			if (!dashboardData?.marketCap) {
+				marketCap =
+					dashboardData.circulationSupply * dashboardData.tokenPrice;
+			}
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					apr: dashboardData.apr,
+					validators: dashboardData?.validator ?? 0,
+					circulationSupply: dashboardData?.circulationSupply ?? 0,
+					latest_block: latestBlock,
+					total_transactions: totalTransactions,
+					total_accounts: totalAccounts,
+					bondedTokens: dashboardData?.bondedTokens ?? 0,
+					bondedRate: dashboardData?.bondedRate,
+					totalValidator: dashboardData?.totalValidator,
+					apy: dashboardData.apy,
+					marketCap: marketCap,
+				},
+			};
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async dashboard(): Promise<IESResponse> {
+		try {
+			const data: any = await calculateData();
+			const [latest_block, transactionCount, userCount] =
+				await Promise.all([
+					// web3Helper.getBlockNumber().then(Number),
+					web3Helper.getBlockNumber().then((res) => {
+						const num = Number(res);
+						if (!num || isNaN(num)) {
+							// fallback to Redis
+							return RedisService.getString('LATEST_BLOCK').then(
+								(r) => Number(r) || 0,
+							);
+						}
+						return num;
+					}),
+					prisma.transactions.count(),
+					prisma.users.count(),
+				]);
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					// apr: data?.apr ? Number(data?.apr) : 0,
+					apr: CURRENT_DEFAULT_APR,
+					validators: data?.validator ? data?.validator : 0,
+					circulationSupply: data?.circulationSupply
+						? data.circulationSupply
+						: 0,
+					latest_block: latest_block,
+					total_transactions: transactionCount,
+					total_accounts: userCount,
+					bondedTokens: data?.bondedTokens
+						? Number(data.bondedTokens)
+						: 0,
+					bondedRate: data?.bondedRate,
+					totalValidator: data?.totalValidator,
+				},
+			};
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
 		}
 	}
 }

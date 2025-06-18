@@ -1,10 +1,13 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { RES_MSG, CONST_NAME } from '../constant/response';
+import { RES_MSG, CONST_NAME, REDIS_KEY } from '../constant/response';
 import { Params, BlockHeader } from '../interfaces/index';
 import logger from '../lib/logger';
 import { getDigitsAfterE } from '../lib/utilities.helper';
+import { RedisService } from '../service';
 
-async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
+async function getTendermintParams(
+	apiRes: AxiosInstance,
+): Promise<Params | false> {
 	try {
 		const [
 			validatorResponse,
@@ -45,13 +48,10 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			Number(circulationSupplyResponse.data.amount.amount) /
 			CONST_NAME.ETH_EXP;
 
-		const inflation_rate = Number(inflationRateResponse.data.inflation);
-
-		const formattedInflationRate = `${inflation_rate}`;
+		const inflation = Number(inflationRateResponse.data.inflation);
 
 		let blocksPerYear = Number(CONST_NAME.BLOCK_PER_YEAR);
 		blocksPerYear = Number(blocksPerYear / 2);
-		const inflation = formattedInflationRate;
 
 		const bondedTokens =
 			Number(poolResponse.data.pool.bonded_tokens) / 10 ** 18;
@@ -66,6 +66,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			totalSupply,
 			bondedTokens,
 			bondedRate,
+			inflationRateResponse,
 		);
 		return {
 			annualProvisions,
@@ -155,7 +156,7 @@ const calculateData = async (): Promise<
 			},
 			timeout: 5000,
 		});
-		const params = await getParams(apiRes);
+		const params = await getTendermintParams(apiRes);
 		if (!params) throw new Error(RES_MSG.APR_VALUE_ERROR);
 		const blocksYearReal = await getBlocksPerYearReal(apiRes);
 		const nominalAPR: number = calculateNominalAPR(params);
@@ -187,4 +188,118 @@ const calculateData = async (): Promise<
 	}
 };
 
-export { calculateData };
+const getDashboardData = async (): Promise<
+	| {
+			validator: number;
+			totalValidator: number;
+			bondedRate: number;
+			apy: number;
+	  }
+	| { error: boolean; message: string }
+> => {
+	try {
+		const apiUrl = environment.evmHost;
+		const apiRes = axios.create({
+			baseURL: apiUrl,
+			headers: {
+				'Content-Type': 'application/json; charset=utf-8',
+				Accept: 'application/json',
+			},
+			timeout: 5000,
+		});
+
+		const tenderMintParams = await getTendermintParams(apiRes);
+		if (!tenderMintParams) throw new Error(RES_MSG.SERVER_ERROR);
+
+		const apyValue = calculateAPY(
+			Number(tenderMintParams.inflation),
+			Number(tenderMintParams.bondedRate / 100),
+			tenderMintParams.communityTax,
+		);
+
+		const blocksYearReal = await getBlocksPerYearReal(apiRes);
+		const nominalAPR: number = calculateNominalAPR(tenderMintParams);
+		const actualAPR: any = calculateRealAPR(
+			tenderMintParams,
+			nominalAPR,
+			blocksYearReal,
+		);
+
+		const expoValue: number = getDigitsAfterE(actualAPR.toString());
+		const actualapr = actualAPR.toFixed(expoValue);
+
+		const validatorData = {
+			validator: tenderMintParams?.activeValidator,
+			totalValidator: tenderMintParams?.totalValidator,
+			bondedRate: tenderMintParams?.bondedRate,
+			apy: apyValue,
+			totalSupply: tenderMintParams?.total_supply,
+			inflation: Number(tenderMintParams?.inflation),
+			circulating_supply: tenderMintParams?.circulation_supply,
+			activeValidator: tenderMintParams?.activeValidator,
+			bondedTokens: tenderMintParams?.bondedTokens,
+			communityTax: tenderMintParams?.communityTax,
+			apr: actualapr,
+		};
+
+		const existingDataStr: any = await RedisService.getString(
+			REDIS_KEY.DASHBOARD_DATA,
+		);
+		let existingData: any = {};
+		if (existingDataStr) {
+			existingData = JSON.parse(existingDataStr);
+		}
+
+		// Step 2: Add or update fields
+		existingData.validator = validatorData.validator;
+		existingData.totalValidator = validatorData.totalValidator;
+		existingData.bondedRate = validatorData.bondedRate;
+
+		existingData.apy = validatorData.apy;
+		existingData.totalSupply = validatorData.totalSupply;
+		existingData.inflation = validatorData.inflation;
+		existingData.circulating_supply = validatorData.circulating_supply;
+		existingData.circulationSupply = validatorData.circulating_supply;
+		existingData.activeValidator = validatorData.activeValidator;
+		existingData.apr = validatorData.apr;
+
+		const latest_block: string = await RedisService.getString(
+			CONST_NAME.LATEST_BLOCK,
+		);
+		const total_transactions: string = await RedisService.getString(
+			REDIS_KEY.TRANSACTIONS_COUNT,
+		);
+		const total_accounts: string = await RedisService.getString(
+			REDIS_KEY.TOTAL_ADDRESSES,
+		);
+		existingData.latest_block = JSON.parse(latest_block);
+		existingData.total_transactions = JSON.parse(total_transactions);
+		existingData.total_accounts = JSON.parse(total_accounts);
+
+		await RedisService.setStringWithExpiry(
+			REDIS_KEY.DASHBOARD_DATA,
+			JSON.stringify(existingData),
+			600,
+		);
+		return validatorData;
+	} catch (err) {
+		logger.log('error', 'Error occurred while calculating stake APY', err);
+		if (err instanceof Error) {
+			return { error: true, message: err.message };
+		}
+		return { error: true, message: RES_MSG.SERVER_ERROR };
+	}
+};
+
+function calculateAPY(
+	inflation: number,
+	bondedRate: number,
+	communityTax: number,
+): number {
+	const apy = Number(
+		((inflation / bondedRate) * (1 - communityTax) * 100).toFixed(2),
+	);
+	return apy;
+}
+
+export { calculateData, getDashboardData };

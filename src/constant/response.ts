@@ -194,6 +194,7 @@ export const REDIS_KEY = {
 	STAST_GENERATED: 'StatsGenerated',
 	TX_FEE_HISTORY: 'TxFeeHistory',
 	COIN_PRICE_GRAPH: 'CoinPriceGraph',
+	DASHBOARD_DATA: 'DASHBOARD_DATA',
 };
 
 export const QUEUE_NAME = {
