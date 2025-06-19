@@ -754,16 +754,30 @@ class ExplorerService {
 					prisma.transactions.count(),
 					prisma.users.count(),
 				]);
+
+			console.log(
+				'latest_block',
+				await web3Helper.getBlockNumber(),
+				await RedisService.getString(CONST_NAME.LATEST_BLOCK),
+			);
+			console.log(
+				!latest_block
+					? RedisService.getString(CONST_NAME.LATEST_BLOCK)
+					: latest_block,
+			);
+
+			const latestBlock = await RedisService.getString(
+				CONST_NAME.LATEST_BLOCK,
+			);
+			console.log('latestBlock', latestBlock);
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
 					apr: data?.apr ? Number(data?.apr) : 0,
-					validators: data?.validator ? data?.validator : 0,
-					circulationSupply: data?.circulationSupply
-						? data.circulationSupply
-						: 0,
-					latest_block: latest_block,
+					validators: data?.validator ?? 0,
+					circulationSupply: data?.circulationSupply ?? 0,
+					latest_block: !latest_block ? +latestBlock : +latest_block,
 					total_transactions: transactionCount,
 					total_accounts: userCount,
 					bondedTokens: data?.bondedTokens
