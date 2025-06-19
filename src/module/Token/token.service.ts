@@ -718,7 +718,7 @@ class TokenService {
 
 			const getLastId = await prisma.tokens.findMany({
 				select: {
-					id: true, // Replace 'id' with your desired column
+					id: true,
 				},
 				orderBy: {
 					id: 'asc',
@@ -731,6 +731,8 @@ class TokenService {
 				},
 				take: totalTokens % data.limit || data.limit,
 			});
+
+			console.log(getLastId, 'getLastId');
 
 			const cursorPages = cursorPagination(
 				tokens,
@@ -796,7 +798,7 @@ class TokenService {
 					// 		? null
 					// 		: cursorPages.previousCursor,
 					prevCursor: cursorPages.previousCursor,
-					lastPage: getLastId
+					lastPage: getLastId.length
 						? getLastId[getLastId.length - 1].id
 						: null,
 				},

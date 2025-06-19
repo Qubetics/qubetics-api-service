@@ -1342,7 +1342,7 @@ class ContractService {
 
 					prevCursor: serializeBigInt(cursorPages.previousCursor),
 
-					lastPage: getLastId
+					lastPage: getLastId.length
 						? getLastId[getLastId.length - 1].id
 						: null,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
