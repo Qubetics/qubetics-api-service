@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { RES_MSG, CONST_NAME } from '../constant/response';
+import { RES_MSG, CONST_NAME, CURRENT_DEFAULT_APR } from '../constant/response';
 import { Params, BlockHeader } from '../interfaces/index';
 import logger from '../lib/logger';
 import { getDigitsAfterE } from '../lib/utilities.helper';
@@ -157,18 +157,22 @@ const calculateData = async (): Promise<
 		});
 		const params = await getParams(apiRes);
 		if (!params) throw new Error(RES_MSG.APR_VALUE_ERROR);
-		const blocksYearReal = await getBlocksPerYearReal(apiRes);
-		const nominalAPR: number = calculateNominalAPR(params);
-		const actualAPR: any = calculateRealAPR(
-			params,
-			nominalAPR,
-			blocksYearReal,
-		);
+		const getApr = await apiRes.get('/qubetics/validatorpool/params');
+		console.log(getApr, 'getAprgetApr');
+		const nominalAPR = getApr?.data?.params?.annual_roi;
 
-		const expoValue: number = getDigitsAfterE(actualAPR.toString());
-		const actualapr = actualAPR.toFixed(expoValue);
+		// const blocksYearReal = await getBlocksPerYearReal(apiRes);
+		// const nominalAPR: number = calculateNominalAPR(params);
+		// const actualAPR: any = calculateRealAPR(
+		// 	params,
+		// 	nominalAPR,
+		// 	blocksYearReal,
+		// );
+
+		// const expoValue: number = getDigitsAfterE(actualAPR.toString());
+		// const actualapr = actualAPR.toFixed(expoValue);
 		return {
-			apr: actualapr,
+			apr: nominalAPR ?? CURRENT_DEFAULT_APR.toString(),
 			circulationSupply: params?.circulation_supply,
 			validator: params?.activeValidator,
 			bondedTokens: params?.bondedTokens,

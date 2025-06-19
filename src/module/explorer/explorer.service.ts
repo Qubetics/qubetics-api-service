@@ -884,6 +884,7 @@ class ExplorerService {
 				// 	userBalance,
 				// );
 			} catch (error) {
+				console.log('BALANCE FETCH ERRROR');
 				userBalance = '';
 			}
 			const actualBalance: any = userBalance

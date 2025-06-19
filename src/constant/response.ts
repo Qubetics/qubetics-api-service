@@ -291,3 +291,4 @@ export const STATS_CONVERTER: {
 		'5': { key: 'monthly', len: 60 },
 	},
 };
+export const CURRENT_DEFAULT_APR = 30;
