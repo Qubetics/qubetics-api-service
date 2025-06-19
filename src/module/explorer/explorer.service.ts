@@ -7,6 +7,7 @@ import {
 	RESPONSES,
 	STATS_CONVERTER,
 	CURRENT_DEFAULT_COIN_PRICE,
+	CURRENT_DEFAULT_APR,
 } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService } from '../../service/index';
@@ -774,7 +775,7 @@ class ExplorerService {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
-					apr: data?.apr ? Number(data?.apr) : 0,
+					apr: data?.apr ? Number(data?.apr) : CURRENT_DEFAULT_APR,
 					validators: data?.validator ?? 0,
 					circulationSupply: data?.circulationSupply ?? 0,
 					latest_block: !latest_block ? +latestBlock : +latest_block,
@@ -785,6 +786,7 @@ class ExplorerService {
 						: 0,
 					bondedRate: data?.bondedRate,
 					totalValidator: data?.totalValidator,
+					apy: CURRENT_DEFAULT_APR,
 				},
 			};
 		} catch (err) {
