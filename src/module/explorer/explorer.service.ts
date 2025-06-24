@@ -756,21 +756,9 @@ class ExplorerService {
 					prisma.users.count(),
 				]);
 
-			console.log(
-				'latest_block',
-				await web3Helper.getBlockNumber(),
-				await RedisService.getString(CONST_NAME.LATEST_BLOCK),
-			);
-			console.log(
-				!latest_block
-					? RedisService.getString(CONST_NAME.LATEST_BLOCK)
-					: latest_block,
-			);
-
 			const latestBlock = await RedisService.getString(
 				CONST_NAME.LATEST_BLOCK,
 			);
-			console.log('latestBlock', latestBlock);
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
