@@ -375,76 +375,6 @@ class BlockService {
 		}
 	}
 
-	async getAverageBlockTime(blockCount = 10): Promise<IESResponse> {
-		const avgTime = await RedisService.getString(REDIS_KEY.BLOCK_AVG_TIME);
-		const latestBlock = await RedisService.getString(
-			CONST_NAME.LATEST_BLOCK,
-		);
-		try {
-			if (avgTime) {
-				return {
-					error: false,
-					message: RES_MSG.BLOCK_AVG_SUCCESS,
-					data: { avgTime: avgTime, currentBlock: latestBlock },
-				};
-			}
-			const currentBlock = await web3Helper.getBlockNumber();
-			const blockNumber = +currentBlock.toString();
-			if (blockNumber <= blockCount) {
-				return {
-					error: false,
-					message: RES_MSG.BLOCK_AVG_SUCCESS,
-					data: {
-						avgTime: environment?.averageBlockTime,
-						currentBlock: latestBlock,
-					},
-				};
-			}
-			const calls = [];
-			for (let i = 0; i <= blockCount; i++) {
-				calls.push(
-					web3Helper.getDetailByBlockNumber(
-						blockNumber - blockCount + i,
-					),
-				);
-			}
-			const blocks: any = await Promise.all(calls);
-			let total = 0;
-			for (let i = 1; i <= blockCount; i++) {
-				const diff =
-					+blocks[i].timestamp.toString() -
-					+blocks[i - 1].timestamp.toString();
-				total += diff;
-			}
-
-			const avg = total / blockCount;
-			await RedisService.setStringWithExpiry(
-				REDIS_KEY.BLOCK_AVG_TIME,
-				avg.toFixed(2),
-				120,
-			);
-			return {
-				error: false,
-				message: RES_MSG.BLOCK_AVG_SUCCESS,
-				data: {
-					avgTime: Number(avg).toFixed(2),
-					currentBlock,
-				},
-			};
-		} catch (err) {
-			logger.error('Error inside block avg', err);
-
-			return {
-				error: false,
-				message: RES_MSG.BLOCK_AVG_SUCCESS,
-				data: {
-					avgTime: avgTime || environment?.averageBlockTime,
-					currentBlock: latestBlock,
-				},
-			};
-		}
-	}
-
 	async getAllLatestBlock(data: {
 		page: number;
 		limit: number;
@@ -635,6 +565,47 @@ class BlockService {
 		} catch (err) {
 			console.log('Error stateSync', err);
 			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async getAverageBlockTime(blockCount = 10): Promise<IESResponse> {
+		const avgTime = await RedisService.getString(REDIS_KEY.BLOCK_AVG_TIME);
+		const latestBlock = await RedisService.getString(
+			CONST_NAME.LATEST_BLOCK,
+		);
+		try {
+			if (avgTime) {
+				return {
+					error: false,
+					message: RES_MSG.BLOCK_AVG_SUCCESS,
+					data: { avgTime: avgTime, currentBlock: latestBlock },
+				};
+			}
+			const currentBlock: any = await web3Helper.getBlockNumber();
+			const blockNumber = +currentBlock.toString();
+			RabbitMqService.inQueueData(
+				QUEUE_NAME.BLOCK_TIME_QUE,
+				blockCount.toString(),
+			);
+
+			return {
+				error: false,
+				message: RES_MSG.BLOCK_AVG_SUCCESS,
+				data: {
+					avgTime: environment?.averageBlockTime,
+					currentBlock: serializeBigInt(blockNumber),
+				},
+			};
+		} catch (err) {
+			logger.error('Error inside block avg', err);
+			return {
+				error: false,
+				message: RES_MSG.BLOCK_AVG_SUCCESS,
+				data: {
+					avgTime: avgTime || environment?.averageBlockTime,
+					currentBlock: +latestBlock,
+				},
+			};
 		}
 	}
 }
