@@ -13,7 +13,7 @@ jobs:
       ARGOCD_BRANCH: prod
       HUAWEI_REGION: 'ap-southeast-1'
       ARGOCD_REPOSITORY: Qubetics/argocd-qubetics
-      DEPLOYMENT_PATH: Evm-backend/qubetics-api-deployment.yaml
+      DEPLOYMENT_PATH: Evm-backend/api-deployment.yaml
       HUAWEI_IMAGE: prod-qubetics-evm-backend
       DOCKER_USERNAME: ap-southeast-1@BQG9INQF0BKVHSNQOLJG
       ENV: ${{ vars.PROD_QUBETICS_API_ENV }}
