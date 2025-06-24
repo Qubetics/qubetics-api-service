@@ -1,4 +1,4 @@
-name: '[prod] Deploy testnet qubetics api'
+name: '[prod] Deploy qubetics api'
 
 on: 
   push:
@@ -9,7 +9,7 @@ jobs:
   deploy_testnet_qubetics_api_service:
     uses: ./.github/workflows/qubetics-api.yaml
     with:
-      SWR_ORGANIZATION: testnet-qubetics
+      SWR_ORGANIZATION: prod-qubetics
       ARGOCD_BRANCH: prod
       HUAWEI_REGION: 'ap-southeast-1'
       ARGOCD_REPOSITORY: Qubetics/argocd-qubetics
