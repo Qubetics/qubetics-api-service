@@ -180,7 +180,10 @@ const calculateData = async (): Promise<
 			totalValidator: params?.totalValidator,
 		};
 	} catch (err) {
-		logger.error('Error occurred while calculating stake APR', err);
+		logger.error(
+			'Error occurred while calculating data for dashboard',
+			err,
+		);
 		if (err instanceof Error) {
 			return { error: true, message: err.message };
 		}
