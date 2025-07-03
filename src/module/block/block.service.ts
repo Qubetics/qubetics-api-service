@@ -2,7 +2,7 @@ import {
 	convertBigIntToNumber,
 	serializeBigInt,
 } from '../../helper/common.helper';
-import Web3Helper from '../../helper/web3.helper';
+import web3Helper from '../../helper/web3.helper';
 import {
 	RES_MSG,
 	QUEUE_NAME,
@@ -12,129 +12,11 @@ import {
 import { IESResponse } from '../../interfaces/index';
 import { RabbitMqService, RedisService } from '../../service/index';
 import prisma from '../../lib/db';
-import web3Helper from '../../helper/web3.helper';
 import logger from '../../lib/logger';
 import { cursorPagination } from '../../lib/utilities.helper';
 import axios from 'axios';
 
 class BlockService {
-	async getAllLatestBlock_1(data: {
-		page: number;
-		limit: number;
-		order: any;
-	}): Promise<IESResponse> {
-		try {
-			let isLimitFullFilled = true;
-			let maxId = 0;
-			let minId: any = 0;
-			let zerothElement = 0;
-			let isFirstPage = data.page === 1;
-			let blocks = await prisma.blocks.findMany({
-				orderBy: {
-					blocknumber: data.order,
-				},
-				where: isFirstPage
-					? {}
-					: {
-							blocknumber:
-								data.order === 'asc'
-									? { gt: data.page }
-									: { lt: data.page },
-						},
-				take: data.limit,
-			});
-
-			// check if limit is fullfilled with current block range
-			if (blocks.length < data.limit) {
-				isLimitFullFilled = false;
-			}
-			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
-
-			let blockCount = await RedisService.getString(
-				REDIS_KEY.BLOCKS_COUNT,
-			);
-
-			if (!blockCount) {
-				const result = await prisma.blocks.aggregate({
-					_count: {
-						blocknumber: true,
-					},
-				});
-				blockCount = result._count.blocknumber;
-			}
-
-			zerothElement = serializeBigInt(blocks[0].blocknumber);
-			console.log(zerothElement, 'zerothElement');
-			const nextCursor =
-				blocks.length === data.limit && isLimitFullFilled
-					? convertBigIntToNumber(blocks)[blocks.length - 1]
-							.blocknumber
-					: null;
-
-			const prevCursor: number = isFirstPage
-				? null
-				: data.order === 'asc'
-					? serializeBigInt(blocks[blocks.length - 1].blocknumber)
-					: serializeBigInt(blocks[0].blocknumber);
-
-			if (!blocks?.length) throw new Error(RES_MSG.BLOCK_NOT_FOUND);
-			let nextCursorValue: number | null = nextCursor;
-			if (data.order === 'asc') {
-				const result = await prisma.blocks.aggregate({
-					_max: {
-						blocknumber: true,
-					},
-				});
-				maxId = serializeBigInt(result._max.blocknumber);
-				if (maxId === data.page + data.limit) {
-					nextCursorValue = null;
-				}
-			} else if (data.order === 'desc') {
-				minId = await prisma.blocks.findMany({
-					select: {
-						blocknumber: true,
-					},
-					orderBy: {
-						blocknumber: 'asc',
-					},
-					take: (blockCount % data.limit) + 1 || data.limit + 1,
-				});
-				if (blockCount === nextCursor || nextCursor === 1) {
-					nextCursorValue = null;
-				}
-			}
-			const offset: number = blockCount % data.limit || data.limit;
-
-			const lastPage =
-				data.order === 'asc'
-					? maxId - offset
-					: serializeBigInt(minId[minId.length - 1].blocknumber);
-			console.log('HEHREHHE', minId, lastPage);
-
-			return {
-				error: false,
-				message: RES_MSG.ALL_BLOCK_FETCH,
-				data: {
-					blockCount,
-					blocks: convertBigIntToNumber(blocks),
-					nextCursor: nextCursorValue,
-					prevCursor: prevCursor,
-					lastPage,
-				},
-			};
-		} catch (err) {
-			console.log('--Error BLOCK--', err);
-			if (err instanceof Error) {
-				logger.error(err);
-				if (err.message.includes('prisma')) {
-					return { error: true, message: RES_MSG.SERVER_ERROR };
-				}
-				return { error: true, message: err.message };
-			}
-			return { error: true, message: RES_MSG.ERROR };
-		}
-	}
-
 	async getAllLatestBlocks(data: {
 		page?: number;
 		limit: number;
@@ -200,7 +82,8 @@ class BlockService {
 			});
 
 			if (!blockDetailsByHash) {
-				const blockData = await Web3Helper.getDetailByBlockNumber(hash);
+				const blockData = await web3Helper.getDetailByBlockNumber(hash);
+				console.log('blockData from chain', blockData);
 
 				if (blockData) {
 					RabbitMqService.inQueueData(
@@ -260,6 +143,7 @@ class BlockService {
 			}
 			return false;
 		} catch (err) {
+			console.log('*** Error getTxByBlock', err);
 			return true;
 		}
 	}
@@ -273,7 +157,7 @@ class BlockService {
 			});
 			if (!blockDetail) {
 				const blockData =
-					await Web3Helper.getDetailByBlockNumber(blockNumber);
+					await web3Helper.getDetailByBlockNumber(blockNumber);
 				if (blockData) {
 					RabbitMqService.inQueueData(
 						QUEUE_NAME.MISSING_BLOCK,
@@ -331,7 +215,7 @@ class BlockService {
 			if (blockIdentity.startsWith('0x')) {
 				blockDetail = await prisma.blocks.findUnique({
 					where: {
-						blockhash: <string>blockIdentity.toLowerCase(),
+						blockhash: blockIdentity.toLowerCase(),
 					},
 				});
 			} else {
@@ -361,7 +245,7 @@ class BlockService {
 
 	async getLatestBlock(): Promise<IESResponse> {
 		try {
-			const lastHeader = await Web3Helper.getBlockNumber();
+			const lastHeader = await web3Helper.getBlockNumber();
 			return {
 				error: false,
 				message: RES_MSG.BLOCK_FETCH,
@@ -544,10 +428,8 @@ class BlockService {
 			const response: any = await axios.get(url);
 
 			console.log(response?.data?.result, 'stateSyncUrl');
-			const result = response?.data?.result?.response
-				? response.data?.result?.response
-				: '';
-			result.rpcServers = rpcServers ? rpcServers : '';
+			const result = response?.data?.result?.response ?? '';
+			result.rpcServers = rpcServers || '';
 			console.log('result', result);
 			await RedisService.setStringWithExpiry(
 				REDIS_KEY.STATE_SYNC,

@@ -61,12 +61,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 		const totalSupply = Number(total_Supply.data.supply[0].amount);
 
 		const bondedRate = Number((bondedTokens / circulation_supply) * 100);
-		console.log(
-			'bondedRate-totalSupply',
-			totalSupply,
-			bondedTokens,
-			bondedRate,
-		);
+
 		return {
 			annualProvisions,
 			blocksPerYear,
@@ -158,7 +153,7 @@ const calculateData = async (): Promise<
 		const params = await getParams(apiRes);
 		if (!params) throw new Error(RES_MSG.APR_VALUE_ERROR);
 		const getApr = await apiRes.get('/qubetics/validatorpool/params');
-		console.log(getApr, 'getAprgetApr');
+
 		const nominalAPR = getApr?.data?.params?.annual_roi;
 
 		// const blocksYearReal = await getBlocksPerYearReal(apiRes);

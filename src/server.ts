@@ -3,6 +3,7 @@ import { AddressInfo } from 'net';
 import Environment from './environments/environment';
 import { setGlobalEnvironment } from './global';
 import logger from './lib/logger';
+import web3Helper from './helper/web3.helper';
 
 const env: Environment = new Environment();
 setGlobalEnvironment(env);

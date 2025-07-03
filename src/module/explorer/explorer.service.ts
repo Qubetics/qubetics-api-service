@@ -1,4 +1,4 @@
-import Web3Helper from '../../helper/web3.helper';
+import web3Helper from '../../helper/web3.helper';
 import {
 	RES_MSG,
 	CONST_NAME,
@@ -24,7 +24,6 @@ import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
-import web3Helper from '../../helper/web3.helper';
 import { serializeBigInt } from '../../helper/common.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
@@ -749,24 +748,32 @@ class ExplorerService {
 	async dashboard(): Promise<IESResponse> {
 		try {
 			const data: any = await calculateData();
-			const [latest_block, transactionCount, userCount] =
-				await Promise.all([
-					web3Helper.getBlockNumber().then(Number),
-					prisma.transactions.count(),
-					prisma.users.count(),
-				]);
+			const [transactionCount, userCount] = await Promise.all([
+				// web3Helper.getBlockNumber().then(Number),
+				prisma.transactions.count(),
+				prisma.users.count(),
+			]);
 
 			const latestBlock = await RedisService.getString(
 				CONST_NAME.LATEST_BLOCK,
 			);
+			const marketCap = await RedisService.getString(
+				REDIS_KEY.MARKET_CAP,
+			);
+
+			const circulationSupply =
+				data?.circulationSupply === 0 || !data.circulationSupply
+					? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
+					: data?.circulationSupply;
+
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
 				data: {
 					apr: data?.apr ? Number(data?.apr) : CURRENT_DEFAULT_APR,
 					validators: data?.validator ?? 0,
-					circulationSupply: data?.circulationSupply ?? 0,
-					latest_block: !latest_block ? +latestBlock : +latest_block,
+					circulationSupply: circulationSupply,
+					latest_block: latestBlock,
 					total_transactions: transactionCount,
 					total_accounts: userCount,
 					bondedTokens: data?.bondedTokens
@@ -775,6 +782,7 @@ class ExplorerService {
 					bondedRate: data?.bondedRate,
 					totalValidator: data?.totalValidator,
 					apy: CURRENT_DEFAULT_APR,
+					marketCap,
 				},
 			};
 		} catch (err) {
@@ -863,7 +871,7 @@ class ExplorerService {
 			// );
 			try {
 				userBalance = (
-					await Web3Helper.getBalance(
+					await web3Helper.getBalance(
 						Web3.utils.toChecksumAddress(address),
 					)
 				).toString();

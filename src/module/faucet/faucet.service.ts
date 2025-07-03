@@ -2,47 +2,33 @@ import axios from 'axios';
 import Web3Helper from '../../helper/web3.helper';
 import { RES_MSG, CONST_NAME } from '../../constant/response';
 import Redis from '../../service/redis.helper';
-import logger from '../../lib/logger';
 import {
 	isExponentialNumber,
 	getDigitsAfterE,
 } from '../../lib/utilities.helper';
-import web3Helper from '../../helper/web3.helper';
 
 class FaucetService {
-	async captchaRequest(token: string) {
-		// console.log(
-		// 	'GET TOKEN VLAUE',
-		// 	`${environment.recaptchaUrl}--------${environment.recaptchaSiteKey}------${token}`,
-		// );
-		return new Promise(async (resolve, reject) => {
-			try {
-				const res = await axios.post(
+	captchaRequest(token: string): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			axios
+				.post(
 					`${environment.recaptchaUrl}?secret=${environment.recaptchaSiteKey}&response=${token}`,
-				);
-
-				if (res.data.success) {
-					resolve(true);
-				} else {
-					reject(RES_MSG.INVALID_USER_ERROR);
-				}
-			} catch (err) {
-				console.log('Errrrr', err);
-				reject(RES_MSG.CAPTCHA_ERROR);
-			}
+				)
+				.then((res) => {
+					if (res.data.success) {
+						resolve(true);
+					} else {
+						reject(new Error(RES_MSG.INVALID_USER_ERROR));
+					}
+				})
+				.catch((error) => {
+					reject(new Error(RES_MSG.CAPTCHA_ERROR));
+				});
 		});
 	}
 
 	async fundTransfer(to: string, _captchaToken: string) {
 		try {
-			// console.log(
-			// 	'Capcha: ',
-			// 	to,
-			// 	_captchaToken,
-			// 	'Environment: ',
-			// 	environment.recaptchaUrl,
-			// );
-
 			let faucetBalance;
 			const privateKey = `0x${environment.privateKey}`;
 			const existingData = await Redis.client.get(`${to}`);
@@ -72,7 +58,7 @@ class FaucetService {
 				if (Number(faucetBalance) <= Number(value))
 					throw new Error(RES_MSG.FAUCET_ACCOUNT_BALANCE_LOW);
 
-				const nonce = await web3Helper.getTransactionCount(
+				const nonce = await Web3Helper.getTransactionCount(
 					environment.publicKey,
 					'pending',
 				);
@@ -84,13 +70,6 @@ class FaucetService {
 					maxFeePerGas: CONST_NAME.MAX_FEES,
 					maxPriorityFeePerGas: CONST_NAME.MAX_PRIORIY_FEES,
 					value: (Number(value) * Math.pow(10, 18)).toString(),
-					// nonce: Number(
-					// 	(
-					// 		await Web3Helper.getTransactionCount(
-					// 			environment.publicKey,
-					// 		)
-					// 	).toString(),
-					// ),
 					nonce: Number(nonce.toString()),
 				};
 
