@@ -17,11 +17,10 @@ class Web3Helper {
 			this.web3 = new Web3(
 				new Web3.providers.HttpProvider(environment.RPCURL),
 			);
-			return true;
 		} catch (error) {
 			logger.error('Here s the errror', error);
-			return false;
 		}
+		return true;
 	}
 
 	async getBlockNumber() {
