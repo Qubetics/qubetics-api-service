@@ -275,12 +275,7 @@ class BlockService {
 				orderBy: {
 					blocknumber: data.order,
 				},
-				// orderBy: {
-				// 	blocknumber:
-				// 		data.filterBy === 'newest' && data.order === 'desc'
-				// 			? 'asc'
-				// 			: 'desc',
-				// },
+
 				where: isFirstPage
 					? {}
 					: {
@@ -353,13 +348,6 @@ class BlockService {
 			console.log('lastPageResult', lastPageResult);
 			const offset: number = blockCount % data.limit || data.limit;
 
-			// const lastPage =
-			// 	data.order === 'asc'
-			// 		? maximumId - offset
-			// 		: serializeBigInt(
-			// 				lastPageResult[lastPageResult.length - 1]
-			// 					.blocknumber,
-			// 			);
 			const lastPage = serializeBigInt(
 				lastPageResult[lastPageResult.length - 1].blocknumber,
 			);

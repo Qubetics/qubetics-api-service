@@ -153,7 +153,6 @@ const calculateData = async (): Promise<
 		const params = await getParams(apiRes);
 		if (!params) throw new Error(RES_MSG.APR_VALUE_ERROR);
 		const getApr = await apiRes.get('/qubetics/validatorpool/params');
-
 		const nominalAPR = getApr?.data?.params?.annual_roi;
 
 		// const blocksYearReal = await getBlocksPerYearReal(apiRes);

@@ -8,6 +8,7 @@ import {
 	STATS_CONVERTER,
 	CURRENT_DEFAULT_COIN_PRICE,
 	CURRENT_DEFAULT_APR,
+	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
 } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService } from '../../service/index';
@@ -761,10 +762,12 @@ class ExplorerService {
 				REDIS_KEY.MARKET_CAP,
 			);
 
-			const circulationSupply =
-				data?.circulationSupply === 0 || !data.circulationSupply
-					? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
-					: data?.circulationSupply;
+			// const circulationSupply =
+			// 	data?.circulationSupply === 0 || !data.circulationSupply
+			// 		? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
+			// 		: data?.circulationSupply;
+
+			const circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
 
 			return {
 				error: false,
