@@ -73,6 +73,7 @@ async function getParams(apiRes: AxiosInstance): Promise<Params | false> {
 			circulation_supply,
 			bondedRate,
 			total_supply: totalSupply,
+			totalValidators: validatorResponse?.data?.validators.length,
 		};
 	} catch (error) {
 		logger.error('getParams Error', error);
