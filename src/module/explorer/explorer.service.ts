@@ -868,7 +868,7 @@ class ExplorerService {
 					? (Number(price) * Number(actualBalance)).toString()
 					: '';
 			} else {
-				marketCapPrice = JSON.parse(marketCapPrice);
+				marketCapPrice = marketCapPrice;
 				console.log('marketCapPriceELSE', marketCapPrice);
 
 				value =

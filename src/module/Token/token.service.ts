@@ -387,7 +387,7 @@ class TokenService {
 					address: data?.address,
 				},
 			});
-			console.log('holdersCount', holdersData[0].contract.Tokens);
+			// console.log('holdersCount', holdersData[0].contract.Tokens);
 
 			const holdersCount = await prisma.holders.count({
 				where: {
