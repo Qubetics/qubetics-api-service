@@ -229,7 +229,7 @@ class ContractService {
 				contractName: contractData?.ContractVerification?.contractname
 					? contractData?.ContractVerification?.contractname
 					: contractData?.contractName,
-				balance: actualBalance,
+				balance: userBalance,
 			};
 			delete contractDataToSend.Tokens;
 			const contract = convertBigIntToNumber([contractDataToSend])[0];
