@@ -22,6 +22,7 @@ import {
 } from '../../lib/utilities.helper';
 import redisHelper from '../../service/redis.helper';
 import moment from 'moment';
+import web3Helper from '../../helper/web3.helper';
 
 class ContractService {
 	async getAllContract_(data: {
@@ -212,6 +213,10 @@ class ContractService {
 			// 				})
 			// 			)?.createdAt ?? null
 			// 		: undefined;
+
+			const userBalance = (
+				await web3Helper.getBalance(address)
+			).toString();
 			const contractDataToSend = {
 				...contractData,
 				// updatedAt: updatedAt,
@@ -223,6 +228,7 @@ class ContractService {
 				contractName: contractData?.ContractVerification?.contractname
 					? contractData?.ContractVerification?.contractname
 					: contractData?.contractName,
+				balance: userBalance,
 			};
 			delete contractDataToSend.Tokens;
 			const contract = convertBigIntToNumber([contractDataToSend])[0];
