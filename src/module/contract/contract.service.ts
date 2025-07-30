@@ -276,6 +276,7 @@ class ContractService {
 							blockhash: true,
 							type: true,
 							timestamp: true,
+							value: true,
 							ContractLogs: {
 								select: {
 									...CONTRACTLOGS,
