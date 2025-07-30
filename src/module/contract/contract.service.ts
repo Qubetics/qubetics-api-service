@@ -217,6 +217,9 @@ class ContractService {
 			const userBalance = (
 				await web3Helper.getBalance(address)
 			).toString();
+			const actualBalance: any = userBalance
+				? (Number(userBalance) / Math.pow(10, 18)).toString()
+				: '';
 			const contractDataToSend = {
 				...contractData,
 				// updatedAt: updatedAt,
@@ -228,7 +231,7 @@ class ContractService {
 				contractName: contractData?.ContractVerification?.contractname
 					? contractData?.ContractVerification?.contractname
 					: contractData?.contractName,
-				balance: userBalance,
+				balance: actualBalance,
 			};
 			delete contractDataToSend.Tokens;
 			const contract = convertBigIntToNumber([contractDataToSend])[0];
