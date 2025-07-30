@@ -1348,7 +1348,7 @@ class ContractService {
 
 					prevCursor: serializeBigInt(cursorPages.previousCursor),
 
-					lastPage: getLastId
+					lastPage: getLastId.length
 						? getLastId[getLastId.length - 1].id
 						: null,
 					erc20Count: erc20Count ? Number(erc20Count) : 0,
@@ -1678,6 +1678,7 @@ class ContractService {
 				await prisma.$queryRawUnsafe(resultCountQuery);
 
 			console.log('getContractsTokens Response', results, resultCount);
+			const totalContracts = Number(resultCount[0].count_id);
 
 			const getContractsCount: any = await this.getContractsCount();
 			const {
@@ -1694,7 +1695,9 @@ class ContractService {
 					message: RES_MSG.DATA_NOT_FOUND,
 					error: true,
 					data: {
-						count: count ? Number(count) : 0,
+						message: RES_MSG.DATA_NOT_FOUND,
+						error: true,
+						contractCount: totalContracts || 0,
 						erc20Count: erc20Count ? Number(erc20Count) : 0,
 						erc721Count: erc721Count ? Number(erc721Count) : 0,
 						erc777Count: erc777Count ? Number(erc777Count) : 0,
@@ -1704,7 +1707,6 @@ class ContractService {
 				};
 			}
 
-			const totalContracts = Number(resultCount[0].count_id);
 			const minimumId = resultCount[0].min_id;
 			const maximumId = resultCount[0].max_id;
 

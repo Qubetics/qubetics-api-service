@@ -15,8 +15,6 @@ export const RESPONSES = {
 	GATEWAYTIMEOUT: 504,
 };
 
-export const CURRENT_DEFAULT_COIN_PRICE = 0.01;
-
 export const RATE_LIMITER_MESSAGE = {
 	TOO_MANY_REQUEST:
 		'You are doing too many request. Please try again in 5 minutes.',
@@ -293,5 +291,6 @@ export const STATS_CONVERTER: {
 		'5': { key: 'monthly', len: 60 },
 	},
 };
-
 export const CURRENT_DEFAULT_APR = 30;
+export const CURRENT_DEFAULT_COIN_PRICE = 0.337097;
+export const CURRENT_DEFAULT_CIRCULATING_SUPPLY = 30542186;

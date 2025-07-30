@@ -17,17 +17,18 @@ class Web3Helper {
 			this.web3 = new Web3(
 				new Web3.providers.HttpProvider(environment.RPCURL),
 			);
-		} catch (Error) {
-			logger.error('Here s the errror', Error);
+		} catch (error) {
+			logger.error('Here s the errror', error);
 		}
+		return true;
 	}
 
 	async getBlockNumber() {
 		try {
 			return await this.web3.eth.getBlockNumber();
 		} catch (err) {
-			// throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
-			return false;
+			logger.error('error while getBlockNumber : ', err);
+			throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
 		}
 	}
 
@@ -36,7 +37,7 @@ class Web3Helper {
 			const res = await this.web3.eth.getBlock(latestBlock);
 			return res;
 		} catch (err) {
-			return false;
+			logger.error('error while getDetailByBlockNumber : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.BLOCK_NUMBER_FETCH);
 		}
 	}
@@ -45,7 +46,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.getTransaction(txHash);
 		} catch (err) {
-			return false;
+			logger.error('error while getTxByHash : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.TRANSACTION_FETCH);
 		}
 	}
@@ -55,6 +56,7 @@ class Web3Helper {
 			const res = await this.web3.eth.getTransactionReceipt(hash);
 			return res;
 		} catch (err) {
+			logger.error('error while getTransactionCount : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.TRANSACTION_FETCH);
 		}
 	}
@@ -65,12 +67,6 @@ class Web3Helper {
 		} catch (err) {
 			logger.error('error while getting balance : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
-			// if (err instanceof Error) {
-			// 	throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
-			// 	// throw new Error(err.message);
-			// } else {
-			// 	throw new Error(BLOCKCHAIN_ERROR_MSG.GET_BALANCE);
-			// }
 		}
 	}
 
@@ -81,16 +77,14 @@ class Web3Helper {
 				nonceType,
 			);
 		} catch (err) {
+			logger.error('error while getTransactionCount : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
-			// throw new Error(BLOCKCHAIN_ERROR_MSG.TRANSACTION_COUNT);
 		}
 	}
 
 	async getAccount(privateKey: string) {
 		try {
-			const account =
-				await this.web3.eth.accounts.privateKeyToAccount(privateKey);
-			return account;
+			return this.web3.eth.accounts.privateKeyToAccount(privateKey);
 		} catch (err) {
 			logger.error('getAccount error : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.INVALID_ADDRESS);
@@ -104,7 +98,7 @@ class Web3Helper {
 				privateKey,
 			);
 		} catch (err) {
-			logger.error('error : ', err);
+			logger.error('error signTransaction : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
 		}
 	}
@@ -113,8 +107,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.sendSignedTransaction(rawTransaction);
 		} catch (err) {
-			logger.error('error : ', err);
-
+			logger.error('error sendSignedTransaction: ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
 		}
 	}
@@ -123,6 +116,7 @@ class Web3Helper {
 		try {
 			return await this.web3.eth.net.getPeerCount();
 		} catch (err) {
+			logger.error('error getPeerCount : ', err);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.GET_ACCOUNT);
 		}
 	}
@@ -132,8 +126,11 @@ class Web3Helper {
 			Web3.utils.toChecksumAddress(address);
 			return true;
 		} catch (error) {
+			logger.error('error isValidAddress : ', error);
 			throw new Error(BLOCKCHAIN_ERROR_MSG.INVALID_ADDRESS);
 		}
 	}
 }
-export default new Web3Helper();
+
+const web3Helper = new Web3Helper();
+export default web3Helper;

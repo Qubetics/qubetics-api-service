@@ -1,5 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { RES_MSG, CONST_NAME, REDIS_KEY } from '../constant/response';
+import {
+	RES_MSG,
+	CONST_NAME,
+	CURRENT_DEFAULT_APR,
+	REDIS_KEY,
+} from '../constant/response';
 import { Params, BlockHeader } from '../interfaces/index';
 import logger from '../lib/logger';
 import { getDigitsAfterE } from '../lib/utilities.helper';
@@ -20,7 +25,7 @@ async function getTendermintParams(
 		] = await Promise.all([
 			apiRes.get('/cosmos/staking/v1beta1/validators'),
 			apiRes.get(
-				`/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.token_symbol}`,
+				`/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.token_symbol.toLowerCase()}`,
 			),
 			apiRes.get('/cosmos/mint/v1beta1/inflation'),
 			apiRes.get('/cosmos/staking/v1beta1/pool'),
@@ -61,13 +66,6 @@ async function getTendermintParams(
 		const totalSupply = Number(total_Supply.data.supply[0].amount);
 
 		const bondedRate = Number((bondedTokens / circulation_supply) * 100);
-		console.log(
-			'bondedRate-totalSupply',
-			totalSupply,
-			bondedTokens,
-			bondedRate,
-			inflationRateResponse,
-		);
 		return {
 			annualProvisions,
 			blocksPerYear,
@@ -79,6 +77,7 @@ async function getTendermintParams(
 			circulation_supply,
 			bondedRate,
 			total_supply: totalSupply,
+			totalValidators: validatorResponse?.data?.validators.length,
 		};
 	} catch (error) {
 		logger.error('getParams Error', error);
@@ -158,18 +157,21 @@ const calculateData = async (): Promise<
 		});
 		const params = await getTendermintParams(apiRes);
 		if (!params) throw new Error(RES_MSG.APR_VALUE_ERROR);
-		const blocksYearReal = await getBlocksPerYearReal(apiRes);
-		const nominalAPR: number = calculateNominalAPR(params);
-		const actualAPR: any = calculateRealAPR(
-			params,
-			nominalAPR,
-			blocksYearReal,
-		);
+		const getApr = await apiRes.get('/qubetics/validatorpool/params');
+		const nominalAPR = getApr?.data?.params?.annual_roi;
 
-		const expoValue: number = getDigitsAfterE(actualAPR.toString());
-		const actualapr = actualAPR.toFixed(expoValue);
+		// const blocksYearReal = await getBlocksPerYearReal(apiRes);
+		// const nominalAPR: number = calculateNominalAPR(params);
+		// const actualAPR: any = calculateRealAPR(
+		// 	params,
+		// 	nominalAPR,
+		// 	blocksYearReal,
+		// );
+
+		// const expoValue: number = getDigitsAfterE(actualAPR.toString());
+		// const actualapr = actualAPR.toFixed(expoValue);
 		return {
-			apr: actualapr,
+			apr: nominalAPR ?? CURRENT_DEFAULT_APR.toString(),
 			circulationSupply: params?.circulation_supply,
 			validator: params?.activeValidator,
 			bondedTokens: params?.bondedTokens,
@@ -177,7 +179,10 @@ const calculateData = async (): Promise<
 			totalValidator: params?.totalValidator,
 		};
 	} catch (err) {
-		logger.error('Error occurred while calculating stake APR', err);
+		logger.error(
+			'Error occurred while calculating data for dashboard',
+			err,
+		);
 		if (err instanceof Error) {
 			return { error: true, message: err.message };
 		}

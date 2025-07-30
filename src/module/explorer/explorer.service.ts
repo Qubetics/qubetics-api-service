@@ -1,4 +1,4 @@
-import Web3Helper from '../../helper/web3.helper';
+import web3Helper from '../../helper/web3.helper';
 import {
 	RES_MSG,
 	CONST_NAME,
@@ -8,6 +8,7 @@ import {
 	STATS_CONVERTER,
 	CURRENT_DEFAULT_COIN_PRICE,
 	CURRENT_DEFAULT_APR,
+	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
 } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService } from '../../service/index';
@@ -27,7 +28,6 @@ import {
 } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
-import web3Helper from '../../helper/web3.helper';
 import { serializeBigInt } from '../../helper/common.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
@@ -749,6 +749,54 @@ class ExplorerService {
 		}
 	}
 
+	async dashboard_old(): Promise<IESResponse> {
+		try {
+			const data: any = await calculateData();
+			const [transactionCount, userCount] = await Promise.all([
+				// web3Helper.getBlockNumber().then(Number),
+				prisma.transactions.count(),
+				prisma.users.count(),
+			]);
+
+			const latestBlock = await RedisService.getString(
+				CONST_NAME.LATEST_BLOCK,
+			);
+			const marketCap = await RedisService.getString(
+				REDIS_KEY.MARKET_CAP,
+			);
+
+			// const circulationSupply =
+			// 	data?.circulationSupply === 0 || !data.circulationSupply
+			// 		? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
+			// 		: data?.circulationSupply;
+
+			const circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					apr: data?.apr ? Number(data?.apr) : CURRENT_DEFAULT_APR,
+					validators: data?.validator ?? 0,
+					circulationSupply: circulationSupply,
+					latest_block: latestBlock,
+					total_transactions: transactionCount,
+					total_accounts: userCount,
+					bondedTokens: data?.bondedTokens
+						? Number(data.bondedTokens)
+						: 0,
+					bondedRate: data?.bondedRate,
+					totalValidator: data?.totalValidator,
+					apy: CURRENT_DEFAULT_APR,
+					marketCap,
+				},
+			};
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
+		}
+	}
+
 	async getTopValidator(): Promise<IESResponse> {
 		try {
 			// Try to get the cached result from Redis first
@@ -829,7 +877,7 @@ class ExplorerService {
 			// );
 			try {
 				userBalance = (
-					await Web3Helper.getBalance(
+					await web3Helper.getBalance(
 						Web3.utils.toChecksumAddress(address),
 					)
 				).toString();
@@ -840,6 +888,7 @@ class ExplorerService {
 				// 	userBalance,
 				// );
 			} catch (error) {
+				console.log('BALANCE FETCH ERRROR');
 				userBalance = '';
 			}
 			const actualBalance: any = userBalance

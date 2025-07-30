@@ -16,7 +16,7 @@ export default function registerRoutes(): Router {
 
 	const blockController = new BlockController();
 	const transactionController = new TransactionController();
-	const faucetController = new FaucetController();
+	// const faucetController = new FaucetController();
 	const explorerController = new ExplorerController();
 	const contractController = new ContractController();
 	const tokenController = new TokenController();
@@ -27,7 +27,7 @@ export default function registerRoutes(): Router {
 	});
 	router.use('/blocks', blockController.router);
 	router.use('/transactions', transactionController.router);
-	router.use('/faucet', faucetController.router);
+	// router.use('/faucet', faucetController.router);
 	router.use('/explorer', explorerController.router);
 	router.use('/contracts', contractController.router);
 	router.use('/tokens', tokenController.router);

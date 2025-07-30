@@ -52,7 +52,6 @@ class ContractController implements Controller {
 				this.searchContractToken_,
 			)
 			.get('/graph/:address', this.contractGraph);
-		// https://api.evm.qa.5ire.network/5ire/contracts/search/0xeE02101Da362c9bFc616F72AbF8301Ba94f3C4fe?page=1&limit=10;
 	}
 
 	private getAllContract = async (request: Request, response: Response) => {
