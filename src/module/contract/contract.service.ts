@@ -217,9 +217,7 @@ class ContractService {
 			const userBalance = (
 				await web3Helper.getBalance(address)
 			).toString();
-			const actualBalance: any = userBalance
-				? (Number(userBalance) / Math.pow(10, 18)).toString()
-				: '';
+
 			const contractDataToSend = {
 				...contractData,
 				// updatedAt: updatedAt,
@@ -409,7 +407,7 @@ class ContractService {
 					gasFee: log?.gasFee || base?.txFee,
 					timestamp: log?.timestamp || base?.timestamp,
 					createdAt: log?.createdAt || base?.createdAt,
-					value: Number(log?.value) ?? 0,
+					value: Number(log?.value) || log?.value,
 				};
 				delete contractData.ContractLogs;
 				return contractData;
