@@ -26,6 +26,7 @@ import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
 import { serializeBigInt } from '../../helper/common.helper';
+import { ethers } from 'ethers';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
 		try {
@@ -1167,6 +1168,69 @@ class ExplorerService {
 			};
 		} catch (err) {
 			logger.error('Error in code', err);
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
+
+	async getAndStoreInternalTxs(
+		txHash: string,
+		// blockNumber: number,
+		// timestamp: Date,
+	) {
+		try {
+			const provider = new ethers.JsonRpcProvider(environment.RPCURL);
+			console.log('calls-provider', provider);
+			const tx = await provider.getTransaction(txHash);
+			console.log('calls-tx', tx);
+
+			const receipt = await provider.getTransactionReceipt(txHash);
+			console.log('calls-receipt', receipt);
+
+			// Send raw RPC call
+			const trace = await provider.send('debug_traceTransaction', [
+				txHash,
+				{ tracer: 'callTracer' },
+			]);
+
+			const callTraces = trace?.calls;
+
+			if (callTraces) {
+				for (const t of callTraces) {
+					console.log('t.call&t.type', t.type, t.action, t.callType);
+				}
+			}
+			// console.log('calls-trace', trace.structLogs, trace.calls.length);
+
+			// let callTraces;
+
+			// callTraces = await provider.send('trace_transaction', [txHash]);
+
+			// const web3: any = new Web3(environment.RPCURL);
+			// const provider = new ethers.JsonRpcProvider(
+			// 	'http://localhost:8545',
+			// );
+
+			// console.log('traceCalls-web3', web3);
+
+			// const trace = await web3.currentProvider.send({
+			// 	method: 'debug_traceTransaction',
+			// 	params: [txHash, {}],
+			// 	id: 1,
+			// 	jsonrpc: '2.0',
+			// });
+			// console.log('traceCalls', trace);
+
+			// const calls = trace.result.structLogs.filter(
+			// 	(log: any) => log.op === 'CALL' || log.op === 'DELEGATECALL',
+			// );
+			// console.log('calls', callTraces.calls, callTraces);
+			return {
+				error: false,
+				message: RES_MSG.DATA_FETCH,
+				data: trace,
+			};
+		} catch (error) {
+			console.log('error', error);
 			return { error: true, message: RES_MSG.ERROR };
 		}
 	}

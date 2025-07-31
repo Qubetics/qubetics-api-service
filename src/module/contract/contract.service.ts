@@ -741,33 +741,42 @@ class ContractService {
 		contractAddress: string;
 	}): Promise<IESResponse> {
 		try {
-			const [contractLogs, contractLogsCount] = await prisma.$transaction(
-				[
-					prisma.contractLogs.findMany({
-						skip: data.page * data.limit,
-						take: data.limit,
-						orderBy: {
-							createdAt: 'desc',
-						},
-						where: {
-							contractAddress: data.contractAddress,
-						},
-					}),
-					prisma.contractLogs.count({
-						where: {
-							contractAddress: data.contractAddress,
-						},
-					}),
-				],
-			);
-			if (!contractLogs?.length)
+			const [internalTxns, internalTxnCount] = await prisma.$transaction([
+				prisma.internalTransaction.findMany({
+					skip: data.page * data.limit,
+					take: data.limit,
+					orderBy: {
+						createdAt: 'desc',
+					},
+					where: {
+						contractAddress: data.contractAddress,
+					},
+				}),
+				prisma.contractLogs.count({
+					where: {
+						contractAddress: data.contractAddress,
+					},
+				}),
+				// prisma.internalTransaction.findMany({
+				// 	skip: data.page * data.limit,
+				// 	take: data.limit,
+				// 	orderBy: {
+				// 		createdAt: 'desc',
+				// 	},
+				// 	where: {
+				// 		contractAddress: data.contractAddress,
+				// 	},
+				// }),
+			]);
+			if (!internalTxns?.length)
 				throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT_TX,
 				data: {
-					count: contractLogsCount,
-					contracts: convertBigIntToNumber(contractLogs),
+					count: internalTxnCount,
+					internalTxns: convertBigIntToNumber(internalTxns),
+					// internalTxns: convertBigIntToNumber(internalTxns),
 				},
 			};
 		} catch (err) {

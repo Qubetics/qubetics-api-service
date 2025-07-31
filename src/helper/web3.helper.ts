@@ -66,7 +66,7 @@ class Web3Helper {
 			return await this.web3.eth.getBalance(publicKey);
 		} catch (err) {
 			logger.error('error while getting balance : ', err);
-			throw new Error(BLOCKCHAIN_ERROR_MSG.SIGN_AND_SEND);
+			throw new Error(BLOCKCHAIN_ERROR_MSG.GET_BALANCE);
 		}
 	}
 

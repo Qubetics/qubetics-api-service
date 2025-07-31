@@ -48,6 +48,8 @@ model Blocks {
   gasLimit         BigInt
   gasUsed          BigInt
   createdAt        DateTime @default(now())
+  internalTransactions InternalTransaction[]
+
 
   @@index([blocknumber, blockhash])
   @@index([createdAt])
@@ -73,6 +75,8 @@ model Transactions {
   input           String?            @default("") 
   createdAt       DateTime          @default(now())
   ContractLogs    ContractLogs[]
+  internalTransactions InternalTransaction[]
+
 
   @@index([type, txhash, contractAddress, fromAddress, toAddress])
 }
@@ -235,4 +239,32 @@ model ContractVerification {
   Contracts              Contracts @relation(fields: [contractAddress], references: [address])
 
   // Contracts Contracts[]
+}
+
+model InternalTransaction {
+  id          String      @id @default(uuid())
+  txnHash     String
+  fromAddress        String      @db.VarChar(42)
+  toAddress        String      @db.VarChar(42)
+  value       String
+  blockNumber BigInt
+  callType    String?
+  depth       Int?
+  method      String?
+  input       String?
+  gas         BigInt
+  gasUsed     BigInt
+  output      String?
+  contractAddress  String?
+  timestamp   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  block       Blocks      @relation(fields: [blockNumber], references: [blocknumber])
+  transaction Transactions @relation(fields: [txnHash], references: [txhash])
+
+  @@map("internal_transaction")
+  @@index([txnHash])
+  @@index([blockNumber])
+   @@unique([txnHash, toAddress])
 }
