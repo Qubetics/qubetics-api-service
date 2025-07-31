@@ -752,21 +752,11 @@ class ContractService {
 						contractAddress: data.contractAddress,
 					},
 				}),
-				prisma.contractLogs.count({
+				prisma.internalTransaction.count({
 					where: {
 						contractAddress: data.contractAddress,
 					},
 				}),
-				// prisma.internalTransaction.findMany({
-				// 	skip: data.page * data.limit,
-				// 	take: data.limit,
-				// 	orderBy: {
-				// 		createdAt: 'desc',
-				// 	},
-				// 	where: {
-				// 		contractAddress: data.contractAddress,
-				// 	},
-				// }),
 			]);
 			if (!internalTxns?.length)
 				throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
