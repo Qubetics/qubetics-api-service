@@ -255,7 +255,6 @@ class ContractService {
 		contractAddress: string;
 	}): Promise<IESResponse> {
 		try {
-			console.log(data.contractAddress, 'contractAddress');
 			const [contractLogs, contractLogsCount] = await prisma.$transaction(
 				[
 					prisma.transactions.findMany({
@@ -273,6 +272,7 @@ class ContractService {
 							blockhash: true,
 							type: true,
 							timestamp: true,
+							value: true,
 							ContractLogs: {
 								select: {
 									...CONTRACTLOGS,
@@ -406,6 +406,7 @@ class ContractService {
 					gasFee: log?.gasFee || base?.txFee,
 					timestamp: log?.timestamp || base?.timestamp,
 					createdAt: log?.createdAt || base?.createdAt,
+					value: Number(log?.value) || log?.value,
 				};
 				delete contractData.ContractLogs;
 				return contractData;

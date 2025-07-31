@@ -386,6 +386,14 @@ class TokenService {
 				where: {
 					address: data?.address,
 				},
+				// where: {
+				// 	address: data?.address,
+				// 	contract: {
+				// 		Tokens: {
+				// 			type: 'ERC-20', // Yahan aap apna desired token type daalo
+				// 		},
+				// 	},
+				// },
 			});
 
 			console.log(holdersData, 'holdersData');
