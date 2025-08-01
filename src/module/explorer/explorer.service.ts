@@ -252,7 +252,7 @@ class ExplorerService {
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				return { error: true, message: err.message };
+				return { error: true, message: RES_MSG.ERROR };
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
 			}
@@ -608,7 +608,7 @@ class ExplorerService {
 			};
 		} catch (err) {
 			if (err instanceof Error) {
-				return { error: true, message: err.message };
+				return { error: true, message: RES_MSG.ERROR };
 			} else {
 				return {
 					error: true,
@@ -950,7 +950,7 @@ class ExplorerService {
 
 			return {
 				error: true,
-				message: err instanceof Error ? err.message : RES_MSG.ERROR,
+				message: RES_MSG.ERROR,
 			};
 		}
 	}
@@ -1218,7 +1218,7 @@ class ExplorerService {
 				if (err.message.includes('prisma')) {
 					return { error: true, message: RES_MSG.SERVER_ERROR };
 				}
-				return { error: true, message: err.message };
+				return { error: true, message: RES_MSG.ERROR };
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
 			}

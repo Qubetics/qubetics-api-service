@@ -395,6 +395,7 @@ class ContractService {
 			// });
 
 			const formatContractData = (base: any, log: any) => {
+				console.log('logdaata', base);
 				const contractData = {
 					...base,
 					txHash: log?.txHash,
@@ -407,7 +408,7 @@ class ContractService {
 					gasFee: log?.gasFee || base?.txFee,
 					timestamp: log?.timestamp || base?.timestamp,
 					createdAt: log?.createdAt || base?.createdAt,
-					value: Number(log?.value) || log?.value,
+					value: Number(base?.value) || base?.value,
 				};
 				delete contractData.ContractLogs;
 				return contractData;
