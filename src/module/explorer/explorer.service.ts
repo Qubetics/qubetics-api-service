@@ -25,7 +25,10 @@ import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
-import { serializeBigInt } from '../../helper/common.helper';
+import {
+	convertBigIntToNumber,
+	serializeBigInt,
+} from '../../helper/common.helper';
 import { ethers } from 'ethers';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
@@ -1172,66 +1175,53 @@ class ExplorerService {
 		}
 	}
 
-	async getAndStoreInternalTxs(
-		txHash: string,
-		// blockNumber: number,
-		// timestamp: Date,
-	) {
+	async getInternalTxns(data: {
+		page: number;
+		limit: number;
+		hash: string;
+	}): Promise<IESResponse> {
 		try {
-			const provider = new ethers.JsonRpcProvider(environment.RPCURL);
-			console.log('calls-provider', provider);
-			const tx = await provider.getTransaction(txHash);
-			console.log('calls-tx', tx);
-
-			const receipt = await provider.getTransactionReceipt(txHash);
-			console.log('calls-receipt', receipt);
-
-			// Send raw RPC call
-			const trace = await provider.send('debug_traceTransaction', [
-				txHash,
-				{ tracer: 'callTracer' },
+			console.log('data', data);
+			const [internalTxns, internalTxnCount] = await prisma.$transaction([
+				prisma.internalTransaction.findMany({
+					skip: data.page * data.limit,
+					take: data.limit,
+					orderBy: {
+						createdAt: 'desc',
+					},
+					where: {
+						txnHash: data.hash,
+					},
+				}),
+				prisma.internalTransaction.count({
+					where: {
+						txnHash: data.hash,
+					},
+				}),
 			]);
-
-			const callTraces = trace?.calls;
-
-			if (callTraces) {
-				for (const t of callTraces) {
-					console.log('t.call&t.type', t.type, t.action, t.callType);
-				}
-			}
-			// console.log('calls-trace', trace.structLogs, trace.calls.length);
-
-			// let callTraces;
-
-			// callTraces = await provider.send('trace_transaction', [txHash]);
-
-			// const web3: any = new Web3(environment.RPCURL);
-			// const provider = new ethers.JsonRpcProvider(
-			// 	'http://localhost:8545',
-			// );
-
-			// console.log('traceCalls-web3', web3);
-
-			// const trace = await web3.currentProvider.send({
-			// 	method: 'debug_traceTransaction',
-			// 	params: [txHash, {}],
-			// 	id: 1,
-			// 	jsonrpc: '2.0',
-			// });
-			// console.log('traceCalls', trace);
-
-			// const calls = trace.result.structLogs.filter(
-			// 	(log: any) => log.op === 'CALL' || log.op === 'DELEGATECALL',
-			// );
-			// console.log('calls', callTraces.calls, callTraces);
+			console.log('internalTxns', internalTxns);
+			if (!internalTxns?.length)
+				throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
 			return {
 				error: false,
-				message: RES_MSG.DATA_FETCH,
-				data: trace,
+				message: RES_MSG.CONTRACT_TX,
+				data: {
+					count: internalTxnCount,
+					internalTxns: convertBigIntToNumber(internalTxns),
+					// internalTxns: convertBigIntToNumber(internalTxns),
+				},
 			};
-		} catch (error) {
-			console.log('error', error);
-			return { error: true, message: RES_MSG.ERROR };
+		} catch (err) {
+			logger.error('error inside getInternalTxns : ', err);
+
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
 		}
 	}
 }

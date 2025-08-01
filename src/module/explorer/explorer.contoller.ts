@@ -68,7 +68,7 @@ class ExplorerController implements Controller {
 				this.getCoinPriceGraph,
 			)
 			.get(
-				'/internal-tx/:txhash',
+				'/internal-transactions',
 				// getGraphHistoryValidation,
 				this.getInternalTransactions,
 			);
@@ -294,10 +294,12 @@ class ExplorerController implements Controller {
 		request: Request,
 		response: Response,
 	) => {
-		console.log(request.params.txhash, 'request.params.txHash');
-		const res = await ExplorerService.getAndStoreInternalTxs(
-			request.params.txhash,
-		);
+		const data = {
+			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
+			limit: !request.query?.limit ? 10 : Number(request.query.limit),
+			hash: <string>request.query.hash,
+		};
+		const res = await ExplorerService.getInternalTxns(data);
 		if (res.error) {
 			return setResponse.error(response, res);
 		}
