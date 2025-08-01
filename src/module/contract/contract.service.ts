@@ -408,7 +408,7 @@ class ContractService {
 					gasFee: log?.gasFee || base?.txFee,
 					timestamp: log?.timestamp || base?.timestamp,
 					createdAt: log?.createdAt || base?.createdAt,
-					value: Number(base?.value) || base?.value,
+					value: log?.value ?? base?.value,
 				};
 				delete contractData.ContractLogs;
 				return contractData;
