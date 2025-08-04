@@ -372,102 +372,103 @@ class TransactionService {
 	}): Promise<IESResponse> {
 		try {
 			// 1️⃣ Wallet address lowercase karo
-			const safeAddress = payloads.address.toLowerCase();
-			const offset = payloads.page * payloads.limit;
+			// const safeAddress = payloads.address.toLowerCase();
+			// console.log('safeAddress', safeAddress);
+			// const offset = payloads.page * payloads.limit;
 
 			// 2️⃣ Raw SQL with UNION & LOWER
-			const transactions = await prisma.$queryRaw`
-    (
-      SELECT
+			// 			const transactions = await prisma.$queryRaw`
+			//     (
+			//       SELECT
 
-        -- t.id,
-        t."txhash" AS "txhash",
-        t."fromAddress" AS "fromAddress",
-        t."toAddress" AS "toAddress",
-        t."contractAddress" AS "contractAddress",
-        t."value",
-        t."timestamp" AS timestamp,
-		t.type,
-		t.status
-      FROM "Transactions" "t"
-      WHERE LOWER(t."fromAddress") = ${safeAddress}
-         OR LOWER(t."toAddress") = ${safeAddress}
-         OR LOWER(t."contractAddress") = ${safeAddress}
-    )
-    UNION
-    (
+			//         -- t.id,
+			//         t."txhash" AS "txhash",
+			//         t."fromAddress" AS "fromAddress",
+			//         t."toAddress" AS "toAddress",
+			//         t."contractAddress" AS "contractAddress",
+			//         t."value",
+			//         t."timestamp" AS timestamp,
+			// 		t.type,
+			// 		t.status
+			//       FROM "Transactions" "t"
+			//       WHERE LOWER(t."fromAddress") = ${safeAddress}
+			//          OR LOWER(t."toAddress") = ${safeAddress}
+			//          OR LOWER(t."contractAddress") = ${safeAddress}
+			//     )
+			//     UNION ALL
+			//     (
 
-      SELECT
+			//       SELECT
 
-        -- i.id,
-        i."txnHash" AS "txhash",
-        i."fromAddress" AS "fromAddress",
-        i."toAddress" AS "toAddress",
-        i."contractAddress" AS "contractAddress",
-        -- i."value",
-		(i."value"::numeric / 1e18)::TEXT AS value,
-        i."timestamp" AS timestamp,
-		'COIN_TRANSFER' AS type,
-		  'SUCCESS' AS status
+			//         -- i.id,
+			//         i."txnHash" AS "txhash",
+			//         i."fromAddress" AS "fromAddress",
+			//         i."toAddress" AS "toAddress",
+			//         i."contractAddress" AS "contractAddress",
+			//         -- i."value",
+			// 		(i."value"::numeric / 1e18)::TEXT AS value,
+			//         i."timestamp" AS timestamp,
+			// 		'COIN_TRANSFER' AS type,
+			// 		  'SUCCESS' AS status
 
-      FROM "internal_transaction" "i"
-      WHERE LOWER(i."fromAddress") = ${safeAddress}
-         OR LOWER(i."toAddress") = ${safeAddress}
-    )
-    ORDER BY timestamp DESC
-    LIMIT ${payloads.limit} OFFSET ${offset};
-  `;
-
-			// ✅ Total Count
-			// 		const countResult: any = await prisma.$queryRaw`
-			// SELECT (
-			//   (SELECT COUNT(*) FROM "Transactions"
-			//    WHERE LOWER("fromAddress") = ${safeAddress}
-			//       OR LOWER("toAddress") = ${safeAddress}
-			//       OR LOWER("contractAddress") = ${safeAddress})
-			//   +
-			//   (SELECT COUNT(*) FROM "internal_transaction"
-			//    WHERE LOWER("fromAddress") = ${safeAddress}
-			//       OR LOWER("toAddress") = ${safeAddress})
-			// ) AS total_count;
+			//       FROM "internal_transaction" "i"
+			//       WHERE LOWER(i."fromAddress") = ${safeAddress}
+			//          OR LOWER(i."toAddress") = ${safeAddress}
+			//     )
+			//     ORDER BY timestamp DESC
+			//     LIMIT ${payloads.limit} OFFSET ${offset};
 			//   `;
 
-			console.log('transactions', transactions);
+			// 			// ✅ Total Count
+			// 			const countResult: any = await prisma.$queryRaw`
+			// 			SELECT (
+			// 			  (SELECT COUNT(*) FROM "Transactions"
+			// 			   WHERE LOWER("fromAddress") = ${safeAddress}
+			// 			      OR LOWER("toAddress") = ${safeAddress}
+			// 			      OR LOWER("contractAddress") = ${safeAddress})
+			// 			  +
+			// 			  (SELECT COUNT(*) FROM "internal_transaction"
+			// 			   WHERE LOWER("fromAddress") = ${safeAddress}
+			// 			      OR LOWER("toAddress") = ${safeAddress})
+			// 			) AS total_count;
+			// 			  `;
 
-			const rawTxns: any = transactions;
+			// 			console.log('transactions', transactions);
 
-			// Make them distinct by `txhash`
-			const uniqueTxns = Array.from(
-				new Map(
-					rawTxns.map((item: any) => [item.txhash, item]),
-				).values(),
-			);
-			const updatedTransactions = convertBigIntToNumber(uniqueTxns);
-			const totalCount = Number(updatedTransactions.length);
+			// 			const rawTxns: any = transactions;
 
-			// const value = exp(`${Number(element?.value) / CONST_NAME.ETH_EXP}`);
+			// 			// Make them distinct by `txhash`
+			// 			const uniqueTxns = Array.from(
+			// 				new Map(
+			// 					rawTxns.map((item: any) => [item.txhash, item]),
+			// 				).values(),
+			// 			);
+			// 			const updatedTransactions = convertBigIntToNumber(uniqueTxns);
+			// 			const totalCount = Number(updatedTransactions.length);
 
-			const isContractAddress = updatedTransactions.some(
-				(transaction: {
-					contractAddress: string;
-					toAddress: string;
-					type: string;
-				}) =>
-					transaction.contractAddress.toLowerCase() === safeAddress ||
-					(transaction.toAddress.toLowerCase() === safeAddress &&
-						transaction.type !== 'COIN_TRANSFER'),
-			);
+			// 			// const value = exp(`${Number(element?.value) / CONST_NAME.ETH_EXP}`);
 
-			return {
-				error: false,
-				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+			// 			const isContractAddress = updatedTransactions.some(
+			// 				(transaction: {
+			// 					contractAddress: string;
+			// 					toAddress: string;
+			// 					type: string;
+			// 				}) =>
+			// 					transaction.contractAddress.toLowerCase() === safeAddress ||
+			// 					(transaction.toAddress.toLowerCase() === safeAddress &&
+			// 						transaction.type !== 'COIN_TRANSFER'),
+			// 			);
 
-				data: {
-					count: totalCount,
-					transactions: updatedTransactions,
-					isContractAddress,
-				},
-			};
+			// 			return {
+			// 				error: false,
+			// 				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+
+			// 				data: {
+			// 					count: totalCount,
+			// 					transactions: updatedTransactions,
+			// 					isContractAddress,
+			// 				},
+			// 			};
 
 			//////////////////////////////////
 			// return {
@@ -476,60 +477,60 @@ class TransactionService {
 			// 	page,
 			// 	limit,
 			// };
-			// const address = Web3.utils.toChecksumAddress(payloads.address);
-			// const [transactions, transactionCount] = await prisma.$transaction([
-			// 	prisma.transactions.findMany({
-			// 		where: {
-			// 			OR: [
-			// 				{ fromAddress: address },
-			// 				{ toAddress: address },
-			// 				{ contractAddress: address },
-			// 			],
-			// 		},
-			// 		skip: payloads.page * payloads.limit,
-			// 		take: payloads.limit,
-			// 		orderBy: {
-			// 			createdAt: 'desc',
-			// 		},
-			// 		include: {
-			// 			internalTransactions: true,
-			// 		},
-			// 	}),
-			// 	prisma.transactions.count({
-			// 		where: {
-			// 			OR: [
-			// 				{ fromAddress: address },
-			// 				{ toAddress: address },
-			// 				{ contractAddress: address },
-			// 			],
-			// 		},
-			// 	}),
-			// ]);
-			// if (!transactionCount)
-			// 	throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
+			const address = Web3.utils.toChecksumAddress(payloads.address);
+			const [transactions, transactionCount] = await prisma.$transaction([
+				prisma.transactions.findMany({
+					where: {
+						OR: [
+							{ fromAddress: address },
+							{ toAddress: address },
+							{ contractAddress: address },
+						],
+					},
+					skip: payloads.page * payloads.limit,
+					take: payloads.limit,
+					orderBy: {
+						createdAt: 'desc',
+					},
+					include: {
+						internalTransactions: true,
+					},
+				}),
+				prisma.transactions.count({
+					where: {
+						OR: [
+							{ fromAddress: address },
+							{ toAddress: address },
+							{ contractAddress: address },
+						],
+					},
+				}),
+			]);
+			if (!transactionCount)
+				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
 
-			// const updatedTransactions = convertBigIntToNumber(transactions);
-			// const isContractAddress = updatedTransactions.some(
-			// 	(transaction: {
-			// 		contractAddress: string;
-			// 		toAddress: string;
-			// 		type: string;
-			// 	}) =>
-			// 		transaction.contractAddress === address ||
-			// 		(transaction.toAddress === address &&
-			// 			transaction.type !== 'COIN_TRANSFER'),
-			// );
+			const updatedTransactions = convertBigIntToNumber(transactions);
+			const isContractAddress = updatedTransactions.some(
+				(transaction: {
+					contractAddress: string;
+					toAddress: string;
+					type: string;
+				}) =>
+					transaction.contractAddress === address ||
+					(transaction.toAddress === address &&
+						transaction.type !== 'COIN_TRANSFER'),
+			);
 
-			// return {
-			// 	error: false,
-			// 	message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+			return {
+				error: false,
+				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
 
-			// 	data: {
-			// 		count: transactionCount,
-			// 		transactions: updatedTransactions,
-			// 		isContractAddress,
-			// 	},
-			// };
+				data: {
+					count: transactionCount,
+					transactions: updatedTransactions,
+					isContractAddress,
+				},
+			};
 		} catch (err) {
 			console.log('Error', err);
 			if (err instanceof Error) {
