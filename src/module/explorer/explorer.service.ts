@@ -861,7 +861,10 @@ class ExplorerService {
 			const [user] = await Promise.all([
 				prisma.users.findFirst({
 					where: {
-						address: address,
+						address: {
+							equals: address,
+							mode: 'insensitive',
+						},
 					},
 					select: {
 						txn: true,
@@ -869,7 +872,49 @@ class ExplorerService {
 				}),
 			]);
 
-			let txnCount = user ? user.txn : '';
+			// let txnCount = user ? user.txn : '';
+
+			const safeAddress = address.toLowerCase();
+
+			const contractCount: any = await prisma.$queryRaw`
+		  	SELECT COUNT(tr.id) AS count, MIN(tr.id) AS min_id, MAX(tr.id) AS max_id
+			FROM
+            "Transactions" tr
+            LEFT JOIN
+            "DecodedLogs" dl
+	        ON tr.txhash = dl."txHash"
+	        LEFT JOIN "Tokens" t
+	        ON dl."contractAddress"=t."contractAddress"
+			WHERE (LOWER(tr."toAddress") = ${safeAddress} OR LOWER(tr."fromAddress") = ${safeAddress} OR LOWER(tr."contractAddress") = ${safeAddress}) AND tr."type" = 'CONTRACT_TRANSFER'
+		`;
+
+			const coinCount: any = await prisma.$queryRaw`
+  SELECT COUNT(*) AS total_count 
+  FROM (
+    SELECT txhash
+    FROM (
+      SELECT "txhash" AS txhash  
+      FROM "Transactions"
+      WHERE LOWER("fromAddress") = ${safeAddress}
+         OR LOWER("toAddress") = ${safeAddress}
+         OR LOWER("contractAddress") = ${safeAddress}
+
+      UNION ALL
+
+      SELECT "txnHash" AS txhash
+      FROM "internal_transaction"
+      WHERE LOWER("fromAddress") = ${safeAddress}
+         OR LOWER("toAddress") = ${safeAddress}
+    ) AS combined
+    GROUP BY txhash
+  ) AS final_count;
+`;
+			const totalCoinCount = Number(coinCount[0].total_count);
+			const totalContractCount = Number(contractCount[0]?.count);
+
+			let txnCount = Number(totalCoinCount) + Number(totalContractCount);
+
+			console.log(txnCount, 'txnCount');
 
 			let userBalance: any;
 			// Check if USER_BALANCE is in Redis
@@ -882,16 +927,20 @@ class ExplorerService {
 						Web3.utils.toChecksumAddress(address),
 					)
 				).toString();
-
-				// Store userBalance in Redis
-				// await RedisService.setString(
-				// 	REDIS_KEY.USER_BALANCE,
-				// 	userBalance,
-				// );
 			} catch (error) {
 				console.log('BALANCE FETCH ERRROR');
 				userBalance = '';
 			}
+
+			await prisma.users.update({
+				where: {
+					address: address,
+				},
+				data: {
+					balance: userBalance,
+					txn: txnCount,
+				},
+			});
 			const actualBalance: any = userBalance
 				? (Number(userBalance) / Math.pow(10, 18)).toString()
 				: '';
@@ -911,7 +960,6 @@ class ExplorerService {
 						price: true,
 					},
 				});
-				console.log('latestEntry', latestEntry);
 
 				const price = latestEntry?.price?.toString() ?? '';
 				value = price

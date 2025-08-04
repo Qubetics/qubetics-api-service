@@ -398,6 +398,7 @@ FROM (
     t."fromAddress",
     t."toAddress",
     t."contractAddress",
+	t."blocknumber" AS blocknumber,
     -- t."value",
 (t."value"::numeric )::TEXT AS value,
 
@@ -417,6 +418,8 @@ FROM (
     i."fromAddress",
     i."toAddress",
     i."contractAddress",
+		    i."blockNumber" AS blocknumber,
+
    	(i."value"::numeric / 1e18)::TEXT AS value,
     i."timestamp",
     'COIN_TRANSFER' AS type,
