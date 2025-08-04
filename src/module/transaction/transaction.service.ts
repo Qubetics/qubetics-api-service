@@ -371,104 +371,136 @@ class TransactionService {
 		address: string;
 	}): Promise<IESResponse> {
 		try {
+			// if (payloads.page < 1) {
+			// 	payloads.page = 1;
+			// }
 			// 1️⃣ Wallet address lowercase karo
-			// const safeAddress = payloads.address.toLowerCase();
-			// console.log('safeAddress', safeAddress);
-			// const offset = payloads.page * payloads.limit;
+			const safeAddress = payloads.address.toLowerCase();
+			console.log('safeAddress', safeAddress);
+			const offset = (payloads.page - 1) * payloads.limit;
+			console.log('offset', offset);
 
 			// 2️⃣ Raw SQL with UNION & LOWER
-			// 			const transactions = await prisma.$queryRaw`
-			//     (
-			//       SELECT
+			const transactions = await prisma.$queryRaw`
+    SELECT
+  txhash,
+  MIN("fromAddress") AS "fromAddress",
+  MIN("toAddress") AS "toAddress",
+  MIN("contractAddress") AS "contractAddress",
+SUM(value::numeric)::TEXT AS value,
+  MIN(timestamp) AS timestamp,
+  MIN(type) AS type,
+  MIN(status) AS status
+FROM (
+  -- Transactions table
+  SELECT
+    t."txhash" AS txhash,
+    t."fromAddress",
+    t."toAddress",
+    t."contractAddress",
+    -- t."value",
+(t."value"::numeric )::TEXT AS value,
 
-			//         -- t.id,
-			//         t."txhash" AS "txhash",
-			//         t."fromAddress" AS "fromAddress",
-			//         t."toAddress" AS "toAddress",
-			//         t."contractAddress" AS "contractAddress",
-			//         t."value",
-			//         t."timestamp" AS timestamp,
-			// 		t.type,
-			// 		t.status
-			//       FROM "Transactions" "t"
-			//       WHERE LOWER(t."fromAddress") = ${safeAddress}
-			//          OR LOWER(t."toAddress") = ${safeAddress}
-			//          OR LOWER(t."contractAddress") = ${safeAddress}
-			//     )
-			//     UNION ALL
-			//     (
+    t."timestamp",
+    t.type,
+    t.status
+  FROM "Transactions" t
+  WHERE LOWER(t."fromAddress") = ${safeAddress}
+     OR LOWER(t."toAddress") = ${safeAddress}
+     OR LOWER(t."contractAddress") = ${safeAddress}
 
-			//       SELECT
+  UNION ALL
 
-			//         -- i.id,
-			//         i."txnHash" AS "txhash",
-			//         i."fromAddress" AS "fromAddress",
-			//         i."toAddress" AS "toAddress",
-			//         i."contractAddress" AS "contractAddress",
-			//         -- i."value",
-			// 		(i."value"::numeric / 1e18)::TEXT AS value,
-			//         i."timestamp" AS timestamp,
-			// 		'COIN_TRANSFER' AS type,
-			// 		  'SUCCESS' AS status
+  -- Internal transactions table
+  SELECT
+    i."txnHash" AS txhash,
+    i."fromAddress",
+    i."toAddress",
+    i."contractAddress",
+   	(i."value"::numeric / 1e18)::TEXT AS value,
+    i."timestamp",
+    'COIN_TRANSFER' AS type,
+    'SUCCESS' AS status
+  FROM "internal_transaction" i
+  WHERE LOWER(i."fromAddress") = ${safeAddress}
+     OR LOWER(i."toAddress") = ${safeAddress}
+) AS combined
 
-			//       FROM "internal_transaction" "i"
-			//       WHERE LOWER(i."fromAddress") = ${safeAddress}
-			//          OR LOWER(i."toAddress") = ${safeAddress}
-			//     )
-			//     ORDER BY timestamp DESC
-			//     LIMIT ${payloads.limit} OFFSET ${offset};
-			//   `;
+GROUP BY txhash
+ORDER BY MIN(timestamp) DESC, txhash DESC
+LIMIT ${payloads.limit} OFFSET ${offset};
 
-			// 			// ✅ Total Count
-			// 			const countResult: any = await prisma.$queryRaw`
-			// 			SELECT (
-			// 			  (SELECT COUNT(*) FROM "Transactions"
-			// 			   WHERE LOWER("fromAddress") = ${safeAddress}
-			// 			      OR LOWER("toAddress") = ${safeAddress}
-			// 			      OR LOWER("contractAddress") = ${safeAddress})
-			// 			  +
-			// 			  (SELECT COUNT(*) FROM "internal_transaction"
-			// 			   WHERE LOWER("fromAddress") = ${safeAddress}
-			// 			      OR LOWER("toAddress") = ${safeAddress})
-			// 			) AS total_count;
-			// 			  `;
+  `;
 
-			// 			console.log('transactions', transactions);
+			// ✅ Total Count
 
-			// 			const rawTxns: any = transactions;
+			const countResult: any = await prisma.$queryRaw`
+  SELECT COUNT(*) AS total_count 
+  FROM (
+    SELECT txhash
+    FROM (
+      SELECT "txhash" AS txhash  
+      FROM "Transactions"
+      WHERE LOWER("fromAddress") = ${safeAddress}
+         OR LOWER("toAddress") = ${safeAddress}
+         OR LOWER("contractAddress") = ${safeAddress}
 
-			// 			// Make them distinct by `txhash`
-			// 			const uniqueTxns = Array.from(
-			// 				new Map(
-			// 					rawTxns.map((item: any) => [item.txhash, item]),
-			// 				).values(),
-			// 			);
-			// 			const updatedTransactions = convertBigIntToNumber(uniqueTxns);
-			// 			const totalCount = Number(updatedTransactions.length);
+      UNION ALL
 
-			// 			// const value = exp(`${Number(element?.value) / CONST_NAME.ETH_EXP}`);
+      SELECT "txnHash" AS txhash
+      FROM "internal_transaction"
+      WHERE LOWER("fromAddress") = ${safeAddress}
+         OR LOWER("toAddress") = ${safeAddress}
+    ) AS combined
+    GROUP BY txhash
+  ) AS final_count;
+`;
 
-			// 			const isContractAddress = updatedTransactions.some(
-			// 				(transaction: {
-			// 					contractAddress: string;
-			// 					toAddress: string;
-			// 					type: string;
-			// 				}) =>
-			// 					transaction.contractAddress.toLowerCase() === safeAddress ||
-			// 					(transaction.toAddress.toLowerCase() === safeAddress &&
-			// 						transaction.type !== 'COIN_TRANSFER'),
-			// 			);
+			const totalCount = Number(countResult[0].total_count);
 
-			// 			return {
-			// 				error: false,
-			// 				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+			// console.log(
+			// 	'transactions',
+			// 	transactions,
+			// 	parseInt((countResult[0] as any).count),
+			// );
 
-			// 				data: {
-			// 					count: totalCount,
-			// 					transactions: updatedTransactions,
-			// 					isContractAddress,
-			// 				},
-			// 			};
+			// const rawTxns: any = transactions;
+
+			// Make them distinct by `txhash`
+			// const uniqueTxns = Array.from(
+			// 	new Map(
+			// 		rawTxns.map((item: any) => [item.txhash, item]),
+			// 	).values(),
+			// );
+			const updatedTransactions = convertBigIntToNumber(transactions);
+
+			const isContractAddress = await this.isContractAddress(safeAddress);
+			console.log(isContractAddress, 'isContractAddress');
+			// const totalCount = Number(updatedTransactions.length);
+
+			// const value = exp(`${Number(element?.value) / CONST_NAME.ETH_EXP}`);
+
+			// const isContractAddress = updatedTransactions.some(
+			// 	(transaction: {
+			// 		contractAddress: string;
+			// 		toAddress: string;
+			// 		type: string;
+			// 	}) =>
+			// 		transaction.contractAddress.toLowerCase() === safeAddress ||
+			// 		(transaction.toAddress.toLowerCase() === safeAddress &&
+			// 			transaction.type !== 'COIN_TRANSFER'),
+			// );
+
+			return {
+				error: false,
+				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+
+				data: {
+					count: totalCount,
+					transactions: updatedTransactions,
+					isContractAddress,
+				},
+			};
 
 			//////////////////////////////////
 			// return {
@@ -477,60 +509,60 @@ class TransactionService {
 			// 	page,
 			// 	limit,
 			// };
-			const address = Web3.utils.toChecksumAddress(payloads.address);
-			const [transactions, transactionCount] = await prisma.$transaction([
-				prisma.transactions.findMany({
-					where: {
-						OR: [
-							{ fromAddress: address },
-							{ toAddress: address },
-							{ contractAddress: address },
-						],
-					},
-					skip: payloads.page * payloads.limit,
-					take: payloads.limit,
-					orderBy: {
-						createdAt: 'desc',
-					},
-					include: {
-						internalTransactions: true,
-					},
-				}),
-				prisma.transactions.count({
-					where: {
-						OR: [
-							{ fromAddress: address },
-							{ toAddress: address },
-							{ contractAddress: address },
-						],
-					},
-				}),
-			]);
-			if (!transactionCount)
-				throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
+			// const address = Web3.utils.toChecksumAddress(payloads.address);
+			// const [transactions, transactionCount] = await prisma.$transaction([
+			// 	prisma.transactions.findMany({
+			// 		where: {
+			// 			OR: [
+			// 				{ fromAddress: address },
+			// 				{ toAddress: address },
+			// 				{ contractAddress: address },
+			// 			],
+			// 		},
+			// 		skip: payloads.page * payloads.limit,
+			// 		take: payloads.limit,
+			// 		orderBy: {
+			// 			createdAt: 'desc',
+			// 		},
+			// 		include: {
+			// 			internalTransactions: true,
+			// 		},
+			// 	}),
+			// 	prisma.transactions.count({
+			// 		where: {
+			// 			OR: [
+			// 				{ fromAddress: address },
+			// 				{ toAddress: address },
+			// 				{ contractAddress: address },
+			// 			],
+			// 		},
+			// 	}),
+			// ]);
+			// if (!transactionCount)
+			// 	throw new Error(RES_MSG.TRANSACTION_NOT_FOUND);
 
-			const updatedTransactions = convertBigIntToNumber(transactions);
-			const isContractAddress = updatedTransactions.some(
-				(transaction: {
-					contractAddress: string;
-					toAddress: string;
-					type: string;
-				}) =>
-					transaction.contractAddress === address ||
-					(transaction.toAddress === address &&
-						transaction.type !== 'COIN_TRANSFER'),
-			);
+			// const updatedTransactions = convertBigIntToNumber(transactions);
+			// const isContractAddress = updatedTransactions.some(
+			// 	(transaction: {
+			// 		contractAddress: string;
+			// 		toAddress: string;
+			// 		type: string;
+			// 	}) =>
+			// 		transaction.contractAddress === address ||
+			// 		(transaction.toAddress === address &&
+			// 			transaction.type !== 'COIN_TRANSFER'),
+			// );
 
-			return {
-				error: false,
-				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+			// return {
+			// 	error: false,
+			// 	message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
 
-				data: {
-					count: transactionCount,
-					transactions: updatedTransactions,
-					isContractAddress,
-				},
-			};
+			// 	data: {
+			// 		count: transactionCount,
+			// 		transactions: updatedTransactions,
+			// 		isContractAddress,
+			// 	},
+			// };
 		} catch (err) {
 			console.log('Error', err);
 			if (err instanceof Error) {
@@ -778,6 +810,34 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 					contractLogs: contractLogs,
 				},
 			};
+		} catch (err) {
+			console.log(err, 'Caught the error');
+			if (err instanceof Error) {
+				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	async isContractAddress(address: string) {
+		try {
+			let checkSumAddress = true;
+			checkSumAddress = web3Helper.isValidAddress(address);
+			if (!checkSumAddress) {
+				return false;
+			}
+			const contractAddress = await prisma.contracts.findFirst({
+				where: { address: address },
+				select: {
+					address: true,
+				},
+			});
+
+			if (contractAddress?.address) {
+				return true;
+			}
+			return false;
 		} catch (err) {
 			console.log(err, 'Caught the error');
 			if (err instanceof Error) {

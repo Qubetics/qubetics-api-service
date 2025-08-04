@@ -80,7 +80,7 @@ class ExplorerController implements Controller {
 		response: Response,
 	) => {
 		const data = {
-			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
+			page: !request.query?.page ? 1 : Number(request.query.page),
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
 			address: <string>request.query.address,
 		};
