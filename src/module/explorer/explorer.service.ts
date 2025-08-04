@@ -766,12 +766,13 @@ class ExplorerService {
 				REDIS_KEY.MARKET_CAP,
 			);
 
-			const circulationSupply =
-				data?.circulationSupply === 0 || !data.circulationSupply
-					? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
-					: data?.circulationSupply;
+			// const circulationSupply =
+			// 	data?.circulationSupply === 0 || !data.circulationSupply
+			// 		? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
+			// 		: data?.circulationSupply;
 
 			// const circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+			const circulationSupply = 108375166.891;
 
 			return {
 				error: false,
