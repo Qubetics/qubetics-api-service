@@ -771,9 +771,12 @@ class ExplorerService {
 			// 		? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
 			// 		: data?.circulationSupply;
 
-			// const circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
-			const circulationSupply = 108375166.891;
-
+			let circulationSupply = await RedisService.getString(
+				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
+			);
+			if (!circulationSupply) {
+				circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+			}
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
