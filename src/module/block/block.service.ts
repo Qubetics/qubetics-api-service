@@ -320,7 +320,7 @@ class BlockService {
 			const minimumId: number = Number(blockCountData?._min.blocknumber);
 			const maximumId: number = Number(blockCountData?._max.blocknumber);
 
-			console.log('------blockCountData----------', blockCountData);
+			console.log('------blockCountData---------', blockCountData);
 
 			zerothElement = serializeBigInt(blocks[0].blocknumber);
 			console.log(zerothElement, 'zerothElement');
