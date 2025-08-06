@@ -749,6 +749,10 @@ class ContractService {
 		contractAddress: string;
 	}): Promise<IESResponse> {
 		try {
+			const contractAddress = web3Helper.getCheckSumAddress(
+				data.contractAddress,
+			);
+
 			const [internalTxns, internalTxnCount] = await prisma.$transaction([
 				prisma.internalTransaction.findMany({
 					skip: data.page * data.limit,
@@ -757,15 +761,22 @@ class ContractService {
 						createdAt: 'desc',
 					},
 					where: {
-						contractAddress: data.contractAddress,
+						contractAddress: {
+							equals: contractAddress,
+							mode: 'insensitive',
+						},
 					},
 				}),
 				prisma.internalTransaction.count({
 					where: {
-						contractAddress: data.contractAddress,
+						contractAddress: {
+							equals: contractAddress,
+							mode: 'insensitive',
+						},
 					},
 				}),
 			]);
+
 			if (!internalTxns?.length)
 				throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
 			return {

@@ -1128,6 +1128,26 @@ class ExplorerService {
 				console.log('contracts', contracts);
 				console.log('addresses', addresses);
 
+				const formattedTokens = tokens.map((token: any) => ({
+					...token,
+					contractAddress: web3Helper.getCheckSumAddress(
+						token.contract_address,
+					), // your alias name in SELECT
+				}));
+
+				const formattedContracts = contracts.map((contract: any) => ({
+					...contract,
+					// address: web3Helper.getCheckSumAddress(contract.address),
+					contract_address: web3Helper.getCheckSumAddress(
+						contract.contract_address,
+					),
+				}));
+
+				const formattedAddresses = addresses.map((address: any) => ({
+					...address,
+					address: web3Helper.getCheckSumAddress(address.address),
+				}));
+
 				if (tokens && tokens.length) {
 					tabs.push('tokens');
 					results.push(tokens);
@@ -1153,9 +1173,9 @@ class ExplorerService {
 					data: {
 						tabs: tabs,
 						results: serializeBigInt({
-							tokens,
-							contracts,
-							addresses,
+							tokens: formattedTokens,
+							contracts: formattedContracts,
+							addresses: formattedAddresses,
 						}),
 					},
 				};
