@@ -256,6 +256,9 @@ class ContractService {
 		contractAddress: string;
 	}): Promise<IESResponse> {
 		try {
+			const contractAddress = await web3Helper.getCheckSumAddress(
+				data.contractAddress,
+			);
 			const [contractLogs, contractLogsCount] = await prisma.$transaction(
 				[
 					prisma.transactions.findMany({
@@ -282,8 +285,8 @@ class ContractService {
 						},
 						where: {
 							OR: [
-								{ toAddress: data.contractAddress },
-								{ fromAddress: data.contractAddress },
+								{ toAddress: contractAddress },
+								{ fromAddress: contractAddress },
 							],
 							// method: {
 							// 	// not: 'transfer',
@@ -294,8 +297,8 @@ class ContractService {
 					prisma.transactions.count({
 						where: {
 							OR: [
-								{ toAddress: data.contractAddress },
-								{ fromAddress: data.contractAddress },
+								{ toAddress: contractAddress },
+								{ fromAddress: contractAddress },
 							],
 							// contractAddress: data.contractAddress,
 							// method: {
@@ -306,7 +309,11 @@ class ContractService {
 				],
 			);
 
-			console.log('contractLogs....................', contractLogs);
+			console.log(
+				'contractLogs....................',
+				contractLogs,
+				contractLogsCount,
+			);
 
 			// if (!contractLogs?.length) {
 			// 	const [contractTx, contractTxCount] = await prisma.$transaction(

@@ -518,6 +518,8 @@ class TokenService {
 			OFFSET ${data.page * data.limit}
 		  `;
 
+			console.log('tokensDetails', tokens);
+
 			const total_count: any = await prisma.$queryRaw`
 		  	SELECT COUNT(tr.id) AS count, MIN(tr.id) AS min_id, MAX(tr.id) AS max_id
 			FROM
@@ -529,13 +531,14 @@ class TokenService {
 	        ON dl."contractAddress"=t."contractAddress"
 			WHERE (tr."toAddress" = ${data.address} OR tr."fromAddress" = ${data.address} OR tr."contractAddress" = ${data.address}) AND tr."type" = 'CONTRACT_TRANSFER'
 		`;
+			console.log('total_count', total_count);
 
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
 
 			const tokenTransfers = tokens.map((element: any) => {
-				console.log('element.logs', element.logs);
 				let value: any;
 				if (element?.logs) {
+					console.log('ELEMENTS.logs');
 					const jsonString = JSON.stringify(element?.logs);
 					console.log(jsonString, 'DEMO!');
 
@@ -558,6 +561,7 @@ class TokenService {
 						});
 					}
 				} else if (element?.input) {
+					console.log('INPUTS');
 					const jsonString = JSON.stringify(element?.input);
 					console.log(jsonString, 'DEMO-input!');
 

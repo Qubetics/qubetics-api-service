@@ -130,6 +130,15 @@ class Web3Helper {
 			throw new Error(BLOCKCHAIN_ERROR_MSG.INVALID_ADDRESS);
 		}
 	}
+
+	getCheckSumAddress(address: string) {
+		try {
+			return Web3.utils.toChecksumAddress(address);
+		} catch (error) {
+			logger.error('error isValidAddress : ', error);
+			throw new Error(BLOCKCHAIN_ERROR_MSG.INVALID_ADDRESS);
+		}
+	}
 }
 
 const web3Helper = new Web3Helper();
