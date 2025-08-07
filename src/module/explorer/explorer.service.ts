@@ -1071,56 +1071,58 @@ class ExplorerService {
 			let addresses: any = {};
 			let tabs = [];
 			let results = [];
-			const searchedWord = payload.searchedWord?.toLowerCase();
 
 			if (
-				!searchedWord.startsWith('0x') &&
-				!isNaN(Number(searchedWord)) &&
-				searchedWord.length > 0
+				!payload.searchedWord.startsWith('0x') &&
+				!isNaN(Number(payload.searchedWord)) &&
+				payload.searchedWord.length > 0
 			) {
 				const result = await BlockService.getBlockByNumber(
-					Number(searchedWord),
+					Number(payload.searchedWord),
 				);
 				return result;
 			} else if (
-				searchedWord?.startsWith('0x') &&
-				searchedWord?.length === 66
+				payload.searchedWord?.startsWith('0x') &&
+				payload.searchedWord?.length === 66
 			) {
-				const txData =
-					await TransactionService.getTransactionByHash(searchedWord);
+				const txData = await TransactionService.getTransactionByHash(
+					payload.searchedWord,
+				);
 				if (txData?.error) {
-					const result =
-						await BlockService.getBlockByHash(searchedWord);
+					const result = await BlockService.getBlockByHash(
+						payload.searchedWord,
+					);
 					if (result?.error) result.message = RES_MSG.DATA_NOT_FOUND;
 					return result;
 				}
 
 				return txData;
 			} else {
+				const searchedWord = payload.searchedWord?.toLowerCase();
 				tokens =
-					await prisma.$queryRaw` SELECT t."tokenName", t."tokenSymbol", LOWER(t."contractAddress"), LOWER(c."address") AS "contract_address",COUNT(tr."id") AS "transactionCount" FROM "Tokens" t JOIN "Contracts" c ON LOWER(t."contractAddress") = LOWER(c."address") LEFT JOIN "Transactions" tr ON LOWER(t."contractAddress") = LOWER(tr."toAddress") OR LOWER(t."contractAddress") = LOWER(tr."fromAddress") WHERE LOWER(t."contractAddress") ILIKE ${
+					await prisma.$queryRaw` SELECT t."tokenName", t."tokenSymbol", t."contractAddress" AS "contractAddress", c."address" AS "contract_address",COUNT(tr."id") AS "transactionCount" FROM "Tokens" t JOIN "Contracts" c ON LOWER(t."contractAddress") = LOWER(c."address") LEFT JOIN "Transactions" tr ON LOWER(t."contractAddress") = LOWER(tr."toAddress") OR LOWER(t."contractAddress") = LOWER(tr."fromAddress") WHERE LOWER(t."contractAddress") ILIKE	 ${
 						'%' + searchedWord + '%'
 					} OR t."tokenName" ILIKE ${
 						'%' + searchedWord + '%'
 					} OR t."tokenSymbol" ILIKE ${
 						'%' + searchedWord + '%'
-					} GROUP BY LOWER(t."contractAddress"), t."tokenName",t."tokenSymbol", LOWER(c."address") ORDER BY "transactionCount" DESC LIMIT ${
+					} GROUP BY t."contractAddress", t."tokenName",t."tokenSymbol", c."address" ORDER BY "transactionCount" DESC LIMIT ${
 						payload.limit
 					} OFFSET ${offset}`;
 
 				contracts =
-					await prisma.$queryRaw` SELECT LOWER(c."address"), COUNT(tr."id") AS "transactionCount", cv."contractname" as contract_name, LOWER(cv."contractAddress") AS "contract_address" FROM "ContractVerification" cv RIGHT JOIN "Contracts" c ON LOWER(cv."contractAddress") = LOWER(c."address") LEFT JOIN "Transactions" tr ON LOWER(c."address") = LOWER(tr."toAddress") OR LOWER(c."address") = LOWER(tr."fromAddress") WHERE LOWER(c."address") ILIKE ${
+					await prisma.$queryRaw` SELECT c."address" AS "address", COUNT(tr."id") AS "transactionCount", cv."contractname" as contract_name, (cv."contractAddress") AS "contractAddress" FROM "ContractVerification" cv RIGHT JOIN "Contracts" c ON LOWER(cv."contractAddress") = LOWER(c."address") LEFT JOIN "Transactions" tr ON LOWER(c."address") = LOWER(tr."toAddress") OR LOWER(c."address") = LOWER(tr."fromAddress") WHERE LOWER(c."address") ILIKE ${
 						'%' + searchedWord + '%'
 					} OR cv."contractname" ILIKE ${
 						'%' + searchedWord + '%'
-					} GROUP BY LOWER(c."address"), cv."contractname", LOWER(cv."contractAddress") ORDER BY "transactionCount" DESC LIMIT ${
+					} GROUP BY (c."address"), cv."contractname", (cv."contractAddress") ORDER BY "transactionCount" DESC LIMIT ${
 						payload.limit
 					} OFFSET ${offset}`;
 
 				addresses =
-					await prisma.$queryRaw` SELECT LOWER(u."address") AS address, COUNT(tr."id") AS "transactionCount" FROM "Users" u LEFT JOIN "Transactions" tr ON LOWER(u."address") = LOWER(tr."toAddress") OR LOWER(u."address") = tr."fromAddress" WHERE LOWER(u."address") ILIKE ${
+					await prisma.$queryRaw` SELECT LOWER(u."address") AS "address", COUNT(tr."id") AS "transactionCount" FROM "Users" u LEFT JOIN "Transactions" tr ON LOWER(u."address") = LOWER(tr."toAddress") OR LOWER(u."address") = LOWER(tr."fromAddress") WHERE LOWER(u."address") ILIKE ${
 						'%' + searchedWord + '%'
-					} GROUP BY (LOWER(u."address")) ORDER BY "transactionCount" DESC LIMIT ${
+					} GROUP BY LOWER(u."address") ORDER BY "transactionCount" DESC LIMIT ${
 						payload.limit
 					} OFFSET ${offset}`;
 
@@ -1131,15 +1133,18 @@ class ExplorerService {
 				const formattedTokens = tokens.map((token: any) => ({
 					...token,
 					contractAddress: web3Helper.getCheckSumAddress(
+						token.contractAddress,
+					), // your alias name in SELECT
+					contract_address: web3Helper.getCheckSumAddress(
 						token.contract_address,
 					), // your alias name in SELECT
 				}));
 
 				const formattedContracts = contracts.map((contract: any) => ({
 					...contract,
-					// address: web3Helper.getCheckSumAddress(contract.address),
+					address: web3Helper.getCheckSumAddress(contract.address),
 					contract_address: web3Helper.getCheckSumAddress(
-						contract.contract_address,
+						contract.address,
 					),
 				}));
 
