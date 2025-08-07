@@ -862,7 +862,7 @@ class ExplorerService {
 
 	async getAddressDetail(address: string): Promise<IESResponse> {
 		try {
-			const [user] = await Promise.all([
+			const user: any = await Promise.all([
 				prisma.users.findFirst({
 					where: {
 						address: {
@@ -876,6 +876,12 @@ class ExplorerService {
 				}),
 			]);
 
+			if (!user.txn) {
+				return {
+					error: true,
+					message: RES_MSG.USER_NOT_FOUND,
+				};
+			}
 			// let txnCount = user ? user.txn : '';
 
 			const safeAddress = address.toLowerCase();
@@ -918,8 +924,6 @@ class ExplorerService {
 
 			let txnCount = Number(totalCoinCount) + Number(totalContractCount);
 
-			console.log(txnCount, 'txnCount');
-
 			let userBalance: any;
 			// Check if USER_BALANCE is in Redis
 			// let userBalance = await RedisService.getString(
@@ -948,12 +952,10 @@ class ExplorerService {
 			const actualBalance: any = userBalance
 				? (Number(userBalance) / Math.pow(10, 18)).toString()
 				: '';
-			console.log('actualBalanceAS', actualBalance);
 
 			let marketCapPrice = await RedisService.getString(
 				CONST_NAME.MARKET_CAP_PRICE,
 			);
-			console.log('marketCapPrice', marketCapPrice);
 			let value: string;
 			if (!marketCapPrice) {
 				const latestEntry = await prisma.coinmarketInfo.findFirst({
@@ -971,7 +973,6 @@ class ExplorerService {
 					: '';
 			} else {
 				marketCapPrice = marketCapPrice;
-				console.log('marketCapPriceELSE', marketCapPrice);
 
 				value =
 					marketCapPrice?.price && actualBalance
