@@ -389,7 +389,7 @@ class TransactionService {
   MIN("contractAddress") AS "contractAddress",
  MIN("blocknumber") AS "blocknumber",
 
-	SUM(value::numeric)::TEXT AS value,
+	MIN(value::numeric)::TEXT AS value,
   MIN(timestamp) AS timestamp,
   MIN(type) AS type,
   MIN(status) AS status

@@ -1103,13 +1103,13 @@ class ExplorerService {
 			} else {
 				const searchedWord = payload.searchedWord?.toLowerCase();
 				tokens =
-					await prisma.$queryRaw` SELECT t."tokenName", t."tokenSymbol", t."contractAddress" AS "contractAddress", c."address" AS "contract_address",COUNT(tr."id") AS "transactionCount" FROM "Tokens" t JOIN "Contracts" c ON LOWER(t."contractAddress") = LOWER(c."address") LEFT JOIN "Transactions" tr ON LOWER(t."contractAddress") = LOWER(tr."toAddress") OR LOWER(t."contractAddress") = LOWER(tr."fromAddress") WHERE t."type" = 'ERC-20' AND LOWER(t."contractAddress") ILIKE ${
+					await prisma.$queryRaw` SELECT t."tokenName", t."tokenSymbol", t."contractAddress" AS "contractAddress", c."address" AS "contract_address",COUNT(tr."id") AS "transactionCount" FROM "Tokens" t JOIN "Contracts" c ON LOWER(t."contractAddress") = LOWER(c."address") LEFT JOIN "Transactions" tr ON LOWER(t."contractAddress") = LOWER(tr."toAddress") OR LOWER(t."contractAddress") = LOWER(tr."fromAddress") WHERE t."type" = 'ERC-20' AND (LOWER(t."contractAddress") ILIKE ${
 						'%' + searchedWord + '%'
 					} OR t."tokenName" ILIKE ${
 						'%' + searchedWord + '%'
 					} OR t."tokenSymbol" ILIKE ${
 						'%' + searchedWord + '%'
-					} GROUP BY t."contractAddress", t."tokenName",t."tokenSymbol", c."address" ORDER BY "transactionCount" DESC LIMIT ${
+					}) GROUP BY t."contractAddress", t."tokenName",t."tokenSymbol", c."address" ORDER BY "transactionCount" DESC LIMIT ${
 						payload.limit
 					} OFFSET ${offset}`;
 
