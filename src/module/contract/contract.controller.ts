@@ -175,11 +175,19 @@ class ContractController implements Controller {
 		request: Request,
 		response: Response,
 	) => {
+		// const data: any = {
+		// 	page: !request.query?.page ? 0 : Number(request.query.page),
+		// 	limit: !request.query?.limit ? 10 : Number(request.query.limit),
+		// 	contractName: request.params[0].trim(), // to get the params
+		// 	order: request.query?.order ? request.query.order : 'desc',
+		// };
+
 		const data: any = {
 			page: !request.query?.page ? 0 : Number(request.query.page),
 			limit: !request.query?.limit ? 10 : Number(request.query.limit),
 			contractName: request.params[0].trim(), // to get the params
 			order: request.query?.order ? request.query.order : 'desc',
+			contractType: request.query?.contractType,
 		};
 
 		const searchContractToken =

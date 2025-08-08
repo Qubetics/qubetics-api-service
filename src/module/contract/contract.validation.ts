@@ -61,6 +61,10 @@ export const getContractValidation = (
 			.messages({
 				'custom.order': 'Order must be dsec or asc.',
 			}),
+		contractType: Joi.string()
+			.valid('ERC-20', 'ERC-721', 'ERC-777', 'ERC-1155')
+			.optional()
+			.allow(null, ''),
 	});
 
 	const { error, value } = schema.validate(req.query);

@@ -1629,7 +1629,7 @@ class ContractService {
 		}
 	}
 
-	async getContractsTokens(data: {
+	async getContractsTokens_previouslyWorking(data: {
 		page: number;
 		limit: number;
 		order: string;
@@ -1842,6 +1842,239 @@ class ContractService {
 		}
 	}
 
+	async getContractsTokens(data: {
+		page: number;
+		limit: number;
+		order: string;
+		contractName: string;
+		contractType: string;
+	}): Promise<any> {
+		const { contractName, limit, page, order, contractType } = data;
+		// Validate limit
+		const parsedLimit = limit;
+
+		try {
+			let contractTypeFilter = 'ERC-20';
+			if (
+				data?.contractType &&
+				['ERC-20', 'ERC-721', 'ERC-777', 'ERC-1155'].includes(
+					contractType,
+				)
+			) {
+				contractTypeFilter = ` AND "c"."contractType" = '${contractType}'`;
+			}
+
+			let selectContracts =
+				'SELECT "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply","t"."type", "t"."tokenName", "t"."tokenSymbol", "t"."contractAddress", COUNT("h"."address") as holders ';
+			let selectContractsForCount =
+				'SELECT COUNT(c.id) AS count_id, MIN(c.id) AS min_id, MAX(c.id) AS max_id ';
+			let lastPageSelect = ' SELECT (c.id) ';
+
+			let joinFrom =
+				'FROM "Contracts" AS "c" LEFT JOIN "ContractVerification" AS "cv" ON "cv"."contractAddress" = "c"."address" LEFT JOIN "Tokens" AS "t" ON "t"."contractAddress" = "c"."address" LEFT JOIN "Holders" as h ON "h"."contractAddress" = "t"."contractAddress"';
+
+			let idFilter = '';
+
+			let searchFilter = `
+			    WHERE (("c"."contractName" ILIKE '%${contractName}%' OR "c"."address" ILIKE '%${contractName}%')
+			    OR ("t"."tokenName" ILIKE '%${contractName}%' OR "t"."contractAddress" ILIKE '%${contractName}%' OR "t"."tokenSymbol" ILIKE '%${contractName}%')
+			    OR ("cv"."contractname" ILIKE '%${contractName}%' OR "cv"."contractAddress" ILIKE '%${contractName}%')
+				${contractType ? `AND "c"."contractType" = '${contractType}'` : ''}
+				)`;
+
+			let orderBy: string = 'desc';
+			if (data?.order) {
+				orderBy = data?.order.toString();
+			}
+			if (data.page && data.page > 1) {
+				if (data.order === 'asc') {
+					idFilter = ` AND "c"."id" > ${data.page}`;
+				} else {
+					idFilter = ` AND "c"."id" < ${data.page}`;
+				}
+			}
+
+			// Perform the query with cursor-based pagination
+
+			const whereClause = `${searchFilter} ${contractTypeFilter} ${idFilter}`;
+
+			const orderClause = ` ORDER BY "c"."id" ${orderBy} `;
+			const limitClause = ` LIMIT ${parsedLimit}`;
+			const groupByClause = ` GROUP BY "c"."id", "c"."contractName", "c"."contractType", "c"."address", "c"."createdAt", 
+         "c"."updatedAt", "c"."timestamp", "c"."blockHash", "c"."blockNumber", "c"."creator", 
+         "c"."txHash", "cv"."contractAddress", "cv"."contractname", "cv"."verificationType", 
+         "cv"."iconUrl", "t"."creator", "t"."decimal", "t"."totalSupply", "t"."type", 
+         "t"."tokenName", "t"."tokenSymbol", "t"."contractAddress"`;
+
+			const queryContracts =
+				selectContracts +
+				joinFrom +
+				whereClause +
+				groupByClause +
+				orderClause +
+				limitClause;
+
+			const resultCountQuery =
+				selectContractsForCount +
+				joinFrom +
+				searchFilter +
+				contractTypeFilter;
+
+			const results: any = await prisma.$queryRawUnsafe(queryContracts);
+
+			const getContractsCount: any = await this.getContractsCount();
+			const {
+				'ERC-20': erc20Count,
+				'ERC-721': erc721Count,
+				'ERC-777': erc777Count,
+				'ERC-1155': erc1155Count,
+				UNKNOWN: unknownCount,
+				count,
+			} = getContractsCount.counts;
+
+			if (!results.length) {
+				return {
+					data: {
+						contracts: [],
+						contractCount: 0,
+						message: RES_MSG.DATA_NOT_FOUND,
+						error: true,
+						data: {
+							erc20Count: erc20Count ? Number(erc20Count) : 0,
+							erc721Count: erc721Count ? Number(erc721Count) : 0,
+							erc777Count: erc777Count ? Number(erc777Count) : 0,
+							erc1155Count: erc1155Count
+								? Number(erc1155Count)
+								: 0,
+							unknownCount: unknownCount
+								? Number(unknownCount)
+								: 0,
+						},
+					},
+				};
+			}
+			// const sortedResults =
+			// 	data.order === 'asc' ? results.reverse() : results;
+
+			// Determine the first and last page from the search results
+			// const firstContract = results[0].id || null;
+			// const lastContract = results[results.length - 1] || null;
+			const resultCount: any =
+				await prisma.$queryRawUnsafe(resultCountQuery);
+
+			const totalContracts = Number(resultCount[0].count_id);
+
+			const minimumId = resultCount[0].min_id;
+			const maximumId = resultCount[0].max_id;
+
+			const lastPageRemainder = totalContracts % Number(parsedLimit);
+			const lastPageFilter = ` AND "c"."id" > ${minimumId}`;
+			const lastPageCondition = `${searchFilter} ${contractTypeFilter} ${lastPageFilter}`;
+			const lastPageLimitCheck = lastPageRemainder
+				? lastPageRemainder
+				: parsedLimit;
+			const lastPageLimit = ` LIMIT ${lastPageLimitCheck}`;
+
+			const cursorPages: any = cursorPagination(
+				results,
+				orderBy,
+				'',
+				parsedLimit,
+				'id',
+				totalContracts,
+				maximumId,
+				minimumId,
+			);
+
+			// console.log('cursorPages', cursorPages);
+
+			let lastPageResult: any;
+			// let orderClauseForLastPage = ` ORDER BY "c"."id" desc `;
+			// if (totalContracts && totalContracts < parsedLimit) {
+			// if (!data.order || data.order === 'desc') {
+			// 	console.log('IN CHECKING');
+			// }
+			let orderClauseForLastPage = ` ORDER BY "c"."id" asc `;
+			const lastPageQuery =
+				lastPageSelect +
+				joinFrom +
+				lastPageCondition +
+				orderClauseForLastPage +
+				lastPageLimit;
+
+			// console.log('lastPageQuery', lastPageQuery);
+
+			lastPageResult = await prisma.$queryRawUnsafe(lastPageQuery);
+
+			// console.log('lastPageResult', lastPageResult);
+			// console.log(
+			// 	'lastPageResult',
+			// 	lastPageResult[lastPageResult.length - 1].id,
+			// );
+			// }
+
+			// const previousCursor =
+			// 	results[0].id === maximumId ? null : results[0].id;
+
+			// const nextCursor =
+			// 	results.length > 0 &&
+			// 	results[results.length - 1].id === minimumId
+			// 		? null
+			// 		: results[results.length - 1]?.id;
+
+			const contractData = await Promise.all(
+				results.map(async (item: any) => ({
+					...item,
+					transaction_count: await this.getContractTxCount(
+						item?.address,
+					),
+					contractname: item?.contractname || '',
+					verificationType: item?.verificationType || 0,
+					iconUrl: item?.iconUrl || '',
+					creator: item?.creator,
+					decimal: item?.decimal,
+					totalSupply: item?.totalSupply,
+					type: item?.type,
+					tokenName: item?.tokenName,
+					tokenSymbol: item?.tokenSymbol,
+					contractAddress: item?.contractAddress,
+				})),
+			);
+
+			return {
+				error: false,
+				message: RES_MSG.CONTRACT,
+				data: {
+					contracts: cursorPages.sortedResults
+						? convertBigIntToNumber(cursorPages.sortedResults)
+						: [],
+					contractCount: totalContracts || 0,
+					erc20Count: erc20Count ? Number(erc20Count) : 0,
+					erc721Count: erc721Count ? Number(erc721Count) : 0,
+					erc777Count: erc777Count ? Number(erc777Count) : 0,
+					erc1155Count: erc1155Count ? Number(erc1155Count) : 0,
+					unknownCount: unknownCount ? Number(unknownCount) : 0,
+					count: count ? Number(count) : 0,
+					nextCursor:
+						page > 1 &&
+						cursorPages.nextCursor === cursorPages.previousCursor
+							? null
+							: cursorPages.nextCursor,
+					prevCursor:
+						((page === 1 || page === 0 || !page) && !data.order) ||
+						cursorPages.nextCursor === cursorPages.previousCursor
+							? null
+							: cursorPages.previousCursor,
+					lastPage: lastPageResult.length
+						? lastPageResult[lastPageResult.length - 1].id
+						: null,
+				},
+			};
+		} catch (err) {
+			logger.error('Error Log:: getContractsTokens Error', err);
+			return { error: true, message: RES_MSG.ERROR };
+		}
+	}
 	// async contractGraphs(data: {
 	// 	interval: string;
 	// 	days: string;
