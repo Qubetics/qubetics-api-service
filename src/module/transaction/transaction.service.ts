@@ -898,7 +898,11 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 				}),
 			]);
 			console.log('internalTxns', internalTxns);
-			if (!internalTxns?.length) throw new Error(RES_MSG.NOT_FOUND);
+			if (!internalTxns?.length)
+				return {
+					error: true,
+					message: RES_MSG.DATA_NOT_FOUND,
+				};
 			return {
 				error: false,
 				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
