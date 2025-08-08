@@ -879,36 +879,50 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 		hash: string;
 	}): Promise<IESResponse> {
 		try {
-			console.log('hash::', data.hash);
+			type countResult = { count: number };
+			type internalTxnsResult = Object[];
+
 			const [internalTxns, internalTxnCount] = await prisma.$transaction([
-				prisma.internalTransaction.findMany({
-					skip: data.page * data.limit,
-					take: data.limit,
-					orderBy: {
-						timestamp: 'desc',
-					},
-					where: {
-						txnHash: data.hash,
-					},
-				}),
-				prisma.internalTransaction.count({
-					where: {
-						txnHash: data.hash,
-					},
-				}),
+				prisma.$queryRaw<internalTxnsResult[]>`
+    SELECT DISTINCT ON (LOWER("toAddress")) *
+    FROM "internal_transaction"
+    WHERE "txnHash" = ${data.hash}
+    ORDER BY LOWER("toAddress"), "timestamp" DESC
+    OFFSET ${data.page * data.limit}
+    LIMIT ${data.limit}
+  `,
+				prisma.$queryRaw<countResult[]>`
+    SELECT COUNT(*)::int AS count
+    FROM (
+      SELECT DISTINCT ON (LOWER("toAddress")) 1
+      FROM "internal_transaction"
+      WHERE "txnHash" = ${data.hash}
+    ) sub
+  `,
 			]);
-			console.log('internalTxns', internalTxns);
-			if (!internalTxns?.length)
+			console.log(
+				'internalTxns',
+				internalTxns,
+				internalTxnCount,
+				'internalTxnCount',
+			);
+			if (!internalTxns)
 				return {
 					error: true,
 					message: RES_MSG.DATA_NOT_FOUND,
 				};
+
+			const result = internalTxns.map((internalTxn: any) => ({
+				...internalTxn,
+				txHash: internalTxn?.txnHash,
+				txhash: internalTxn?.txnHash,
+			}));
 			return {
 				error: false,
 				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
 				data: {
-					count: internalTxnCount,
-					internalTxns: convertBigIntToNumber(internalTxns),
+					count: internalTxnCount[0]?.count ?? 0,
+					internalTxns: convertBigIntToNumber(result),
 					// internalTxns: convertBigIntToNumber(internalTxns),
 				},
 			};
