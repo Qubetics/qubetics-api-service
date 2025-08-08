@@ -424,7 +424,7 @@ FROM (
 
    	(i."value"::numeric / 1e18)::TEXT AS value,
     i."timestamp",
-    'COIN_TRANSFER' AS type,
+    'CONTRACT_TRANSFER' AS type,
     'SUCCESS' AS status
   FROM "internal_transaction" i
   WHERE LOWER(i."fromAddress") = ${safeAddress}
