@@ -2634,7 +2634,7 @@ class ContractService {
 			// Send raw RPC call
 
 			const trace = await provider.send('debug_traceTransaction', [
-				'0xd5848d01fa7be784145d0eb33a580f34ea7f4b3664232359b0f0aec4e277d67d',
+				'0x5d96b98960b9048e17b6c103721804cc03f6ca39c512a0ddd192467be079ba5a',
 				{ tracer: 'callTracer' },
 			]);
 
