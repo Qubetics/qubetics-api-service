@@ -1854,7 +1854,7 @@ class ContractService {
 		const parsedLimit = limit;
 
 		try {
-			let contractTypeFilter = 'ERC-20';
+			let contractTypeFilter = '';
 			if (
 				data?.contractType &&
 				['ERC-20', 'ERC-721', 'ERC-777', 'ERC-1155'].includes(
@@ -1862,6 +1862,8 @@ class ContractService {
 				)
 			) {
 				contractTypeFilter = ` AND "c"."contractType" = '${contractType}'`;
+			} else {
+				contractTypeFilter = ` AND "c"."contractType" = 'ERC-20'`;
 			}
 
 			let selectContracts =
@@ -1919,6 +1921,8 @@ class ContractService {
 				joinFrom +
 				searchFilter +
 				contractTypeFilter;
+
+			console.log('queryContracts', queryContracts);
 
 			const results: any = await prisma.$queryRawUnsafe(queryContracts);
 
