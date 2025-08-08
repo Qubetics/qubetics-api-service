@@ -779,12 +779,18 @@ class ContractService {
 
 			if (!internalTxns?.length)
 				throw new Error(RES_MSG.CONTRACT_TX_NOT_FOUND);
+
+			const result = internalTxns.map((internalTxn) => ({
+				...internalTxn,
+				txHash: internalTxn?.txnHash,
+				txhash: internalTxn?.txnHash,
+			}));
 			return {
 				error: false,
 				message: RES_MSG.CONTRACT_TX,
 				data: {
 					count: internalTxnCount,
-					internalTxns: convertBigIntToNumber(internalTxns),
+					internalTxns: convertBigIntToNumber(result),
 					// internalTxns: convertBigIntToNumber(internalTxns),
 				},
 			};
