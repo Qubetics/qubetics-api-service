@@ -746,14 +746,9 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			console.log('transactionDataInDB', transactionDataInDB);
 			transactionData = serializeBigInt(transactionDataInDB[0]);
 			console.log('transactionData2', transactionData.blocknumber);
+			console.log(transactionData);
 
-			const txnType = txType(
-				`${transactionData.to}`,
-				transactionData.input,
-			);
-			console.log('txnType', txnType);
-
-			if (txnType === TRANSFER_TYPE.CONTRACT_TRANSFER) {
+			if (transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER) {
 				console.log('INIT CONTRACT');
 
 				RabbitMqService.inQueueData(
@@ -773,10 +768,6 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 							JSON.stringify(Number(txData?.blockNumber)),
 						);
 
-						RabbitMqService.inQueueData(
-							QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
-							JSON.stringify(Number(txData?.blockNumber)),
-						);
 						const txReceipt =
 							await web3Helper.getTransactionReceipt(txHash);
 						const amount =
