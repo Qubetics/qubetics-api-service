@@ -726,9 +726,22 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			   LEFT JOIN "DecodedLogs" ON "Transactions"."txhash" = "DecodedLogs"."txHash"
 			   WHERE "Transactions"."txhash" = ${txHash};`;
 
-			// let transactionData = await prisma.transactions.findUnique({
-			// 	where: { txhash: txHash },
-			// });
+			const [internalTxns, internalTxnCount] = await prisma.$transaction([
+				prisma.internalTransaction.findMany({
+					take: CONST_NAME.TEN,
+					orderBy: {
+						timestamp: 'desc',
+					},
+					where: {
+						txnHash: txHash,
+					},
+				}),
+				prisma.internalTransaction.count({
+					where: {
+						txnHash: txHash,
+					},
+				}),
+			]);
 			console.log('transactionDataInDB', transactionDataInDB);
 			transactionData = serializeBigInt(transactionDataInDB[0]);
 			console.log(transactionData, 'transactionDataA');
@@ -739,6 +752,11 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 					if (txData) {
 						RabbitMqService.inQueueData(
 							QUEUE_NAME.MISSING_BLOCK,
+							JSON.stringify(Number(txData?.blockNumber)),
+						);
+
+						RabbitMqService.inQueueData(
+							QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
 							JSON.stringify(Number(txData?.blockNumber)),
 						);
 						const txReceipt =
@@ -813,6 +831,8 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 				data: {
 					transaction: mergedTransaction,
 					contractLogs: contractLogs,
+					internalTxnCount: internalTxnCount ?? 0,
+					internalTxns: convertBigIntToNumber(internalTxns) ?? [],
 				},
 			};
 		} catch (err) {
@@ -847,6 +867,55 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			console.log(err, 'Caught the error');
 			if (err instanceof Error) {
 				return { error: true, message: err.message };
+			} else {
+				return { error: true, message: RES_MSG.ERROR };
+			}
+		}
+	}
+
+	async getInternalTxnsByHash(data: {
+		page: number;
+		limit: number;
+		hash: string;
+	}): Promise<IESResponse> {
+		try {
+			console.log('hash::', data.hash);
+			const [internalTxns, internalTxnCount] = await prisma.$transaction([
+				prisma.internalTransaction.findMany({
+					skip: data.page * data.limit,
+					take: data.limit,
+					orderBy: {
+						timestamp: 'desc',
+					},
+					where: {
+						txnHash: data.hash,
+					},
+				}),
+				prisma.internalTransaction.count({
+					where: {
+						txnHash: data.hash,
+					},
+				}),
+			]);
+			console.log('internalTxns', internalTxns);
+			if (!internalTxns?.length) throw new Error(RES_MSG.NOT_FOUND);
+			return {
+				error: false,
+				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+				data: {
+					count: internalTxnCount,
+					internalTxns: convertBigIntToNumber(internalTxns),
+					// internalTxns: convertBigIntToNumber(internalTxns),
+				},
+			};
+		} catch (err) {
+			logger.error('error inside getInternalTxns : ', err);
+
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: RES_MSG.ERROR };
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
 			}

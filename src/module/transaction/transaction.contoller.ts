@@ -40,7 +40,12 @@ class ExplorerController implements Controller {
 				getTxByBlock,
 				this.getTransactionByBlock,
 			)
-			.get(`/erc-20`, getTxValidation, this.getErc20Transaction);
+			.get(`/erc-20`, getTxValidation, this.getErc20Transaction)
+			.get(
+				'/internal/:transactionHash',
+				getTxByHashValidation,
+				this.getInternalTransactionsByHash,
+			);
 	}
 
 	private getAllTransaction = async (
@@ -120,6 +125,22 @@ class ExplorerController implements Controller {
 		};
 		const res = await TransactionService.getErc20Transaction(data);
 
+		if (res.error) {
+			return setResponse.error(response, res);
+		}
+		return setResponse.success(response, res);
+	};
+
+	private getInternalTransactionsByHash = async (
+		request: Request,
+		response: Response,
+	) => {
+		const data = {
+			page: !request.query?.page ? 0 : Number(request.query.page) - 1,
+			limit: !request.query?.limit ? 10 : Number(request.query.limit),
+			hash: <string>request.params.transactionHash,
+		};
+		const res = await TransactionService.getInternalTxnsByHash(data);
 		if (res.error) {
 			return setResponse.error(response, res);
 		}

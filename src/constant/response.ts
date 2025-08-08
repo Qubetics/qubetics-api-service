@@ -75,6 +75,7 @@ export const RES_MSG = {
 	DATA_NOT_FOUND: 'data not found',
 	TRANSACTION_FEE_SUCCESS: 'transaction fee fetched successfully',
 	BLOCK_AVG_SUCCESS: 'Block avg time fetched successfully',
+	INTERNAL_TRANSACTION_SUCCESS: 'Internal transactions fetched successfully',
 };
 
 export const BLOCKCHAIN_ERROR_MSG = {
@@ -110,6 +111,7 @@ export const CONST_NAME = {
 	NOT_FOUND: 'not found',
 	MARKET_CAP_PRICE: 'MARKET_CAP_PRICE',
 	BOND_STATUS: 'BOND_STATUS_BONDED',
+	TEN: 10,
 };
 
 export const TRANSFER_TYPE = {
@@ -200,6 +202,7 @@ export const QUEUE_NAME = {
 	VALIDATOR_DETAIL: 'VALIDATOR_DETAIL',
 	CONTRACT_DEPLOY_DETAIL: 'CONTRACT_DEPLOY_DETAIL',
 	BLOCK_TIME_QUE: 'BLOCK_TIME_QUE',
+	CATCH_MISSING_INTERNAL_TRXNS: 'CATCH_MISSING_INTERNAL_TRXNS',
 };
 
 export enum TransactionStatus {
