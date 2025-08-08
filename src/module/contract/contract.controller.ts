@@ -9,6 +9,7 @@ import {
 	getContractTxValidation,
 	getContractIconUrls,
 } from './contract.validation';
+import contractService from './contract.service';
 
 const setResponse = Helpers.ResponseHelper;
 
@@ -52,6 +53,7 @@ class ContractController implements Controller {
 				this.searchContractToken_,
 			)
 			.get('/graph/:address', this.contractGraph);
+		// .get('/int/trxn', this.int_trxn);
 	}
 
 	private getAllContract = async (request: Request, response: Response) => {
@@ -232,6 +234,22 @@ class ContractController implements Controller {
 		}
 		return setResponse.success(response, searchContractToken);
 	};
+
+	// private int_trxn = async (request: Request, response: Response) => {
+	// 	const data: any = {
+	// 		// interval: !request.query?.interval ? 30 : request.query.interval,
+	// 		// days: !request.query?.time ? 30 : Number(request.query.time),
+	// 		address: <string>request.params.address, // to get the params
+	// 	};
+	// 	console.log(data.address, 'int_trxn-int_trxn');
+	// 	const searchContractToken =
+	// 		await contractService.getAndStoreInternalTxs();
+
+	// 	// if (searchContractToken.error) {
+	// 	// 	return setResponse.error(response, searchContractToken);
+	// 	// }
+	// 	return setResponse.success(response, {});
+	// };
 }
 
 export default ContractController;

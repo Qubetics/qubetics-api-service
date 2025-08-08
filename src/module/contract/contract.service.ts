@@ -23,6 +23,7 @@ import {
 import redisHelper from '../../service/redis.helper';
 import moment from 'moment';
 import web3Helper from '../../helper/web3.helper';
+import { ethers } from 'ethers';
 
 class ContractService {
 	async getAllContract_(data: {
@@ -402,7 +403,8 @@ class ContractService {
 			// });
 
 			const formatContractData = (base: any, log: any) => {
-				console.log('logdaata', base);
+				console.log('logValue', log?.value);
+				console.log('baseValue', base?.value);
 				const contractData = {
 					...base,
 					txHash: log?.txHash,
@@ -602,21 +604,17 @@ class ContractService {
 			if (!tokens?.length) throw new Error(RES_MSG.NOT_FOUND);
 
 			const tokenTransfers = tokens.map((element: any) => {
-				console.log('element.logs-getContractTransfer', element.logs);
 				let value: any;
 				if (element?.logs) {
 					const jsonString = JSON.stringify(element?.logs);
-					console.log(jsonString, 'DEMO!-getContractTransfer');
-
 					const parsedData = JSON.parse(jsonString);
-					console.log(parsedData, 'DEMO@-getContractTransfer');
 					const fixedJsonString = parseAndFixJson(element?.logs);
 
 					if (fixedJsonString[0]?.events) {
 						fixedJsonString[0]?.events?.forEach((event: any) => {
-							console.log(event.name, 'Name-getContractTransfer');
-							console.log(event.type, 'Type-getContractTransfer');
-							console.log(event.value, 'v-getContractTransfer');
+							console.log(event.name, 'Name-event');
+							console.log(event.type, 'Type-event');
+							console.log(event.value, 'v-event');
 							if (
 								event.name === 'value' &&
 								event.value !== undefined
@@ -628,19 +626,14 @@ class ContractService {
 					}
 				} else if (element?.input) {
 					const jsonString = JSON.stringify(element?.input);
-					console.log(jsonString, 'DEMO-input-getContractTransfer!');
-
 					const parsedData = JSON.parse(jsonString);
-					console.log(parsedData, 'DEMO@-getContractTransfer');
 					const fixedJsonString = parseAndFixJson(element?.input);
-
-					console.log('kskks', fixedJsonString);
 
 					if (fixedJsonString?.params) {
 						fixedJsonString?.params?.forEach((param: any) => {
-							console.log(param.name, 'Name');
-							console.log(param.type, 'Type');
-							console.log(param.value, 'Value');
+							console.log(param.name, 'param-Name');
+							console.log(param.type, 'param-Type');
+							console.log(param.value, 'param-Value');
 							if (
 								param.name === 'value' &&
 								param.value !== undefined
@@ -758,7 +751,7 @@ class ContractService {
 					skip: data.page * data.limit,
 					take: data.limit,
 					orderBy: {
-						createdAt: 'desc',
+						timestamp: 'desc',
 					},
 					where: {
 						contractAddress: {
@@ -2627,6 +2620,58 @@ class ContractService {
 				return { error: true, message: RES_MSG.ERROR };
 			}
 		}
+	}
+
+	async getAndStoreInternalTxs() {
+		// contractAddress: string, // timestamp: Date, // blockNumber: number, // txHash: string,
+		try {
+			const provider = new ethers.JsonRpcProvider(environment.RPCURL);
+
+			// const tx = await provider.getTransaction(txHash);
+
+			// const receipt = await provider.getTransactionReceipt(txHash);
+
+			// Send raw RPC call
+
+			const trace = await provider.send('debug_traceTransaction', [
+				'0xfbe30f0f9d2f193ea13a854c16b9ffe0287c9208029fe7d09b642397f040825a',
+				{ tracer: 'callTracer' },
+			]);
+
+			// flatten all traces recursively
+			const onlyCallTraces = this.flattenTraces(trace);
+
+			console.log(`Flattened traces count: ${onlyCallTraces}`);
+
+			for (const t of onlyCallTraces) {
+				console.log('---');
+				console.log('From:', t.from);
+				console.log('To:', t.to);
+				console.log('Type:', t.type);
+				console.log('Gas Used:', t.gasUsed);
+				console.log('Input:', t.input.slice(0, 10)); // Show method selector
+				console.log('value:', Number(t.value).toString());
+
+				// You can add more DB logic or filters here
+			}
+
+			return true;
+		} catch (error) {
+			console.log('error', error);
+			return false;
+		}
+	}
+
+	public flattenTraces(trace: any, result: any[] = []): any[] {
+		result.push(trace);
+
+		if (trace.calls && Array.isArray(trace.calls)) {
+			for (const inner of trace.calls) {
+				this.flattenTraces(inner, result);
+			}
+		}
+
+		return result;
 	}
 }
 
