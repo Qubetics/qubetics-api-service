@@ -295,13 +295,9 @@ class ContractService {
 							// },
 						},
 					}),
-					prisma.transactions.count({
+					prisma.internalTransaction.count({
 						where: {
-							OR: [
-								{ toAddress: contractAddress },
-								{ fromAddress: contractAddress },
-							],
-							// contractAddress: data.contractAddress,
+							contractAddress: data.contractAddress,
 							// method: {
 							// 	notIn: ['transfer', 'Transfer'], // Excludes both lowercase and uppercase variations
 							// },
