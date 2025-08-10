@@ -389,7 +389,6 @@ class TokenService {
 			});
 
 			console.log(holdersData, 'holdersData');
-			// console.log('hold	ersCount', holdersData[0].contract.Tokens);
 
 			const holdersCount = await prisma.holders.count({
 				where: {

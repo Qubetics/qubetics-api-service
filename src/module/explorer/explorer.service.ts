@@ -1102,6 +1102,9 @@ class ExplorerService {
 				return txData;
 			} else {
 				const searchedWord = payload.searchedWord?.toLowerCase();
+				const checkSumAddress = web3Helper.getCheckSumAddress(
+					payload.searchedWord,
+				);
 				tokens =
 					await prisma.$queryRaw` SELECT t."tokenName", t."tokenSymbol", t."contractAddress" AS "contractAddress", c."address" AS "contract_address",COUNT(tr."id") AS "transactionCount" FROM "Tokens" t JOIN "Contracts" c ON LOWER(t."contractAddress") = LOWER(c."address") LEFT JOIN "Transactions" tr ON LOWER(t."contractAddress") = LOWER(tr."toAddress") OR LOWER(t."contractAddress") = LOWER(tr."fromAddress") WHERE t."type" = 'ERC-20' AND (LOWER(t."contractAddress") ILIKE ${
 						'%' + searchedWord + '%'
@@ -1123,9 +1126,9 @@ class ExplorerService {
 					} OFFSET ${offset}`;
 
 				addresses =
-					await prisma.$queryRaw` SELECT LOWER(u."address") AS "address", COUNT(tr."id") AS "transactionCount" FROM "Users" u LEFT JOIN "Transactions" tr ON LOWER(u."address") = LOWER(tr."toAddress") OR LOWER(u."address") = LOWER(tr."fromAddress") WHERE LOWER(u."address") ILIKE ${
-						'%' + searchedWord + '%'
-					} GROUP BY LOWER(u."address") ORDER BY "transactionCount" DESC LIMIT ${
+					await prisma.$queryRaw` SELECT (u."address") AS "address", COUNT(tr."id") AS "transactionCount" FROM "Users" u LEFT JOIN "Transactions" tr ON (u."address") = (tr."toAddress") OR (u."address") = (tr."fromAddress") WHERE (u."address") ILIKE ${
+						'%' + checkSumAddress + '%'
+					} GROUP BY (u."address") ORDER BY "transactionCount" DESC LIMIT ${
 						payload.limit
 					} OFFSET ${offset}`;
 
@@ -1149,11 +1152,6 @@ class ExplorerService {
 					contract_address: web3Helper.getCheckSumAddress(
 						contract.address,
 					),
-				}));
-
-				const formattedAddresses = addresses.map((address: any) => ({
-					...address,
-					address: web3Helper.getCheckSumAddress(address.address),
 				}));
 
 				if (tokens && tokens.length) {
@@ -1183,7 +1181,7 @@ class ExplorerService {
 						results: serializeBigInt({
 							tokens: formattedTokens,
 							contracts: formattedContracts,
-							addresses: formattedAddresses,
+							addresses: addresses,
 						}),
 					},
 				};
