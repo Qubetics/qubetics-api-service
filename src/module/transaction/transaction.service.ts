@@ -746,18 +746,14 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			console.log('transactionDataInDB', transactionDataInDB);
 			transactionData = serializeBigInt(transactionDataInDB[0]);
 			console.log('transactionData2', transactionData.blocknumber);
-			console.log(transactionData);
 
 			if (transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER) {
-				console.log('INIT CONTRACT');
-
 				RabbitMqService.inQueueData(
 					QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
 					JSON.stringify(Number(transactionData?.blocknumber)),
 				);
 			}
 
-			console.log(transactionData, 'transactionDataA');
 			if (transactionDataInDB.length < 1) {
 				console.log('Not in DB');
 				try {
