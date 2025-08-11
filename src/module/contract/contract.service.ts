@@ -272,7 +272,7 @@ class ContractService {
 						skip: data.page * data.limit,
 						take: data.limit,
 						orderBy: {
-							createdAt: 'desc',
+							timestamp: 'desc',
 						},
 						select: {
 							toAddress: true,
@@ -816,7 +816,7 @@ class ContractService {
 					],
 				},
 				orderBy: {
-					createdAt: 'desc',
+					timestamp: 'desc',
 				},
 			});
 
@@ -890,7 +890,7 @@ class ContractService {
 					skip: data.page * data.limit,
 					take: data.limit,
 					orderBy: {
-						createdAt: 'desc',
+						timestamp: 'desc',
 					},
 					select: {
 						contractName: true,
