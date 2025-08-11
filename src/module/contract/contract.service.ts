@@ -200,8 +200,14 @@ class ContractService {
 			// 	txCount = contractLogsCount;
 			// }
 
-			txCount = await prisma.transactions.count({
-				where: { toAddress: contractAddress },
+			// txCount = await prisma.transactions.count({
+			// 	where: { toAddress: contractAddress },
+			// });
+
+			txCount = await prisma.internalTransaction.count({
+				where: {
+					contractAddress: contractAddress,
+				},
 			});
 
 			// Get updatedAt value only if contractType is 'UNKNOWN'
