@@ -114,6 +114,7 @@ export interface Params {
 	bondedRate: number;
 	total_supply: number;
 	totalValidators: number;
+	community_pool: number;
 }
 
 export interface BlockHeader {

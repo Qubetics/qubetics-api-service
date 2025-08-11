@@ -759,6 +759,8 @@ class ExplorerService {
 				prisma.users.count(),
 			]);
 
+			console.log(data, 'dataCalue');
+
 			const latestBlock = await RedisService.getString(
 				CONST_NAME.LATEST_BLOCK,
 			);
@@ -794,6 +796,7 @@ class ExplorerService {
 					totalValidator: data?.totalValidator,
 					apy: CURRENT_DEFAULT_APR,
 					marketCap,
+					community_pool: data?.community_pool ?? 0,
 				},
 			};
 		} catch (err) {
