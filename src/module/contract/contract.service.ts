@@ -10,6 +10,7 @@ import logger from '../../lib/logger';
 import { RedisService } from '../../service';
 import {
 	cursorPagination,
+	exp,
 	fillMissingDatesWithZeroByDay,
 	fillMissingDatesWithZeroByMonth,
 	fillMissingDatesWithZeroByhr,
@@ -18,6 +19,7 @@ import {
 	formatDateByMin,
 	formatDateForDay,
 	formatDateForYear,
+	noExponent,
 	parseAndFixJson,
 } from '../../lib/utilities.helper';
 import redisHelper from '../../service/redis.helper';
@@ -622,6 +624,7 @@ class ContractService {
 								event.value !== undefined
 							) {
 								value = BigInt(event.value);
+								console.log('valueIS', noExponent(value));
 								event.value = value.toString();
 							}
 						});
@@ -641,6 +644,8 @@ class ContractService {
 								param.value !== undefined
 							) {
 								value = BigInt(param.value);
+								console.log('VALUE PARSING', noExponent(value));
+
 								param.value = value.toString();
 							}
 						});

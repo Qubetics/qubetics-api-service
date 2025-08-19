@@ -745,9 +745,11 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 
 			console.log('transactionDataInDB', transactionDataInDB);
 			transactionData = serializeBigInt(transactionDataInDB[0]);
-			console.log('transactionData2', transactionData.blocknumber);
 
-			if (transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER) {
+			if (
+				transactionDataInDB.length > 0 &&
+				transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER
+			) {
 				RabbitMqService.inQueueData(
 					QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
 					JSON.stringify(Number(transactionData?.blocknumber)),
