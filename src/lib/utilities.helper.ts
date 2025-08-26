@@ -499,7 +499,7 @@ export async function calculateBurnedAmount() {
 		const apiUrl = environment.evmHost;
 
 		const getSupply: any = await axios.get(
-			`${apiUrl}/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.symbol.toLowerCase()}`,
+			`${apiUrl}/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.token_symbol.toLowerCase()}`,
 		);
 
 		const { initialSupply } = environment;
