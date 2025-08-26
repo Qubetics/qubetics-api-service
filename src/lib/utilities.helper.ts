@@ -502,7 +502,7 @@ export async function calculateBurnedAmount() {
 			`${apiUrl}/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.symbol.toLowerCase()}`,
 		);
 
-		const initialSupply = environment.initialSupply;
+		const { initialSupply } = environment;
 		const circulation_supply: number =
 			Number(getSupply.data.amount.amount) / CONST_NAME.ETH_EXP;
 

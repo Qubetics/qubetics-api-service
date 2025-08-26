@@ -817,6 +817,7 @@ class ExplorerService {
 					apy: CURRENT_DEFAULT_APR,
 					marketCap,
 					community_pool: data?.community_pool ?? 0,
+					burnedAmount,
 				},
 			};
 		} catch (err) {

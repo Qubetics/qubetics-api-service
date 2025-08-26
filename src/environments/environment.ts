@@ -69,6 +69,7 @@ class Environment implements IEnvironment {
 	public rpcServers: string;
 
 	public stateSyncUrl: string;
+
 	public initialSupply: number;
 
 	/**
