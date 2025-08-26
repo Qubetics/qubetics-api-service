@@ -1,5 +1,5 @@
 import axios, { AxiosResponse, Method } from 'axios';
-import { TRANSACTION_TYPE } from '../constant/response';
+import { CONST_NAME, TRANSACTION_TYPE } from '../constant/response';
 import { CoinMarketData } from '../interfaces/index';
 import logger from './logger';
 
@@ -493,3 +493,23 @@ export const noExponent = function (num: number | string) {
 		return '0';
 	}
 };
+
+export async function calculateBurnedAmount() {
+	try {
+		const apiUrl = environment.evmHost;
+
+		const getSupply: any = await axios.get(
+			`${apiUrl}/cosmos/bank/v1beta1/supply/by_denom?denom=${environment.symbol.toLowerCase()}`,
+		);
+
+		const initialSupply = environment.initialSupply;
+		const circulation_supply: number =
+			Number(getSupply.data.amount.amount) / CONST_NAME.ETH_EXP;
+
+		const returnValue = initialSupply - circulation_supply;
+		return returnValue;
+	} catch (error) {
+		console.log(error, 'error in calculateBurnedAmount');
+		return false;
+	}
+}

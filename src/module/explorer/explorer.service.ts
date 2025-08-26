@@ -21,7 +21,12 @@ import {
 	IPeerData,
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
-import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
+import {
+	formatDate,
+	exp,
+	formatDateForYear,
+	calculateBurnedAmount,
+} from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
@@ -30,6 +35,7 @@ import {
 	serializeBigInt,
 } from '../../helper/common.helper';
 import { ethers } from 'ethers';
+import redisHelper from '../../service/redis.helper';
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
 		try {
@@ -779,6 +785,20 @@ class ExplorerService {
 			if (!circulationSupply) {
 				circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
 			}
+
+			let burnedAmount = await RedisService.getString(
+				REDIS_KEY.TOTAL_BURNED_AMOUNT,
+			);
+
+			if (!burnedAmount) {
+				/** save burned fees */
+				burnedAmount = await calculateBurnedAmount();
+				await redisHelper.setString(
+					REDIS_KEY.TOTAL_BURNED_AMOUNT,
+					burnedAmount,
+				);
+			}
+
 			return {
 				error: false,
 				message: RES_MSG.SUCCESS,
