@@ -71,6 +71,11 @@ class ExplorerController implements Controller {
 				'/internal-transactions',
 				// getGraphHistoryValidation,
 				this.getInternalTransactions,
+			)
+			.get(
+				'/circulation-supply',
+				// getGraphHistoryValidation,
+				this.getCirculationSupply,
 			);
 	}
 
@@ -304,6 +309,18 @@ class ExplorerController implements Controller {
 			return setResponse.error(response, res);
 		}
 		return setResponse.success(response, res);
+	};
+
+	private getCirculationSupply = async (
+		request: Request,
+		response: Response,
+	) => {
+		const getCirculationSupply = await ExplorerService.getSupply();
+
+		if (getCirculationSupply.error) {
+			return setResponse.error(response, getCirculationSupply);
+		}
+		return setResponse.success(response, getCirculationSupply);
 	};
 }
 

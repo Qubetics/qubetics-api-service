@@ -1325,6 +1325,33 @@ class ExplorerService {
 			}
 		}
 	}
+
+	async getSupply(): Promise<IESResponse> {
+		try {
+			// const circulationSupply =
+			// 	data?.circulationSupply === 0 || !data.circulationSupply
+			// 		? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
+			// 		: data?.circulationSupply;
+
+			let circulationSupply = await RedisService.getString(
+				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
+			);
+			if (!circulationSupply) {
+				circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+			}
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					circulationSupply,
+				},
+			};
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
+		}
+	}
 }
 
 export default new ExplorerService();
