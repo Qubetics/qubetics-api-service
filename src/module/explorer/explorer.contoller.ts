@@ -78,7 +78,7 @@ class ExplorerController implements Controller {
 				this.getCirculationSupply,
 			)
 			.get(
-				'/total-supply',
+				'/minted-supply',
 				// getGraphHistoryValidation,
 				this.getTotalSupply,
 			);

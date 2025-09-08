@@ -1370,7 +1370,9 @@ class ExplorerService {
 				);
 			}
 
-			const totalSupply = circulationSupply - burnedAmount;
+			const { initialSupply } = environment;
+
+			const totalSupply = initialSupply - burnedAmount;
 
 			return {
 				error: false,
