@@ -1326,13 +1326,8 @@ class ExplorerService {
 		}
 	}
 
-	async getSupply(): Promise<IESResponse> {
+	async getCirculationSupply(): Promise<IESResponse> {
 		try {
-			// const circulationSupply =
-			// 	data?.circulationSupply === 0 || !data.circulationSupply
-			// 		? await RedisService.getString(REDIS_KEY.CIRCULATING_SUPPLY)
-			// 		: data?.circulationSupply;
-
 			let circulationSupply = await RedisService.getString(
 				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
 			);
@@ -1345,6 +1340,43 @@ class ExplorerService {
 				message: RES_MSG.SUCCESS,
 				data: {
 					circulationSupply,
+				},
+			};
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
+		}
+	}
+
+	async getTotalSupply(): Promise<IESResponse> {
+		try {
+			let circulationSupply = await RedisService.getString(
+				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
+			);
+			if (!circulationSupply) {
+				circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+			}
+
+			let burnedAmount = await RedisService.getString(
+				REDIS_KEY.TOTAL_BURNED_AMOUNT,
+			);
+
+			if (!burnedAmount) {
+				/** save burned fees */
+				burnedAmount = await calculateBurnedAmount();
+				await redisHelper.setString(
+					REDIS_KEY.TOTAL_BURNED_AMOUNT,
+					burnedAmount,
+				);
+			}
+
+			const totalSupply = circulationSupply - burnedAmount;
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					totalSupply,
 				},
 			};
 		} catch (err) {

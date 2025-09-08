@@ -76,6 +76,11 @@ class ExplorerController implements Controller {
 				'/circulation-supply',
 				// getGraphHistoryValidation,
 				this.getCirculationSupply,
+			)
+			.get(
+				'/total-supply',
+				// getGraphHistoryValidation,
+				this.getTotalSupply,
 			);
 	}
 
@@ -315,7 +320,17 @@ class ExplorerController implements Controller {
 		request: Request,
 		response: Response,
 	) => {
-		const getCirculationSupply = await ExplorerService.getSupply();
+		const getCirculationSupply =
+			await ExplorerService.getCirculationSupply();
+
+		if (getCirculationSupply.error) {
+			return setResponse.error(response, getCirculationSupply);
+		}
+		return setResponse.success(response, getCirculationSupply);
+	};
+
+	private getTotalSupply = async (request: Request, response: Response) => {
+		const getCirculationSupply = await ExplorerService.getTotalSupply();
 
 		if (getCirculationSupply.error) {
 			return setResponse.error(response, getCirculationSupply);
