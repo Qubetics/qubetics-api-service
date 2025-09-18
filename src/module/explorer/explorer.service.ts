@@ -9,6 +9,7 @@ import {
 	CURRENT_DEFAULT_COIN_PRICE,
 	CURRENT_DEFAULT_APR,
 	CURRENT_DEFAULT_CIRCULATING_SUPPLY,
+	STATIC_BURNED_AMOUNT,
 } from '../../constant/response';
 import logger from '../../lib/logger';
 import { RedisService } from '../../service/index';
@@ -21,12 +22,7 @@ import {
 	IPeerData,
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
-import {
-	formatDate,
-	exp,
-	formatDateForYear,
-	calculateBurnedAmount,
-} from '../../lib/utilities.helper';
+import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
@@ -792,7 +788,7 @@ class ExplorerService {
 
 			if (!burnedAmount) {
 				/** save burned fees */
-				burnedAmount = await calculateBurnedAmount();
+				burnedAmount = await this.calculateBurnedAmount();
 				await redisHelper.setString(
 					REDIS_KEY.TOTAL_BURNED_AMOUNT,
 					burnedAmount,
@@ -1350,20 +1346,13 @@ class ExplorerService {
 
 	async getTotalSupply(): Promise<IESResponse> {
 		try {
-			let circulationSupply = await RedisService.getString(
-				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
-			);
-			if (!circulationSupply) {
-				circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
-			}
-
 			let burnedAmount = await RedisService.getString(
 				REDIS_KEY.TOTAL_BURNED_AMOUNT,
 			);
 
 			if (!burnedAmount) {
 				/** save burned fees */
-				burnedAmount = await calculateBurnedAmount();
+				burnedAmount = await this.calculateBurnedAmount();
 				await redisHelper.setString(
 					REDIS_KEY.TOTAL_BURNED_AMOUNT,
 					burnedAmount,
@@ -1384,6 +1373,56 @@ class ExplorerService {
 		} catch (err) {
 			logger.error('dashboard-Error', err);
 			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
+		}
+	}
+
+	async getBurnedAmount(): Promise<IESResponse> {
+		try {
+			let burnedAmount = await RedisService.getString(
+				REDIS_KEY.TOTAL_BURNED_AMOUNT,
+			);
+
+			if (!burnedAmount) {
+				/** save burned fees */
+				burnedAmount = await this.calculateBurnedAmount();
+				await redisHelper.setString(
+					REDIS_KEY.TOTAL_BURNED_AMOUNT,
+					burnedAmount,
+				);
+			}
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					burnedAmount,
+				},
+			};
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
+		}
+	}
+
+	async calculateBurnedAmount() {
+		try {
+			const burnedAmount: any = await prisma.transactions.aggregate({
+				_sum: {
+					burnedFee: true,
+				},
+			});
+
+			console.log(burnedAmount, 'burnedAmountValue');
+			if (burnedAmount) {
+				return (
+					Number(burnedAmount?._sum.burnedFee) +
+					Number(STATIC_BURNED_AMOUNT)
+				);
+			}
+			return Number(STATIC_BURNED_AMOUNT);
+		} catch (error) {
+			console.log(error, 'error in calculateBurnedAmount');
+			return false;
 		}
 	}
 }

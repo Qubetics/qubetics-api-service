@@ -74,6 +74,8 @@ model Transactions {
   token           String            @default("0")
   input           String?            @default("") 
   createdAt       DateTime          @default(now())
+  burnedFee       Float            @default(0)
+
   ContractLogs    ContractLogs[]
   internalTransactions InternalTransaction[]
 

@@ -78,9 +78,14 @@ class ExplorerController implements Controller {
 				this.getCirculationSupply,
 			)
 			.get(
-				'/minted-supply',
+				'/total-supply',
 				// getGraphHistoryValidation,
 				this.getTotalSupply,
+			)
+			.get(
+				'/burned-amount',
+				// getGraphHistoryValidation,
+				this.burnedAmount,
 			);
 	}
 
@@ -331,6 +336,15 @@ class ExplorerController implements Controller {
 
 	private getTotalSupply = async (request: Request, response: Response) => {
 		const getCirculationSupply = await ExplorerService.getTotalSupply();
+
+		if (getCirculationSupply.error) {
+			return setResponse.error(response, getCirculationSupply);
+		}
+		return setResponse.success(response, getCirculationSupply);
+	};
+
+	private burnedAmount = async (request: Request, response: Response) => {
+		const getCirculationSupply = await ExplorerService.getBurnedAmount();
 
 		if (getCirculationSupply.error) {
 			return setResponse.error(response, getCirculationSupply);

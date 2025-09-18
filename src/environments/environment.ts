@@ -109,8 +109,7 @@ class Environment implements IEnvironment {
 		this.interval = Number(process.env.INTERVAL) || 90;
 		this.rpcServers = <string>process.env.RPC_SERVERS;
 		this.stateSyncUrl = <string>process.env.STATE_SYNC_URL;
-		this.initialSupply =
-			Number(process.env.INITIAL_SUPPLY) || 1366266047.86;
+		this.initialSupply = Number(process.env.INITIAL_SUPPLY) || 1361867964;
 	}
 
 	/**
