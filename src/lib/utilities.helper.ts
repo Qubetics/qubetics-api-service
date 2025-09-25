@@ -1,8 +1,8 @@
 import axios, { AxiosResponse, Method } from 'axios';
 import { CONST_NAME, TRANSACTION_TYPE } from '../constant/response';
 import { CoinMarketData } from '../interfaces/index';
-import logger from './logger';
 import redisHelper from '../service/redis.helper';
+import logger from './logger';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;

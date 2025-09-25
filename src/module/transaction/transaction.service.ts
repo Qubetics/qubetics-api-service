@@ -47,7 +47,8 @@ class TransactionService {
 				createdAt: true,
 			},
 			orderBy: {
-				id: 'asc',
+				// id: 'asc',
+				timestamp: 'asc',
 			},
 			where: isFirstPage ? {} : { id: { gt: page } },
 			take: limit,
@@ -100,7 +101,8 @@ class TransactionService {
 				createdAt: true,
 			},
 			orderBy: {
-				id: 'desc',
+				// id: 'desc',
+				timestamp: 'desc',
 			},
 			where: isFirstPage ? {} : { id: { lt: page } },
 			take: limit,
