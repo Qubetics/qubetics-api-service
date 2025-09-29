@@ -1,4 +1,4 @@
-name: '[dev] Deploy Qubetics api'
+name: '[dev] Deploy Qubetics api' (not in use)
 
 on: 
   push:
