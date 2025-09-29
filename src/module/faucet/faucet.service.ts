@@ -60,6 +60,7 @@ class FaucetService {
 					environment.publicKey,
 				);
 
+				console.log('faucetAccountBalance:::', faucetAccountBalance);
 				faucetBalance =
 					Number(faucetAccountBalance.toString()) / Math.pow(10, 18);
 
@@ -71,11 +72,13 @@ class FaucetService {
 
 				if (Number(faucetBalance) <= Number(value))
 					throw new Error(RES_MSG.FAUCET_ACCOUNT_BALANCE_LOW);
+				console.log('value::::', value);
 
 				const nonce = await web3Helper.getTransactionCount(
 					environment.publicKey,
 					'pending',
 				);
+				console.log('nonce:::', nonce);
 
 				const rawTransaction = {
 					to: to,
@@ -93,6 +96,7 @@ class FaucetService {
 					// ),
 					nonce: Number(nonce.toString()),
 				};
+				console.log('rawTransaction:::', rawTransaction);
 
 				const signedTx = await Web3Helper.signTransaction(
 					rawTransaction,
