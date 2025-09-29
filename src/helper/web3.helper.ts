@@ -58,7 +58,7 @@ class Web3Helper {
 
 	async getBalance(publicKey: string) {
 		try {
-			console.log("this.web3.eth:::",this.web3.eth)
+			console.log('this.web3.eth:::', this.web3.eth);
 			return await this.web3.eth.getBalance(publicKey);
 		} catch (err) {
 			logger.error('error while getting balance : ', err);
