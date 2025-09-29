@@ -3,7 +3,7 @@ name: '[dev] Deploy Qubetics api'
 on: 
   push:
     branches: 
-      - master
+      - stable-master-v2
 
 jobs:
   dev_deploy_Qubetics_api:
