@@ -10,7 +10,7 @@ jobs:
     uses: ./.github/workflows/qubetics-api.yaml
     with:
       SWR_ORGANIZATION: testnet-qubetics
-      ARGOCD_BRANCH: testnet_v2
+      ARGOCD_BRANCH: testnt_v2
       HUAWEI_REGION: 'ap-southeast-3'
       ARGOCD_REPOSITORY: Qubetics/argocd-qubetics
       DEPLOYMENT_PATH: Evm-backend/qubetics-api-deployment.yaml
