@@ -3,7 +3,7 @@ name: '[testnet] Deploy testnet qubetics api'
 on: 
   push:
     branches: 
-      - stable-master-v2
+      - stable-master-v
 
 jobs:
   deploy_testnet_qubetics_api_service:
