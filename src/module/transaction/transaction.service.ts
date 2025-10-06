@@ -728,35 +728,35 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			   LEFT JOIN "DecodedLogs" ON "Transactions"."txhash" = "DecodedLogs"."txHash"
 			   WHERE "Transactions"."txhash" = ${txHash};`;
 
-			const [internalTxns, internalTxnCount] = await prisma.$transaction([
-				prisma.internalTransaction.findMany({
-					take: CONST_NAME.TEN,
-					orderBy: {
-						timestamp: 'desc',
-					},
-					where: {
-						txnHash: txHash,
-					},
-				}),
-				prisma.internalTransaction.count({
-					where: {
-						txnHash: txHash,
-					},
-				}),
-			]);
+			// const [internalTxns, internalTxnCount] = await prisma.$transaction([
+			// 	prisma.internalTransaction.findMany({
+			// 		take: CONST_NAME.TEN,
+			// 		orderBy: {
+			// 			timestamp: 'desc',
+			// 		},
+			// 		where: {
+			// 			txnHash: txHash,
+			// 		},
+			// 	}),
+			// 	prisma.internalTransaction.count({
+			// 		where: {
+			// 			txnHash: txHash,
+			// 		},
+			// 	}),
+			// ]);
 
 			console.log('transactionDataInDB', transactionDataInDB);
 			transactionData = serializeBigInt(transactionDataInDB[0]);
 
-			if (
-				transactionDataInDB.length > 0 &&
-				transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER
-			) {
-				RabbitMqService.inQueueData(
-					QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
-					JSON.stringify(Number(transactionData?.blocknumber)),
-				);
-			}
+			// if (
+			// 	transactionDataInDB.length > 0 &&
+			// 	transactionData.type === TRANSFER_TYPE.CONTRACT_TRANSFER
+			// ) {
+			// 	RabbitMqService.inQueueData(
+			// 		QUEUE_NAME.CATCH_MISSING_INTERNAL_TRXNS,
+			// 		JSON.stringify(Number(transactionData?.blocknumber)),
+			// 	);
+			// }
 
 			if (transactionDataInDB.length < 1) {
 				console.log('Not in DB');
@@ -840,8 +840,8 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 				data: {
 					transaction: mergedTransaction,
 					contractLogs: contractLogs,
-					internalTxnCount: internalTxnCount ?? 0,
-					internalTxns: convertBigIntToNumber(internalTxns) ?? [],
+					// internalTxnCount: internalTxnCount ?? 0,
+					// internalTxns: convertBigIntToNumber(internalTxns) ?? [],
 				},
 			};
 		} catch (err) {
