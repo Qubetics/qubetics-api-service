@@ -13,7 +13,7 @@ export const fundTransferValidation = (
 			.trim()
 			.messages({
 				'string.pattern.base':
-					'to address must start with 0x and be 42 characters long',
+					'Address must start with 0x and be 42 characters long',
 				'string.base': 'to address must be a string',
 				'any.required': 'to address is required',
 				'string.empty': 'to address cannot be empty',
