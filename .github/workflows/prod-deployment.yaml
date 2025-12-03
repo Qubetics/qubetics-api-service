@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  deploy_testnet_qubetics_api_service:
+  deploy_qubetics_api_service:
     uses: ./.github/workflows/qubetics-api.yaml
     with:
       SWR_ORGANIZATION: prod-qubetics
@@ -15,8 +15,8 @@ jobs:
       ARGOCD_REPOSITORY: Qubetics/argocd-qubetics
       DEPLOYMENT_PATH: Evm-backend/api-deployment.yaml
       HUAWEI_IMAGE: prod-qubetics-evm-backend
-      DOCKER_USERNAME: ap-southeast-1@BQG9INQF0BKVHSNQOLJG
+      DOCKER_USERNAME: ap-southeast-1@HPUAJWWFSLCMD312AZSR
       ENV: ${{ vars.PROD_QUBETICS_API_ENV }}
     secrets:
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      GIT_SSH_KEY: ${{ secrets.ARGOCD_SSH_KEY }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD_NEW }}
+      GIT_SSH_KEY: ${{ secrets.ARGOCD_SSH_KEY_NEW }}
