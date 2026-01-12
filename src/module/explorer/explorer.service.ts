@@ -22,7 +22,7 @@ import {
 	IPeerData,
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
-import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
+import { formatDate, exp, formatDateForYear, calculateCirculatingSupply } from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
@@ -776,10 +776,13 @@ class ExplorerService {
 			// 		: data?.circulationSupply;
 
 			let circulationSupply = await RedisService.getString(
-				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
+				REDIS_KEY.CIRCULATING_SUPPLY,
 			);
+			console.log("Supply from Redis", circulationSupply)
 			if (!circulationSupply) {
-				circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+				circulationSupply = await calculateCirculatingSupply();
+							console.log("Supply from Calculaton", circulationSupply)
+
 			}
 
 			let burnedAmount = await RedisService.getString(
@@ -1325,10 +1328,10 @@ class ExplorerService {
 	async getCirculationSupply(): Promise<IESResponse> {
 		try {
 			let circulationSupply = await RedisService.getString(
-				REDIS_KEY.CIRCULATING_SUPPLY_FIGURE,
+				REDIS_KEY.CIRCULATING_SUPPLY,
 			);
 			if (!circulationSupply) {
-				circulationSupply = CURRENT_DEFAULT_CIRCULATING_SUPPLY;
+				circulationSupply = await calculateCirculatingSupply();
 			}
 
 			return {
@@ -1362,6 +1365,10 @@ class ExplorerService {
 			const { initialSupply } = environment;
 
 			const totalSupply = initialSupply - burnedAmount;
+			await redisHelper.setString(
+				REDIS_KEY.TOTAL_SUPPLY,
+				totalSupply,
+			);
 
 			return {
 				error: false,

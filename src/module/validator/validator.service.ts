@@ -39,10 +39,10 @@ class ValidatorService {
 							},
 						}),
 					]);
+				console.log(validators, validatorCount, activeValidatorCount);
 
 				if (!validators?.length)
 					throw new Error(RES_MSG.VALIDATOR_NOT_FOUND);
-
 				await redisHelper.setStringWithExpiry(
 					redis_key,
 					{
