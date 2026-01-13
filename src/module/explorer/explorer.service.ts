@@ -785,9 +785,14 @@ class ExplorerService {
 			);
 			console.log('Supply from Redis', circulationSupply);
 			if (!circulationSupply) {
-				const fetchCirculationSupply:any = await this.getCirculationSupply();
-				console.log('Supply from Calculaton', fetchCirculationSupply.data);
-				circulationSupply = fetchCirculationSupply.data.circulationSupply
+				const fetchCirculationSupply: any =
+					await this.getCirculationSupply();
+				console.log(
+					'Supply from Calculaton',
+					fetchCirculationSupply.data,
+				);
+				circulationSupply =
+					fetchCirculationSupply.data.circulationSupply;
 			}
 
 			let burnedAmount = await RedisService.getString(
@@ -1332,19 +1337,25 @@ class ExplorerService {
 
 	async getCirculationSupply(): Promise<IESResponse> {
 		try {
-
-			
 			let circulationSupply = await RedisService.getString(
 				REDIS_KEY.CIRCULATING_SUPPLY,
 			);
 			if (!circulationSupply) {
 				const circulationSupplyUrl = environment.nativeAPIUrl;
-										const result = await axios.get(circulationSupplyUrl + '/explorer/circulation-supply');
-			
-			
-					console.log(result.data.data.circulationSupply, "CRCLFRMNATIVE");
-					circulationSupply = result?.data?.data?.circulationSupply;
-				await RedisService.setStringWithExpiry(REDIS_KEY.CIRCULATING_SUPPLY, circulationSupply, 600)	
+				const result = await axios.get(
+					circulationSupplyUrl + '/explorer/circulation-supply',
+				);
+
+				console.log(
+					result.data.data.circulationSupply,
+					'CRCLFRMNATIVE',
+				);
+				circulationSupply = result?.data?.data?.circulationSupply;
+				await RedisService.setStringWithExpiry(
+					REDIS_KEY.CIRCULATING_SUPPLY,
+					circulationSupply,
+					600,
+				);
 			}
 
 			return {
