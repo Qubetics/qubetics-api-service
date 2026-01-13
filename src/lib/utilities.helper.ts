@@ -1,9 +1,14 @@
 import axios, { AxiosResponse, Method } from 'axios';
-import { CONST_NAME, REDIS_KEY, STATIC_BURNED_AMOUNT, TRANSACTION_TYPE } from '../constant/response';
+import {
+	CONST_NAME,
+	REDIS_KEY,
+	STATIC_BURNED_AMOUNT,
+	TRANSACTION_TYPE,
+} from '../constant/response';
 import { CoinMarketData } from '../interfaces/index';
 import redisHelper from '../service/redis.helper';
-import logger from './logger';
 import prisma from './db';
+import logger from './logger';
 
 export function isEven(n: number) {
 	const res = n % 2 === 0;
@@ -499,21 +504,22 @@ export const noExponent = function (num: number | string) {
 export async function calculateCirculatingSupply() {
 	try {
 		const apiUrl = `${environment.evmHost}/${environment.projectName}`;
-	//locked amount
+		// locked amount
 		const lockedSupply: any = await axios.get(
 			`${apiUrl}/validatorpool/locked_supply`,
 		);
 
-		//total supply
+		// total supply
 
-		const totalSupply :any = await getTotalSupply();
+		const totalSupply: any = await getTotalSupply();
 		const locked_supply: number =
 			Number(lockedSupply.data.locked_supply) / CONST_NAME.ETH_EXP;
 
 		const returnValue = totalSupply - locked_supply;
 		await redisHelper.setStringWithExpiry(
 			REDIS_KEY.CIRCULATING_SUPPLY,
-			returnValue, 600
+			returnValue,
+			600,
 		);
 		return returnValue;
 	} catch (error) {
@@ -522,48 +528,49 @@ export async function calculateCirculatingSupply() {
 	}
 }
 
-  export async function getTotalSupply() {
-    try {
-      let burnedAmount:number = await redisHelper.getString(
-        REDIS_KEY.TOTAL_BURNED_AMOUNT,
-      );
+export async function getTotalSupply() {
+	try {
+		let burnedAmount: number = await redisHelper.getString(
+			REDIS_KEY.TOTAL_BURNED_AMOUNT,
+		);
 
-      if (!burnedAmount) {
-        /** save burned fees */
-        burnedAmount = await getBurnedAmount()
-        await redisHelper.setString(
-          REDIS_KEY.TOTAL_BURNED_AMOUNT,
-          burnedAmount,
-        );
-      }
+		if (!burnedAmount) {
+			/** save burned fees */
+			burnedAmount = await getBurnedAmount();
+			await redisHelper.setString(
+				REDIS_KEY.TOTAL_BURNED_AMOUNT,
+				burnedAmount,
+			);
+		}
 
-      const { initialSupply } = environment;
+		const { initialSupply } = environment;
 
-      const totalSupply = initialSupply - burnedAmount;
+		const totalSupply = initialSupply - burnedAmount;
 
-      return totalSupply;
-    } catch (err) {
-      logger.error("dashboard-Error", err);
-      return false;
-    }
-  }
+		return totalSupply;
+	} catch (err) {
+		logger.error('dashboard-Error', err);
+		return false;
+	}
+}
 
-    export async function getBurnedAmount() {
-    try {
-      const burnedAmount: any = await prisma.transactions.aggregate({
-        _sum: {
-          burnedFee: true,
-        },
-      });
+export async function getBurnedAmount() {
+	try {
+		const burnedAmount: any = await prisma.transactions.aggregate({
+			_sum: {
+				burnedFee: true,
+			},
+		});
 
-      if (burnedAmount) {
-        return (
-          Number(burnedAmount?._sum.burnedFee) + Number(STATIC_BURNED_AMOUNT)
-        );
-      }
-      return Number(STATIC_BURNED_AMOUNT);
-    } catch (error) {
-      console.log(error, "error in getBurnedAmount");
-      return STATIC_BURNED_AMOUNT;
-    }
-  }
+		if (burnedAmount) {
+			return (
+				Number(burnedAmount?._sum.burnedFee) +
+				Number(STATIC_BURNED_AMOUNT)
+			);
+		}
+		return Number(STATIC_BURNED_AMOUNT);
+	} catch (error) {
+		console.log(error, 'error in getBurnedAmount');
+		return STATIC_BURNED_AMOUNT;
+	}
+}

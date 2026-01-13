@@ -22,7 +22,12 @@ import {
 	IPeerData,
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
-import { formatDate, exp, formatDateForYear, calculateCirculatingSupply } from '../../lib/utilities.helper';
+import {
+	formatDate,
+	exp,
+	formatDateForYear,
+	calculateCirculatingSupply,
+} from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
@@ -778,11 +783,11 @@ class ExplorerService {
 			let circulationSupply = await RedisService.getString(
 				REDIS_KEY.CIRCULATING_SUPPLY,
 			);
-			console.log("Supply from Redis", circulationSupply)
+			console.log('Supply from Redis', circulationSupply);
 			if (!circulationSupply) {
-				circulationSupply = await calculateCirculatingSupply();
-							console.log("Supply from Calculaton", circulationSupply)
-
+				const fetchCirculationSupply:any = await this.getCirculationSupply();
+				console.log('Supply from Calculaton', fetchCirculationSupply.data);
+				circulationSupply = fetchCirculationSupply.data.circulationSupply
 			}
 
 			let burnedAmount = await RedisService.getString(
@@ -1327,11 +1332,19 @@ class ExplorerService {
 
 	async getCirculationSupply(): Promise<IESResponse> {
 		try {
+
+			
 			let circulationSupply = await RedisService.getString(
 				REDIS_KEY.CIRCULATING_SUPPLY,
 			);
 			if (!circulationSupply) {
-				circulationSupply = await calculateCirculatingSupply();
+				const circulationSupplyUrl = environment.nativeAPIUrl;
+										const result = await axios.get(circulationSupplyUrl + '/explorer/circulation-supply');
+			
+			
+					console.log(result.data.data.circulationSupply, "CRCLFRMNATIVE");
+					circulationSupply = result?.data?.data?.circulationSupply;
+				await RedisService.setStringWithExpiry(REDIS_KEY.CIRCULATING_SUPPLY, circulationSupply, 600)	
 			}
 
 			return {
@@ -1365,10 +1378,7 @@ class ExplorerService {
 			const { initialSupply } = environment;
 
 			const totalSupply = initialSupply - burnedAmount;
-			await redisHelper.setString(
-				REDIS_KEY.TOTAL_SUPPLY,
-				totalSupply,
-			);
+			await redisHelper.setString(REDIS_KEY.TOTAL_SUPPLY, totalSupply);
 
 			return {
 				error: false,

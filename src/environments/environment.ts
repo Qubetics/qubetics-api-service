@@ -71,6 +71,7 @@ class Environment implements IEnvironment {
 	public stateSyncUrl: string;
 
 	public initialSupply: number;
+	public nativeAPIUrl:string;
 
 	/**
 	 *
@@ -110,6 +111,7 @@ class Environment implements IEnvironment {
 		this.rpcServers = <string>process.env.RPC_SERVERS;
 		this.stateSyncUrl = <string>process.env.STATE_SYNC_URL;
 		this.initialSupply = Number(process.env.INITIAL_SUPPLY) || 1361867964;
+		this.nativeAPIUrl= <string>process.env.NATIVE_API_BASE_URL;
 	}
 
 	/**
