@@ -335,21 +335,21 @@ class ExplorerController implements Controller {
 	};
 
 	private getTotalSupply = async (request: Request, response: Response) => {
-		const getCirculationSupply = await ExplorerService.getTotalSupply();
+		const getTotalSupply = await ExplorerService.getTotalSupply();
 
-		if (getCirculationSupply.error) {
-			return setResponse.error(response, getCirculationSupply);
+		if (getTotalSupply.error) {
+			return setResponse.error(response, getTotalSupply);
 		}
-		return setResponse.success(response, getCirculationSupply);
+		return setResponse.success(response, getTotalSupply);
 	};
 
 	private burnedAmount = async (request: Request, response: Response) => {
-		const getCirculationSupply = await ExplorerService.getBurnedAmount();
+		const getBurnedAmount = await ExplorerService.getBurnedAmount();
 
-		if (getCirculationSupply.error) {
-			return setResponse.error(response, getCirculationSupply);
+		if (getBurnedAmount.error) {
+			return setResponse.error(response, getBurnedAmount);
 		}
-		return setResponse.success(response, getCirculationSupply);
+		return setResponse.success(response, getBurnedAmount);
 	};
 }
 

@@ -2,8 +2,12 @@
 
 import axios, { Method } from 'axios';
 import logger from '../lib/logger';
+import type { SupplyResult, Breakdown } from '../interfaces/index';
+import { ALLOCATIONS, TOTAL_SUPPLY } from '../constant/response';
+import { getCurrentDateTime, roundToDecimals } from '../lib/utilities.helper';
+import { getUnlocked } from './calculateAPR.helper';
 
-const fetchRequest = async (
+export const fetchRequest = async (
 	url: string,
 	data: object,
 	method: Method,
@@ -116,94 +120,91 @@ export function serializeBigInt(dataVal: any): any {
 	return dataVal;
 }
 
-
 /**
  * TICS Circulating Supply Calculator
  * ===================================
- * 
+ *
  * Main entry point for calculating TICS token circulating supply.
- * 
+ *
  * Usage:
  * ```typescript
  * import { getCirculatingSupply, getCirculatingSupplyDetails } from './supply-calculator';
- * 
+ *
  * // Get just the circulating supply number
  * const supply = getCirculatingSupply();
  * console.log(supply); // e.g., 1234567.89
- * 
+ *
  * // Get full details with breakdown
  * const details = getCirculatingSupplyDetails();
  * console.log(details.circulating_supply); // e.g., 1234567.89
  * console.log(details.breakdown); // Full allocation breakdown
  * ```
- * 
+ *
  */
 
-import type { SupplyResult, Breakdown } from '../interfaces/index';
-import { ALLOCATIONS, TOTAL_SUPPLY } from '../constant/response';
-import { getCurrentDateTime, roundToDecimals } from '../lib/utilities.helper';
-import { getUnlocked } from './calculateAPR.helper';
+
 
 /**
  * Calculate circulating supply with full breakdown.
- * 
+ *
  * This is the internal calculation function that computes:
  * - Circulating supply (total unlocked tokens)
  * - Locked supply (total - circulating)
  * - Percentage of total supply in circulation
  * - Breakdown by allocation (8 categories)
- * 
+ *
  * @returns Complete supply details object
  */
 export function calculateSupplyDetails(): SupplyResult {
-  const currentDate = getCurrentDateTime();
-  
-  const breakdown: Breakdown = {};
-  let totalUnlocked = 0;
-  
-  // Calculate unlocked amount for each allocation
-  for (const [name, alloc] of Object.entries(ALLOCATIONS)) {
-    const unlocked = getUnlocked(name, alloc, currentDate);
-    
-    breakdown[name] = {
-      unlocked: roundToDecimals(unlocked, 2),
-      total: alloc.total,
-      percentage: alloc.total > 0 
-        ? roundToDecimals((unlocked / alloc.total) * 100, 4) 
-        : 0
-    };
-    
-    totalUnlocked += unlocked;
-  }
-  
-  return {
-    timestamp: currentDate.toISOString(),
-    circulating_supply: roundToDecimals(totalUnlocked, 2),
-    total_supply: TOTAL_SUPPLY,
-    max_supply: TOTAL_SUPPLY,
-    circulating_percentage: roundToDecimals((totalUnlocked / TOTAL_SUPPLY) * 100, 4),
-    locked_supply: roundToDecimals(TOTAL_SUPPLY - totalUnlocked, 2),
-    breakdown
-  };
+	const currentDate = getCurrentDateTime();
+
+	const breakdown: Breakdown = {};
+	let totalUnlocked = 0;
+
+	// Calculate unlocked amount for each allocation
+	for (const [name, alloc] of Object.entries(ALLOCATIONS)) {
+		const unlocked = getUnlocked(name, alloc, currentDate);
+
+		breakdown[name] = {
+			unlocked: roundToDecimals(unlocked, 2),
+			total: alloc.total,
+			percentage:
+				alloc.total > 0
+					? roundToDecimals((unlocked / alloc.total) * 100, 4)
+					: 0,
+		};
+
+		totalUnlocked += unlocked;
+	}
+
+	return {
+		timestamp: currentDate.toISOString(),
+		circulating_supply: roundToDecimals(totalUnlocked, 2),
+		total_supply: TOTAL_SUPPLY,
+		max_supply: TOTAL_SUPPLY,
+		circulating_percentage: roundToDecimals(
+			(totalUnlocked / TOTAL_SUPPLY) * 100,
+			4,
+		),
+		locked_supply: roundToDecimals(TOTAL_SUPPLY - totalUnlocked, 2),
+		breakdown,
+	};
 }
 
 /**
  * Get the current circulating supply as a number.
- * 
+ *
  * Returns only the circulating supply value (unlocked tokens).
  * This is the simplest function when you only need the current supply number.
- * 
+ *
  * @returns Circulating supply in TICS tokens (rounded to 2 decimal places)
- * 
+ *
  * @example
  * const supply = getCirculatingSupply();
  * console.log(`Current supply: ${supply.toLocaleString()} TICS`);
  * // Output: Current supply: 1,234,567.89 TICS
  */
 export function getCirculatingSupply(): number {
-  const result = calculateSupplyDetails();
-  return result.circulating_supply;
+	const result = calculateSupplyDetails();
+	return result.circulating_supply;
 }
-
-
-export { fetchRequest };

@@ -575,61 +575,65 @@ export async function getBurnedAmount() {
 	}
 }
 
-
 /**
  * Utility Helper Functions
  */
 
 /**
  * Add calendar months to a date, handling month-end edge cases.
- * 
+ *
  * @param date - The starting date
  * @param months - Number of months to add
  * @returns New date with months added
- * 
+ *
  * @example
  * addMonths(new Date('2025-01-31'), 1) // Returns 2025-02-28
  * addMonths(new Date('2025-01-15'), 3) // Returns 2025-04-15
  */
 export function addMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  const currentMonth = result.getMonth();
-  const currentDay = result.getDate();
-  
-  result.setMonth(currentMonth + months);
-  
-  // Handle edge case where day doesn't exist in target month (e.g., Jan 31 + 1 month)
-  if (result.getDate() !== currentDay) {
-    result.setDate(0); // Set to last day of previous month
-  }
-  
-  return result;
+	const result = new Date(date);
+	const currentMonth = result.getMonth();
+	const currentDay = result.getDate();
+
+	result.setMonth(currentMonth + months);
+
+	// Handle edge case where day doesn't exist in target month (e.g., Jan 31 + 1 month)
+	if (result.getDate() !== currentDay) {
+		result.setDate(0); // Set to last day of previous month
+	}
+
+	return result;
 }
 
 /**
  * Get current date normalized to 13:00 UTC.
  * All token unlocks happen at 13:00 UTC daily.
- * 
+ *
  * @returns Current date at 13:00:00.000 UTC
  */
 export function getCurrentDateTime(): Date {
-  const now = new Date();
-  return new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    13, 0, 0, 0
-  ));
+	const now = new Date();
+	return new Date(
+		Date.UTC(
+			now.getUTCFullYear(),
+			now.getUTCMonth(),
+			now.getUTCDate(),
+			13,
+			0,
+			0,
+			0,
+		),
+	);
 }
 
 /**
  * Round a number to specified decimal places.
- * 
+ *
  * @param value - Number to round
  * @param decimals - Number of decimal places (default: 2)
  * @returns Rounded number
  */
 export function roundToDecimals(value: number, decimals: number = 2): number {
-  const multiplier = 10**decimals;
-  return Math.round(value * multiplier) / multiplier;
+	const multiplier = 10 ** decimals;
+	return Math.round(value * multiplier) / multiplier;
 }
