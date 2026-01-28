@@ -1,3 +1,9 @@
+/**
+ * Constants and Configuration for TICS Token
+ */
+
+import type { Allocations } from '../interfaces/index';
+
 export const RESPONSES = {
 	SUCCESS: 200,
 	CREATED: 201,
@@ -301,3 +307,68 @@ export const CURRENT_DEFAULT_APR = 30;
 export const CURRENT_DEFAULT_COIN_PRICE = 0.337097;
 export const CURRENT_DEFAULT_CIRCULATING_SUPPLY = 340829898;
 export const STATIC_BURNED_AMOUNT = 52611;
+
+export const TOTAL_SUPPLY = 1_361_867_964;
+
+// Network launch date: June 30, 2025, 13:00 UTC
+// Note: JavaScript months are 0-indexed (0 = January, 5 = June)
+export const NETWORK_LAUNCH = new Date(Date.UTC(2025, 5, 30, 13, 0, 0));
+
+export const ALLOCATIONS: Allocations = {
+  public_sale: {
+    total: 517_146_186.0,
+    tge: 0,
+    cliff: 1,
+    vest: 3,
+    delay: null
+  },
+  ecosystem: {
+    total: 305_421_864.1,
+    tge: 10,
+    cliff: 5,
+    vest: 6,
+    delay: null
+  },
+  network_operation: {
+    total: 187_665_305.4,
+    tge: 0,
+    cliff: 4,
+    vest: 9,
+    delay: null
+  },
+  reserve: {
+    total: 116_167_237.3,
+    tge: 0,
+    cliff: 4,
+    vest: 6,
+    delay: null
+  },
+  foundation: {
+    total: 95_330_657.48,
+    tge: 0,
+    cliff: 4,
+    vest: 6,
+    delay: null
+  },
+  community_incentives: {
+    total: 44_805_356.02,
+    tge: 0,
+    cliff: 4,
+    vest: 6,
+    delay: null
+  },
+  team: {
+    total: 68_093_298.2,
+    tge: 0,
+    cliff: null,
+    vest: 6,
+    delay: new Date(Date.UTC(2027, 11, 31, 13, 0, 0)) // December 31, 2027
+  },
+  advisors: {
+    total: 27_237_259.28,
+    tge: 0,
+    cliff: null,
+    vest: 6,
+    delay: new Date(Date.UTC(2027, 11, 31, 13, 0, 0)) // December 31, 2027
+  }
+};

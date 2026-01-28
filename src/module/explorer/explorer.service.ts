@@ -32,11 +32,14 @@ import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
 import {
+	calculateSupplyDetails,
 	convertBigIntToNumber,
+	getCirculatingSupply,
 	serializeBigInt,
 } from '../../helper/common.helper';
 import { ethers } from 'ethers';
 import redisHelper from '../../service/redis.helper';
+
 class ExplorerService {
 	async calculateAndUpdateFee(gasfee: string) {
 		try {
@@ -1335,7 +1338,7 @@ class ExplorerService {
 		}
 	}
 
-	async getCirculationSupply(): Promise<IESResponse> {
+	async getCirculationSupplyP(): Promise<IESResponse> {
 		try {
 			let circulationSupply = await RedisService.getString(
 				REDIS_KEY.CIRCULATING_SUPPLY,
@@ -1451,6 +1454,44 @@ class ExplorerService {
 		} catch (error) {
 			console.log(error, 'error in calculateBurnedAmount');
 			return false;
+		}
+	}
+
+		async getCirculationSupply(): Promise<IESResponse> {
+		try {
+			let circulatingSupply = await RedisService.getString(
+				REDIS_KEY.CIRCULATING_SUPPLY,
+			);
+			if (!circulatingSupply) {
+				const supplyDetails = await calculateSupplyDetails();
+				circulatingSupply = supplyDetails.circulating_supply;
+				// const circulationSupplyUrl = environment.nativeAPIUrl;
+				// const result = await axios.get(
+				// 	circulationSupplyUrl + '/explorer/circulation-supply',
+				// );
+
+				console.log(
+					circulatingSupply,supplyDetails,
+					'CRCLFRMNATIVE',
+				);
+				// circulationSupply = result?.data?.data?.circulationSupply;
+				await RedisService.setStringWithExpiry(
+					REDIS_KEY.CIRCULATING_SUPPLY,
+					circulatingSupply,
+					600,
+				);
+			}
+
+			return {
+				error: false,
+				message: RES_MSG.SUCCESS,
+				data: {
+					circulatingSupply,
+				},
+			};
+		} catch (err) {
+			logger.error('dashboard-Error', err);
+			return { error: true, message: RES_MSG.APR_VALUE_ERROR };
 		}
 	}
 }
