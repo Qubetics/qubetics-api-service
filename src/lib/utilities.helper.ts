@@ -501,33 +501,6 @@ export const noExponent = function (num: number | string) {
 	}
 };
 
-export async function calculateCirculatingSupply() {
-	try {
-		const apiUrl = `${environment.evmHost}/${environment.projectName}`;
-		// locked amount
-		const lockedSupply: any = await axios.get(
-			`${apiUrl}/validatorpool/locked_supply`,
-		);
-
-		// total supply
-
-		const totalSupply: any = await getTotalSupply();
-		const locked_supply: number =
-			Number(lockedSupply.data.locked_supply) / CONST_NAME.ETH_EXP;
-
-		const returnValue = totalSupply - locked_supply;
-		await redisHelper.setStringWithExpiry(
-			REDIS_KEY.CIRCULATING_SUPPLY,
-			returnValue,
-			600,
-		);
-		return returnValue;
-	} catch (error) {
-		console.log(error, 'error in calculateBurnedAmount');
-		return 0;
-	}
-}
-
 export async function getTotalSupply() {
 	try {
 		let burnedAmount: number = await redisHelper.getString(

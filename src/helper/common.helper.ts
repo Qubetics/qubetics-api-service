@@ -142,8 +142,6 @@ export function serializeBigInt(dataVal: any): any {
  *
  */
 
-
-
 /**
  * Calculate circulating supply with full breakdown.
  *

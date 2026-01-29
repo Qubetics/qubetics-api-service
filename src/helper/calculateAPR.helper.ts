@@ -5,7 +5,7 @@ import {
 	CURRENT_DEFAULT_APR,
 	NETWORK_LAUNCH,
 } from '../constant/response';
-import { Params, BlockHeader,Allocation } from '../interfaces/index';
+import { Params, BlockHeader, Allocation } from '../interfaces/index';
 import logger from '../lib/logger';
 import { getDigitsAfterE, addMonths } from '../lib/utilities.helper';
 
