@@ -22,11 +22,7 @@ import {
 	IPeerData,
 } from '../../interfaces/index';
 import prisma from '../../lib/db';
-import {
-	formatDate,
-	exp,
-	formatDateForYear,
-} from '../../lib/utilities.helper';
+import { formatDate, exp, formatDateForYear } from '../../lib/utilities.helper';
 import { calculateData } from '../../helper/calculateAPR.helper';
 import axios from 'axios';
 import Web3 from 'web3';
@@ -776,16 +772,12 @@ class ExplorerService {
 			const marketCap = await RedisService.getString(
 				REDIS_KEY.MARKET_CAP,
 			);
-			
-				const fetchCirculationSupply: any =
-					await this.getCirculationSupply();
-				console.log(
-					'Supply from Calculaton',
-					fetchCirculationSupply.data,
-				);
-				let circulationSupply =
-					fetchCirculationSupply.data.circulationSupply;
-			
+
+			const fetchCirculationSupply: any =
+				await this.getCirculationSupply();
+			console.log('Supply from Calculaton', fetchCirculationSupply.data);
+			let circulationSupply =
+				fetchCirculationSupply.data.circulationSupply;
 
 			let burnedAmount = await RedisService.getString(
 				REDIS_KEY.TOTAL_BURNED_AMOUNT,
@@ -1327,8 +1319,6 @@ class ExplorerService {
 		}
 	}
 
-
-
 	async getTotalSupply(): Promise<IESResponse> {
 		try {
 			let burnedAmount = await RedisService.getString(
@@ -1418,20 +1408,20 @@ class ExplorerService {
 			// 	REDIS_KEY.CIRCULATING_SUPPLY,
 			// );
 			// if (!circulatingSupply) {
-				const supplyDetails = await calculateSupplyDetails();
-				let circulatingSupply = supplyDetails.circulating_supply;
-				// const circulationSupplyUrl = environment.nativeAPIUrl;
-				// const result = await axios.get(
-				// 	circulationSupplyUrl + '/explorer/circulation-supply',
-				// );
+			const supplyDetails = await calculateSupplyDetails();
+			let circulatingSupply = supplyDetails.circulating_supply;
+			// const circulationSupplyUrl = environment.nativeAPIUrl;
+			// const result = await axios.get(
+			// 	circulationSupplyUrl + '/explorer/circulation-supply',
+			// );
 
-				console.log(circulatingSupply, supplyDetails, 'CRCLFRMNATIVE');
-				// circulationSupply = result?.data?.data?.circulationSupply;
-				// await RedisService.setStringWithExpiry(
-				// 	REDIS_KEY.CIRCULATING_SUPPLY,
-				// 	circulatingSupply,
-				// 	600,
-				// );
+			console.log(circulatingSupply, supplyDetails, 'CRCLFRMNATIVE');
+			// circulationSupply = result?.data?.data?.circulationSupply;
+			// await RedisService.setStringWithExpiry(
+			// 	REDIS_KEY.CIRCULATING_SUPPLY,
+			// 	circulatingSupply,
+			// 	600,
+			// );
 			// }
 
 			return {
