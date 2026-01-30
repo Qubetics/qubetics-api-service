@@ -777,7 +777,7 @@ class ExplorerService {
 				await this.getCirculationSupply();
 			console.log('Supply from Calculaton', fetchCirculationSupply.data);
 			let circulationSupply =
-				fetchCirculationSupply.data.circulationSupply;
+				fetchCirculationSupply.data.circulatingSupply;
 
 			let burnedAmount = await RedisService.getString(
 				REDIS_KEY.TOTAL_BURNED_AMOUNT,
