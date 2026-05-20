@@ -310,15 +310,21 @@ class BlockService {
 				);
 			}
 
-			const blockCountData = await prisma.blocks.aggregate({
-				// _count: { id: true },
-				_min: { blocknumber: true },
-				_max: { blocknumber: true },
-			});
+			const [minBlock, maxBlock] = await Promise.all([
+				prisma.blocks.findFirst({
+					orderBy: { blocknumber: 'asc' },
+					select: { blocknumber: true },
+				}),
+				prisma.blocks.findFirst({
+					orderBy: { blocknumber: 'desc' },
+					select: { blocknumber: true },
+				}),
+			]);
 
-			// blockCount = blockCountData?._count.id;
-			const minimumId: number = Number(blockCountData?._min.blocknumber);
-			const maximumId: number = Number(blockCountData?._max.blocknumber);
+			const minimumId: number = Number(minBlock?.blocknumber || 0);
+			const maximumId: number = Number(maxBlock?.blocknumber || 0);
+			
+			const blockCountData = { _min: { blocknumber: minimumId }, _max: { blocknumber: maximumId } };
 
 			console.log('------blockCountData---------', blockCountData);
 

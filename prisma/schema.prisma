@@ -81,6 +81,11 @@ model Transactions {
 
 
   @@index([type, txhash, contractAddress, fromAddress, toAddress])
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([contractAddress])
+  @@index([createdAt])
+  @@index([timestamp])
 }
 
 model CoinTransaferTx {
@@ -268,5 +273,8 @@ model InternalTransaction {
   @@map("internal_transaction")
   @@index([txnHash])
   @@index([blockNumber])
+  @@index([fromAddress])
+  @@index([toAddress])
    @@unique([txnHash, toAddress])
+  @@index([createdAt])
 }

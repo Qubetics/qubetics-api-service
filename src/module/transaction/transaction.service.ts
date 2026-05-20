@@ -57,7 +57,7 @@ class TransactionService {
 		const nextCursor =
 			transactions.length === limit
 				? convertBigIntToNumber(transactions)[transactions.length - 1]
-						.id
+					.id
 				: null;
 		const prevCursor = isFirstPage
 			? null
@@ -111,7 +111,7 @@ class TransactionService {
 		const nextCursor =
 			transactions.length === limit
 				? convertBigIntToNumber(transactions)[transactions.length - 1]
-						.id
+					.id
 				: null;
 		const prevCursor = isFirstPage
 			? null
@@ -367,7 +367,7 @@ class TransactionService {
 			throw new Error(RES_MSG.TOKEN_FETCH_ERROR);
 		}
 	}
-	async getTransactionByAddress(payloads: {
+	async getTransactionByAddress_old(payloads: {
 		page: number;
 		limit: number;
 		address: string;
@@ -946,6 +946,180 @@ AND "DecodedLogs"."input" != '' AND "Contracts"."contractType" = 'ERC-20'
 			} else {
 				return { error: true, message: RES_MSG.ERROR };
 			}
+		}
+	}
+
+	async getTransactionByAddress(payloads: {
+		page: number;
+		limit: number;
+		address: string;
+	}): Promise<IESResponse> {
+		try {
+			// 1️⃣ Normalize inputs and handle edge-case bounds
+			const page = Math.max(1, payloads.page);
+			const limit = Math.max(1, payloads.limit);
+			const offset = (page - 1) * limit;
+
+			// Ensure lowercase matching string
+			const lowerAddress = payloads.address.toLowerCase();
+			let checksumAddress = lowerAddress;
+			try {
+				checksumAddress = Web3.utils.toChecksumAddress(payloads.address);
+			} catch (e) { }
+
+			// 2️⃣ Optimized Raw SQL (No LOWER() on columns to utilize indexes)
+			const transactions: any[] = await prisma.$queryRaw`
+            SELECT
+                txhash,
+                MIN("fromAddress") AS "fromAddress",
+                MIN("toAddress") AS "toAddress",
+                MIN("contractAddress") AS "contractAddress",
+                MIN("blocknumber") AS "blocknumber",
+                MIN(value) AS value,
+                MIN(timestamp) AS timestamp,
+                MIN(type) AS type,
+                MIN(status) AS status
+            FROM (
+                SELECT
+                    t."txhash" AS txhash,
+                    t."fromAddress",
+                    t."toAddress",
+                    t."contractAddress",
+                    t."blocknumber" AS blocknumber,
+                    (t."value"::numeric)::TEXT AS value,
+                    t."timestamp",
+                    t.type,
+                    t.status
+                FROM "Transactions" t
+                WHERE t."fromAddress" IN (${lowerAddress}, ${checksumAddress})
+
+                UNION ALL
+
+                SELECT
+                    t."txhash" AS txhash,
+                    t."fromAddress",
+                    t."toAddress",
+                    t."contractAddress",
+                    t."blocknumber" AS blocknumber,
+                    (t."value"::numeric)::TEXT AS value,
+                    t."timestamp",
+                    t.type,
+                    t.status
+                FROM "Transactions" t
+                WHERE t."toAddress" IN (${lowerAddress}, ${checksumAddress})
+
+                UNION ALL
+
+                SELECT
+                    t."txhash" AS txhash,
+                    t."fromAddress",
+                    t."toAddress",
+                    t."contractAddress",
+                    t."blocknumber" AS blocknumber,
+                    (t."value"::numeric)::TEXT AS value,
+                    t."timestamp",
+                    t.type,
+                    t.status
+                FROM "Transactions" t
+                WHERE t."contractAddress" IN (${lowerAddress}, ${checksumAddress})
+
+                UNION ALL
+
+                SELECT
+                    i."txnHash" AS txhash,
+                    i."fromAddress",
+                    i."toAddress",
+                    i."contractAddress",
+                    i."blockNumber" AS blocknumber,
+                    (i."value"::numeric / 1e18)::TEXT AS value,
+                    i."timestamp",
+                    'CONTRACT_TRANSFER' AS type,
+                    'SUCCESS' AS status
+                FROM "internal_transaction" i
+                WHERE i."fromAddress" IN (${lowerAddress}, ${checksumAddress})
+
+                UNION ALL
+
+                SELECT
+                    i."txnHash" AS txhash,
+                    i."fromAddress",
+                    i."toAddress",
+                    i."contractAddress",
+                    i."blockNumber" AS blocknumber,
+                    (i."value"::numeric / 1e18)::TEXT AS value,
+                    i."timestamp",
+                    'CONTRACT_TRANSFER' AS type,
+                    'SUCCESS' AS status
+                FROM "internal_transaction" i
+                WHERE i."toAddress" IN (${lowerAddress}, ${checksumAddress})
+            ) AS combined
+            GROUP BY txhash
+            ORDER BY MIN(timestamp) DESC, txhash DESC
+            LIMIT ${limit} OFFSET ${offset};
+        `;
+
+			// 3️⃣ Concurrently fetch properties to avoid blocking sequences
+			const isContractAddressPromise = this.isContractAddress(lowerAddress);
+			const cacheKey = `total_tx_count_${lowerAddress}`;
+
+			let totalCount = 0;
+			const cachedCount = await RedisService.getString(cacheKey);
+
+			let countPromise;
+			if (cachedCount) {
+				totalCount = Number(cachedCount);
+			} else {
+				countPromise = prisma.$queryRaw`
+                SELECT COUNT(DISTINCT txhash) AS total_count 
+                FROM (
+                    SELECT "txhash" AS txhash FROM "Transactions" WHERE "fromAddress" IN (${lowerAddress}, ${checksumAddress})
+                    UNION ALL
+                    SELECT "txhash" AS txhash FROM "Transactions" WHERE "toAddress" IN (${lowerAddress}, ${checksumAddress})
+                    UNION ALL
+                    SELECT "txhash" AS txhash FROM "Transactions" WHERE "contractAddress" IN (${lowerAddress}, ${checksumAddress})
+                    UNION ALL
+                    SELECT "txnHash" AS txhash FROM "internal_transaction" WHERE "fromAddress" IN (${lowerAddress}, ${checksumAddress})
+                    UNION ALL
+                    SELECT "txnHash" AS txhash FROM "internal_transaction" WHERE "toAddress" IN (${lowerAddress}, ${checksumAddress})
+                ) AS combined;
+            `;
+			}
+
+			// Resolve promises concurrently
+			const results = await Promise.all([
+				countPromise ? countPromise : Promise.resolve(null),
+				isContractAddressPromise
+			]);
+
+			const countResult = results[0];
+			const isContractAddress = results[1];
+
+			if (countResult) {
+				totalCount = Number((countResult as any)[0]?.total_count || 0);
+				await RedisService.setStringWithExpiry(cacheKey, totalCount.toString(), 30); // 30 seconds expiry
+			}
+
+			const updatedTransactions = convertBigIntToNumber(transactions);
+
+			return {
+				error: false,
+				message: RES_MSG.TRANSACTION_FETCH_SUCCESS,
+				data: {
+					count: totalCount,
+					transactions: updatedTransactions,
+					isContractAddress,
+				},
+			};
+
+		} catch (err) {
+			console.error('Error fetching transactions by address:', err);
+			if (err instanceof Error) {
+				if (err.message.includes('prisma')) {
+					return { error: true, message: RES_MSG.SERVER_ERROR };
+				}
+				return { error: true, message: err.message };
+			}
+			return { error: true, message: RES_MSG.ERROR };
 		}
 	}
 }
