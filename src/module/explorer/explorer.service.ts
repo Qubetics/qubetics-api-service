@@ -1076,12 +1076,7 @@ class ExplorerService {
 		searchedWord: string;
 	}): Promise<any> {
 		try {
-			console.log(
-				'payload',
-				payload.page,
-				payload.limit,
-				payload.searchedWord.toString(),
-			);
+			
 			if (payload.page <= 1) {
 				payload.page = 1;
 			}
@@ -1118,111 +1113,157 @@ class ExplorerService {
 
 				return txData;
 			} else {
-				const searchedWord = payload.searchedWord?.toLowerCase();
-				const checkSumAddress = web3Helper.getCheckSumAddress(
-					payload.searchedWord,
-				);
-				tokens =
-					await prisma.$queryRaw` SELECT t."tokenName", t."tokenSymbol", t."contractAddress" AS "contractAddress", c."address" AS "contract_address",
-					(SELECT COUNT(*)::int FROM (
-						SELECT txhash FROM "Transactions" WHERE "toAddress" = c."address"
-						UNION ALL
-						SELECT txhash FROM "Transactions" WHERE "fromAddress" = c."address"
-						UNION ALL
-						SELECT txhash FROM "Transactions" WHERE "toAddress" = LOWER(c."address")
-						UNION ALL
-						SELECT txhash FROM "Transactions" WHERE "fromAddress" = LOWER(c."address")
-					) AS tr) AS "transactionCount"
-					FROM "Tokens" t JOIN "Contracts" c ON LOWER(t."contractAddress") = LOWER(c."address") WHERE t."type" = 'ERC-20' AND (LOWER(t."contractAddress") ILIKE ${
-						'%' + searchedWord + '%'
-					} OR t."tokenName" ILIKE ${
-						'%' + searchedWord + '%'
-					} OR t."tokenSymbol" ILIKE ${
-						'%' + searchedWord + '%'
-					}) ORDER BY "transactionCount" DESC LIMIT ${
-						payload.limit
-					} OFFSET ${offset}`;
+    const searchedWord = payload.searchedWord?.toLowerCase();
+    const checkSumAddress = web3Helper.getCheckSumAddress(payload.searchedWord);
 
-				contracts =
-					await prisma.$queryRaw` SELECT c."address" AS "address", cv."contractname" as contract_name, (cv."contractAddress") AS "contractAddress",
-					(SELECT COUNT(*)::int FROM (
-						SELECT txhash FROM "Transactions" WHERE "toAddress" = c."address"
-						UNION ALL
-						SELECT txhash FROM "Transactions" WHERE "fromAddress" = c."address"
-						UNION ALL
-						SELECT txhash FROM "Transactions" WHERE "toAddress" = LOWER(c."address")
-						UNION ALL
-						SELECT txhash FROM "Transactions" WHERE "fromAddress" = LOWER(c."address")
-					) AS tr) AS "transactionCount"
-					FROM "ContractVerification" cv RIGHT JOIN "Contracts" c ON LOWER(cv."contractAddress") = LOWER(c."address") WHERE LOWER(c."address") ILIKE ${
-						'%' + searchedWord + '%'
-					} OR cv."contractname" ILIKE ${
-						'%' + searchedWord + '%'
-					} ORDER BY "transactionCount" DESC LIMIT ${
-						payload.limit
-					} OFFSET ${offset}`;
+    // 1. Pehle check karein ki kya yeh search word ek valid ethereum address hai
+    const isExactAddress = payload.searchedWord?.startsWith('0x') && payload.searchedWord?.length === 42;
 
-				addresses =
-					await prisma.$queryRaw` SELECT (u."address") AS "address", (u."txn")::int AS "transactionCount" FROM "Users" u WHERE (u."address") ILIKE ${
-						'%' + checkSumAddress + '%'
-					} ORDER BY "transactionCount" DESC LIMIT ${
-						payload.limit
-					} OFFSET ${offset}`;
+    let isContract = false;
+    if (isExactAddress) {
+        // Check if this address exists in the Contracts table
+        const contractCheck = await prisma.contracts.findUnique({
+            where: { address: checkSumAddress },
+            select: { address: true }
+        });
+        if (contractCheck) {
+            isContract = true;
+        }
+    }
 
-				console.log('tokens', tokens);
-				console.log('contracts', contracts);
-				console.log('addresses', addresses);
+    // 2. TOKENS QUERY
+    // Agar exact address search hai aur woh contract nahi hai, toh token query khali rakhenge
+    if (isExactAddress && !isContract) {
+        tokens = [];
+    } else {
+        tokens = await prisma.$queryRaw`
+            SELECT t."tokenName", t."tokenSymbol", t."contractAddress" AS "contractAddress", c."address" AS "contract_address",
+            (SELECT COUNT(*)::int FROM (
+                SELECT txhash FROM "Transactions" WHERE "toAddress" = c."address"
+                UNION ALL
+                SELECT txhash FROM "Transactions" WHERE "fromAddress" = c."address"
+                UNION ALL
+                SELECT txhash FROM "Transactions" WHERE "toAddress" = LOWER(c."address")
+                UNION ALL
+                SELECT txhash FROM "Transactions" WHERE "fromAddress" = LOWER(c."address")
+            ) AS tr) AS "transactionCount"
+            FROM "Tokens" t 
+            JOIN "Contracts" c ON LOWER(t."contractAddress") = LOWER(c."address") 
+            WHERE t."type" = 'ERC-20' AND (
+                LOWER(t."contractAddress") ILIKE ${'%' + searchedWord + '%'} OR 
+                t."tokenName" ILIKE ${'%' + searchedWord + '%'} OR 
+                t."tokenSymbol" ILIKE ${'%' + searchedWord + '%'}
+            ) 
+            ORDER BY "transactionCount" DESC LIMIT ${payload.limit} OFFSET ${offset}
+        `;
+    }
 
-				const formattedTokens = tokens.map((token: any) => ({
-					...token,
-					contractAddress: web3Helper.getCheckSumAddress(
-						token.contractAddress,
-					), // your alias name in SELECT
-					contract_address: web3Helper.getCheckSumAddress(
-						token.contract_address,
-					), // your alias name in SELECT
-				}));
+    // 3. CONTRACTS QUERY
+    // Agar search word exact address hai aur woh contract nahi hai, toh faltu search ki zarurat nahi
+    if (isExactAddress && !isContract) {
+        contracts = [];
+    } else {
+        contracts = await prisma.$queryRaw`
+            SELECT c."address" AS "address", cv."contractname" as contract_name, (cv."contractAddress") AS "contractAddress",
+            (SELECT COUNT(*)::int FROM (
+                SELECT txhash FROM "Transactions" WHERE "toAddress" = c."address"
+                UNION ALL
+                SELECT txhash FROM "Transactions" WHERE "fromAddress" = c."address"
+                UNION ALL
+                SELECT txhash FROM "Transactions" WHERE "toAddress" = LOWER(c."address")
+                UNION ALL
+                SELECT txhash FROM "Transactions" WHERE "fromAddress" = LOWER(c."address")
+            ) AS tr) AS "transactionCount"
+            FROM "Contracts" c 
+            LEFT JOIN "ContractVerification" cv ON LOWER(cv."contractAddress") = LOWER(c."address") 
+            WHERE LOWER(c."address") ILIKE ${'%' + searchedWord + '%'} OR 
+                  cv."contractname" ILIKE ${'%' + searchedWord + '%'} 
+            ORDER BY "transactionCount" DESC LIMIT ${payload.limit} OFFSET ${offset}
+        `;
+    }
 
-				const formattedContracts = contracts.map((contract: any) => ({
-					...contract,
-					address: web3Helper.getCheckSumAddress(contract.address),
-					contract_address: web3Helper.getCheckSumAddress(
-						contract.address,
-					),
-				}));
+    // 4. ADDRESSES (WALLETS) QUERY
+    // Agar exact address contract hai, toh use hum Wallet/Address result mein nahi dikhayenge.
+    // Agar substring search (`ILIKE`) chal rahi hai, toh query mein filter laga denge ki 'Contracts' table mein address nahi hona chahiye.
+    // 4. ADDRESSES (WALLETS) QUERY
+    // LOWER() par GROUP BY lagaya hai taaki lowercase aur checksum wale duplicate entries merge ho jayein
+    if (isExactAddress && isContract) {
+        addresses = [];
+    } else {
+        const lowerSearchedWord = payload.searchedWord?.toLowerCase();
+        
+        const rawAddresses: any[] = await prisma.$queryRaw`
+            SELECT 
+                LOWER(u."address") AS "lowercase_address",
+                MAX(u."address") AS "display_address", -- Yeh original case (checksum ya lower) ko preserve karega
+                SUM((u."txn")::int)::int AS "transactionCount"
+            FROM "Users" u 
+            WHERE LOWER(u."address") ILIKE ${'%' + lowerSearchedWord + '%'}
+              AND NOT EXISTS (
+                  SELECT 1 FROM "Contracts" c WHERE LOWER(c."address") = LOWER(u."address")
+              )
+            GROUP BY LOWER(u."address")
+            ORDER BY "transactionCount" DESC 
+            LIMIT ${payload.limit} 
+            OFFSET ${offset}
+        `;
 
-				if (tokens && tokens.length) {
-					tabs.push('tokens');
-					results.push(tokens);
-				}
-				if (contracts && contracts.length) {
-					tabs.push('contracts');
-					results.push(contracts);
-				}
-				if (addresses && addresses.length) {
-					tabs.push('addresses');
-					results.push(addresses);
-				}
+        // Response ko formatted format mein map kar rahe hain jo aapko chahiye
+        addresses = rawAddresses.map((addr) => ({
+            address: web3Helper.getCheckSumAddress(addr.display_address), // Har haal mein ab checksum hi banega
+            transactionCount: addr.transactionCount
+        }));
+    }
 
-				if (tabs && tabs.length < 1) {
-					return {
-						error: true,
-						message: 'No results found',
-					};
-				}
-				return {
-					error: false,
-					message: 'Searched Results',
-					data: {
-						tabs: tabs,
-						results: serializeBigInt({
-							tokens: formattedTokens,
-							contracts: formattedContracts,
-							addresses: addresses,
-						}),
-					},
-				};
-			}
+    console.log('tokens', tokens);
+    console.log('contracts', contracts);
+    console.log('addresses', addresses);
+
+    const formattedTokens = tokens.map((token: any) => ({
+        ...token,
+        contractAddress: web3Helper.getCheckSumAddress(token.contractAddress),
+        contract_address: web3Helper.getCheckSumAddress(token.contract_address),
+    }));
+
+    const formattedContracts = contracts.map((contract: any) => ({
+        ...contract,
+        address: web3Helper.getCheckSumAddress(contract.address),
+        contract_address: web3Helper.getCheckSumAddress(contract.address),
+    }));
+
+    if (tokens && tokens.length) {
+        tabs.push('tokens');
+        results.push(formattedTokens); // Aapne yahan purana tokens array push kiya hua tha, formattedTokens hona chahiye
+    }
+    if (contracts && contracts.length) {
+        tabs.push('contracts');
+        results.push(formattedContracts); // Yahan bhi formattedContracts hona chahiye
+    }
+    if (addresses && addresses.length) {
+        tabs.push('addresses');
+        results.push(addresses);
+    }
+
+    if (tabs && tabs.length < 1) {
+        return {
+            error: true,
+            message: 'No results found',
+        };
+    }
+    
+    return {
+        error: false,
+        message: 'Searched Results',
+        data: {
+            tabs: tabs,
+            results: serializeBigInt({
+                tokens: formattedTokens,
+                contracts: formattedContracts,
+                addresses: addresses,
+            }),
+        },
+    };
+}
 		} catch (err) {
 			console.log('Catch Error', err);
 			if (err instanceof Error) {
