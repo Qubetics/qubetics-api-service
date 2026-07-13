@@ -65,6 +65,13 @@ export const getContractValidation = (
 			.valid('ERC-20', 'ERC-721', 'ERC-777', 'ERC-1155')
 			.optional()
 			.allow(null, ''),
+		filter: Joi.string()
+			.valid('chain-abstraction')
+			.optional()
+			.allow(null, '')
+			.messages({
+				'any.only': 'filter must be chain-abstraction',
+			}),
 	});
 
 	const { error, value } = schema.validate(req.query);
