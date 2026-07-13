@@ -5,7 +5,14 @@ import {
 	convertBigIntToNumber,
 	serializeBigInt,
 } from '../../helper/common.helper';
-import { CONTRACT, CONTRACTLOGS, RES_MSG } from '../../constant/response';
+import {
+	CHAIN_ABSTRACTION_CONTRACTS,
+	CHAIN_ABSTRACTION_FILTER,
+	CONTRACT,
+	CONTRACTLOGS,
+	RES_MSG,
+} from '../../constant/response';
+import { Prisma } from '@prisma/client';
 import logger from '../../lib/logger';
 import { RedisService } from '../../service';
 import {
@@ -1203,11 +1210,22 @@ class ContractService {
 		page: number;
 		limit: number;
 		order: any;
+		filter?: string;
 	}): Promise<IESResponse> {
 		try {
 			const isFirstPage = data.page === 1 && data.order !== 'asc';
 
 			console.log(isFirstPage ? 'firstpage' : 'working');
+
+			const addressScope: Prisma.ContractsWhereInput =
+				data.filter === CHAIN_ABSTRACTION_FILTER
+					? {
+							address: {
+								in: CHAIN_ABSTRACTION_CONTRACTS,
+								mode: 'insensitive',
+							},
+						}
+					: {};
 
 			let contracts = await prisma.contracts.findMany({
 				select: {
@@ -1235,8 +1253,9 @@ class ContractService {
 					id: data.order,
 				},
 				where: isFirstPage
-					? {}
+					? addressScope
 					: {
+							...addressScope,
 							id:
 								data.order === 'asc'
 									? { gt: data.page }
@@ -1249,6 +1268,7 @@ class ContractService {
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 
 			const contractCount = await prisma.contracts.aggregate({
+				where: addressScope,
 				_count: { id: true },
 				_min: { id: true },
 				_max: { id: true },
@@ -1266,6 +1286,7 @@ class ContractService {
 					id: 'asc',
 				},
 				where: {
+					...addressScope,
 					id: {
 						gt: minimumId,
 					},

@@ -61,6 +61,13 @@ export const getContractValidation = (
 			.messages({
 				'custom.order': 'Order must be dsec or asc.',
 			}),
+		filter: Joi.string()
+			.valid('chain-abstraction')
+			.optional()
+			.allow(null, '')
+			.messages({
+				'any.only': 'filter must be chain-abstraction',
+			}),
 	});
 
 	const { error, value } = schema.validate(req.query);
