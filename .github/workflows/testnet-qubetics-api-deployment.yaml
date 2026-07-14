@@ -15,7 +15,7 @@ jobs:
       ARGOCD_REPOSITORY: Qubetics/argocd-qubetics
       DEPLOYMENT_PATH: Evm-backend/qubetics-api-deployment.yaml
       HUAWEI_IMAGE: testnet-qubetics-api
-      DOCKER_USERNAME: ap-southeast-3@{{ vars.DOCKER_USERNAME_V2 }}
+      DOCKER_USERNAME: ap-southeast-3@${{ vars.DOCKER_USERNAME_V2 }}
       ENV: ${{ vars.TESTNET_V2_QUBETICS_API_ENV }}
     secrets:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD_V2 }}
