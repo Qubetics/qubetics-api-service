@@ -1265,7 +1265,6 @@ class ContractService {
 				take: data.limit,
 			});
 
-			console.log('contractsXXX', contracts);
 			if (!contracts?.length) throw new Error(RES_MSG.CONTRACT_NOT_FOUND);
 
 			const contractCount = await prisma.contracts.aggregate({

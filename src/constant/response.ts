@@ -161,12 +161,9 @@ export const DESC = 'desc';
 
 export const CHAIN_ABSTRACTION_FILTER = 'chain-abstraction';
 export const CHAIN_ABSTRACTION_CONTRACTS = [
-	'0x823d91173b0F51b8a7d6CE7c818d19d0B784024f', // TreasuryVault implementation
-	'0xfC707A2feb466B942cfE9E205914e8d3A7942efd', // TreasuryVault proxy
-	'0x96fc23696382ac6830822AaAf3c7673C0843a006', // IntentManager implementation
-	'0x0B0E87Da994C589FbCe609606d8209648F0dC94D', // IntentManager proxy
-	'0x4A2400feA981D43b0f97C25A7103B0218973Fd7e', // SolverManager implementation
-	'0x43e2fC9DB049f1f92d622F46b695a2284FeF0497', // SolverManager proxy
+	'0x78234E33EB213dcc07C9808962a1af5E5212C52A', // TreasuryVault proxy
+	'0x2D60dfD12ecf9551B56E5e96e21CD5dD1113BFba', // IntentManager proxy
+	'0x154A0F375613deaFC05A307010F517AeADA4252b', // SolverManager proxy
 ];
 
 export const REDIS_KEY = {
