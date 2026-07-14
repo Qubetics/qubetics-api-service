@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy_testnet_qubetics_api_service:
-    uses: ./.github/workflows/testnet-qubetics-api-service.yaml
+    uses: Qubetics/argocd-qubetics/.github/workflows/deployment.yaml@testnet
     with:
       SWR_ORGANIZATION: testnet-qubetics
       ARGOCD_BRANCH: testnet_v2
@@ -15,8 +15,8 @@ jobs:
       ARGOCD_REPOSITORY: Qubetics/argocd-qubetics
       DEPLOYMENT_PATH: Evm-backend/qubetics-api-deployment.yaml
       HUAWEI_IMAGE: testnet-qubetics-api
-      DOCKER_USERNAME: ap-southeast-3@HPUAJWWFSLCMD312AZSR
+      DOCKER_USERNAME: ap-southeast-3@{{ vars.DOCKER_USERNAME_V2 }}
       ENV: ${{ vars.TESTNET_V2_QUBETICS_API_ENV }}
     secrets:
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD_NEW }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD_V2 }}
       GIT_SSH_KEY: ${{ secrets.ARGOCD_SSH_KEY_NEW }}
